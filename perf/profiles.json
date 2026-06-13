@@ -1,0 +1,25 @@
+{
+  "health": {
+    "path": "/health",
+    "max_p95_ms": 500,
+    "min_throughput_rps": 10
+  },
+  "health-ready": {
+    "path": "/health/ready",
+    "max_p95_ms": 2000,
+    "min_throughput_rps": 5
+  },
+  "auth-login": {
+    "path": "/api/v1/auth/login",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "json_body": {
+      "email": "user@example.local",
+      "password": "devpassword123"
+    },
+    "max_p95_ms": 5000,
+    "min_throughput_rps": 2
+  }
+}

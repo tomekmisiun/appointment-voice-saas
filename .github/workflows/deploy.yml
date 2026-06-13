@@ -1,0 +1,108 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
+      image_tag:
+        description: Container image tag to deploy
+        required: true
+      dry_run:
+        description: Print the deployment plan without applying changes
+        required: true
+        default: true
+        type: boolean
+      run_migrations:
+        description: Run Alembic migrations after promotion when configured
+        required: true
+        default: true
+        type: boolean
+      run_smoke_checks:
+        description: Run HTTP smoke checks after promotion
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Resolve deployment image
+        id: image
+        run: |
+          image_ref="ghcr.io/${GITHUB_REPOSITORY,,}/api:${{ inputs.image_tag }}"
+          echo "ref=${image_ref}" >> "${GITHUB_OUTPUT}"
+          echo "Deploying ${image_ref} to ${{ inputs.environment }}"
+
+      - name: Log in to GitHub Container Registry
+        if: inputs.dry_run == false
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify release image exists
+        if: inputs.dry_run == false
+        run: docker manifest inspect "${{ steps.image.outputs.ref }}"
+
+      - name: Promote image
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          IMAGE_REF: ${{ steps.image.outputs.ref }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          RUN_MIGRATIONS: ${{ inputs.run_migrations }}
+          DEPLOY_HOOK_URL: ${{ secrets.DEPLOY_HOOK_URL }}
+          DEPLOY_HOOK_TOKEN: ${{ secrets.DEPLOY_HOOK_TOKEN }}
+          DEPLOY_SSH_HOST: ${{ secrets.DEPLOY_SSH_HOST }}
+          DEPLOY_SSH_USER: ${{ secrets.DEPLOY_SSH_USER }}
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          REMOTE_APP_DIR: ${{ vars.REMOTE_APP_DIR }}
+          ALLOW_LATEST_PRODUCTION: ${{ vars.ALLOW_LATEST_PRODUCTION }}
+        run: bash scripts/deploy_promote.sh
+
+      - name: Run database migrations
+        if: >-
+          inputs.dry_run == false &&
+          inputs.run_migrations &&
+          env.SKIP_RUNNER_MIGRATIONS != 'true'
+        env:
+          IMAGE_REF: ${{ steps.image.outputs.ref }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if [[ -z "${DATABASE_URL:-}" ]]; then
+            echo "DATABASE_URL is not configured for this environment; skipping runner-based migrations."
+            exit 0
+          fi
+          bash scripts/deploy_migrate.sh
+
+      - name: Run post-deploy smoke checks
+        if: inputs.dry_run == false && inputs.run_smoke_checks
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+          DEV_ADMIN_EMAIL: ${{ vars.SMOKE_ADMIN_EMAIL }}
+          DEV_PASSWORD: ${{ secrets.SMOKE_ADMIN_PASSWORD }}
+        run: |
+          if [[ -z "${API_BASE_URL:-}" ]]; then
+            echo "API_BASE_URL is not configured for this environment; skipping smoke checks."
+            exit 0
+          fi
+          bash scripts/smoke_test.sh

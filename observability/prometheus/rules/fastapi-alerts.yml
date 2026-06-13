@@ -1,0 +1,38 @@
+groups:
+  - name: fastapi.rules
+    rules:
+      - alert: FastAPITargetDown
+        expr: up{job="fastapi"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: FastAPI target is down
+          description: Prometheus cannot scrape the FastAPI metrics endpoint.
+
+      - alert: FastAPIHighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{status_code=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(http_requests_total[5m])), 1)
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: FastAPI 5xx error rate is above 5 percent
+          description: More than 5 percent of HTTP requests returned 5xx responses.
+
+      - alert: FastAPIHighLatencyP95
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(http_request_duration_seconds_bucket[5m]))
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: FastAPI p95 latency is above 1 second
+          description: The p95 HTTP request latency exceeded 1 second.

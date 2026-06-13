@@ -1,0 +1,61 @@
+name: Load Threshold Check
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Load profile to validate
+        required: true
+        default: health
+        type: choice
+        options:
+          - health
+          - health-ready
+
+permissions:
+  contents: read
+
+jobs:
+  load-thresholds:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Create env file for compose
+        run: |
+          cat > .env <<EOF
+          DATABASE_URL=postgresql://app_user:app_password@db:5432/app_db
+          TEST_DATABASE_URL=postgresql://app_user:app_password@test_db:5432/app_test_db
+          SECRET_KEY=test-secret-key-for-ci-only
+          S3_ACCESS_KEY_ID=minioadmin
+          S3_SECRET_ACCESS_KEY=minioadmin
+          EOF
+
+      - name: Start stack
+        run: docker compose up -d db redis api
+
+      - name: Wait for API health
+        run: |
+          for attempt in $(seq 1 30); do
+            if docker compose exec -T api python -c "import httpx; httpx.get('http://api:8000/health', timeout=2).raise_for_status()"; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "API did not become healthy in time"
+          exit 1
+
+      - name: Run load threshold profile
+        run: |
+          docker compose run --rm api python -m perf.load_baseline \
+            --base-url http://api:8000 \
+            --profile ${{ inputs.profile }} \
+            --check-thresholds \
+            --requests 50 \
+            --concurrency 5
+
+      - name: Stop containers
+        if: always()
+        run: docker compose down

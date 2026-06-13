@@ -1,0 +1,15 @@
+---
+description: Docker, deploy scripts, and env example rules
+globs:
+  - "Dockerfile"
+  - "docker-compose*.yml"
+  - ".env.example"
+  - "scripts/deploy*.sh"
+  - "scripts/smoke_test.sh"
+alwaysApply: false
+---
+
+Source of truth:
+
+- `.ai-rules/docker.md`
+- `.ai-rules/documentation.md`

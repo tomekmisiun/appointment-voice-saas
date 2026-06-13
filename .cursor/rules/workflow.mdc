@@ -1,0 +1,8 @@
+---
+description: Git workflow rules
+globs:
+  - ".git/**"
+alwaysApply: false
+---
+
+Source of truth: `.ai-rules/git.md`.

@@ -1,0 +1,2 @@
+# Leave this file comment-only unless a PR changes app/models/ without a schema migration.
+# To bypass the CI check, replace this line with a one-line reason in the same PR.

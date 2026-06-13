@@ -1,0 +1,12 @@
+---
+description: Gitignore and repository hygiene rules
+globs:
+  - ".gitignore"
+  - "**/.gitignore"
+alwaysApply: false
+---
+
+Source of truth:
+
+- `.ai-rules/repository.md`
+- `.ai-rules/security.md`

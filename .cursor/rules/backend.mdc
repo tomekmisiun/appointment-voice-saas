@@ -1,0 +1,16 @@
+---
+description: Backend code and test rules
+globs:
+  - "app/**/*.py"
+  - "tests/**/*.py"
+alwaysApply: false
+---
+
+Source of truth:
+
+- `.ai-rules/architecture.md`
+- `.ai-rules/api.md`
+- `.ai-rules/database.md`
+- `.ai-rules/security.md`
+- `.ai-rules/tenancy.md`
+- `.ai-rules/workers.md`

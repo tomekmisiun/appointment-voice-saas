@@ -1,0 +1,33 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+
+  - repo: local
+    hooks:
+      - id: block-env-files
+        name: block committed .env files
+        entry: scripts/hooks/check_no_env_files.sh
+        language: script
+        files: '^\.env'
+        exclude: '\.example$'
+      - id: pyproject-lock-pair
+        name: pyproject.toml requires uv.lock
+        entry: scripts/hooks/check_pyproject_lock_staged.sh
+        language: script
+        pass_filenames: false
+        files: '^(pyproject\.toml|uv\.lock)$'
+      - id: block-ai-trailers
+        name: block AI authorship trailers in commit messages
+        entry: scripts/hooks/check_commit_msg_no_ai_trailers.sh
+        language: script
+        stages: [commit-msg]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: ["--fix"]

@@ -1,0 +1,10 @@
+---
+description: Repository structure rules (see project.mdc for full index)
+globs:
+  - "**/*"
+alwaysApply: false
+---
+
+Source of truth: `.ai-rules/repository.md` and `.ai-rules/architecture.md`.
+
+Full rule index: `.cursor/rules/project.mdc`.

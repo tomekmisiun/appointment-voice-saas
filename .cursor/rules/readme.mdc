@@ -1,0 +1,17 @@
+---
+description: Documentation and project tracking rules
+globs:
+  - "README.md"
+  - "docs/**/*.md"
+  - "PROJECT_STATUS.md"
+  - "ROADMAP.md"
+  - "TECH_DEBT.md"
+  - "AGENTS.md"
+  - "CLAUDE.md"
+  - ".ai-rules/**/*.md"
+alwaysApply: false
+---
+
+Source of truth: `.ai-rules/documentation.md`.
+
+Also read `.ai-rules/repository.md` when editing AI rule files.

@@ -1,0 +1,72 @@
+name: Scheduled Backup
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment for backup credentials
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
+      dry_run:
+        description: Print the backup plan without triggering provider hooks or pg_dump
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'production' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install PostgreSQL client
+        if: (vars.BACKUP_MODE == 'direct') && (github.event_name == 'schedule' || inputs.dry_run == false)
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Trigger scheduled backup
+        env:
+          BACKUP_MODE: ${{ vars.BACKUP_MODE || 'provider-hook' }}
+          BACKUP_FILE: ${{ vars.BACKUP_FILE || 'backups/scheduled.dump' }}
+          BACKUP_HOOK_URL: ${{ secrets.BACKUP_HOOK_URL }}
+          BACKUP_HOOK_TOKEN: ${{ secrets.BACKUP_HOOK_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DRY_RUN: ${{ github.event_name == 'schedule' && 'false' || inputs.dry_run }}
+        run: |
+          if [[ "${DRY_RUN}" == "true" ]]; then
+            if [[ "${BACKUP_MODE}" == "provider-hook" && -z "${BACKUP_HOOK_URL:-}" ]]; then
+              echo "BACKUP_HOOK_URL is not configured for this environment; backup dry run only."
+              exit 0
+            fi
+
+            if [[ "${BACKUP_MODE}" == "direct" && -z "${DATABASE_URL:-}" ]]; then
+              echo "DATABASE_URL is not configured for direct backup mode; backup dry run only."
+              exit 0
+            fi
+
+            bash scripts/db_backup.sh
+            exit 0
+          fi
+
+          if [[ "${BACKUP_MODE}" == "provider-hook" && -z "${BACKUP_HOOK_URL:-}" ]]; then
+            echo "BACKUP_HOOK_URL is required for scheduled backups in provider-hook mode." >&2
+            exit 1
+          fi
+
+          if [[ "${BACKUP_MODE}" == "direct" && -z "${DATABASE_URL:-}" ]]; then
+            echo "DATABASE_URL is required for scheduled backups in direct mode." >&2
+            exit 1
+          fi
+
+          bash scripts/db_backup.sh
