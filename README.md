@@ -23,6 +23,24 @@ Clone → configure → extend. Start with [`docs/template-onboarding.md`](docs/
 
 ---
 
+## Appointment Voice SaaS direction
+
+This repository is being prepared as the backend foundation for **Appointment
+Voice SaaS**, a mini SaaS for barbers and other local service businesses that
+miss calls while serving customers. Current work is product bootstrap
+documentation only; appointment booking runtime code, domain models, Twilio,
+SMS, Google Calendar, AI voice agent, and frontend work have not been added.
+
+Product planning:
+
+| Document | Purpose |
+|----------|---------|
+| [`docs/product-scope.md`](docs/product-scope.md) | Target users, MVP flow, non-goals, and assumptions |
+| [`docs/domain-model.md`](docs/domain-model.md) | Planned domain vocabulary for bookings, voice sessions, SMS, and calendar events |
+| [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md) | Phase-based roadmap with task IDs, priorities, acceptance criteria, validation, and risks |
+
+---
+
 ## Quick start
 
 **Requirements:** Python 3.13+, [uv](https://docs.astral.sh/uv/), Docker, Docker Compose, Make.

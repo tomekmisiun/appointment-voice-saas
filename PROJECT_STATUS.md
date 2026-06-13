@@ -33,6 +33,15 @@ coverage floor enforced in CI and `make validate`.
 - **Template freeze (June 2026)** — suitable as a cloneable, AI-ready foundation;
   see `TEMPLATE_FREEZE_CHECKLIST.md` and `docs/ai-workflows.md`.
 
+**Appointment Voice SaaS direction:**
+
+- Product bootstrap documentation is in progress for Appointment Voice SaaS.
+- No appointment booking runtime code has been implemented yet.
+- No appointment booking database models, migrations, Twilio/SMS integration,
+  Google Calendar sync, AI voice agent, or frontend have been added.
+- Next product task should be the core domain model design and implementation
+  plan before adding models or migrations.
+
 **Architecture:**
 
 - API routes: `app/api/routes`
