@@ -119,12 +119,12 @@ Recommended MVP execution order:
 
 | Status | ID | Priority | Goal | Scope | Out | Acceptance | Validation | Risk |
 |--------|----|----------|------|-------|-----|------------|------------|------|
-| [ ] | AVS-C001 | P0 | Generate slots from working hours. | Slot generation from service duration and staff schedule. | Existing booking exclusion. | Slots align to local business schedule. | Unit tests, `make validate`. | Customers see impossible slots. |
-| [ ] | AVS-C002 | P0 | Exclude existing bookings. | Remove slots overlapping active bookings. | DB-level conflict enforcement. | Availability excludes booked staff/time ranges. | Unit/integration tests. | Double-booking shown as available. |
-| [ ] | AVS-C003 | P0 | Exclude exceptions. | Apply closures, blocks, and special hours. | Recurring staff blocks. | Exceptions override normal slot generation. | Unit/integration tests. | Closed times remain bookable. |
-| [ ] | AVS-C004 | P0 | Support business timezone. | Explicit timezone input/output and DST edge cases. | Multi-timezone staff. | Availability is correct across DST transitions. | Timezone tests, `make validate`. | Off-by-one-hour bookings. |
-| [ ] | AVS-C005 | P0 | Add Availability API. | Tenant-scoped endpoint for service/staff/date availability. | Booking creation. | API returns bookable slots with stable contract. | API tests, `make validate`. | Clients depend on unstable availability contract. |
-| [ ] | AVS-C006 | P0 | Cover availability behavior. | Unit and integration tests for C001-C005. | Load testing. | Empty, full, exception, timezone, and tenant cases pass. | `make validate`. | Edge cases regress silently. |
+| [x] | AVS-C001 | P0 | Generate slots from working hours. | Slot generation from service duration and staff schedule. | Existing booking exclusion. | Slots align to local business schedule. | Unit tests, `make validate`. | Customers see impossible slots. |
+| [x] | AVS-C002 | P0 | Exclude existing bookings. | Remove slots overlapping active bookings. | DB-level conflict enforcement. | Availability excludes booked staff/time ranges. | Unit/integration tests. | Double-booking shown as available. |
+| [x] | AVS-C003 | P0 | Exclude exceptions. | Apply closures, blocks, and special hours. | Recurring staff blocks. | Exceptions override normal slot generation. | Unit/integration tests. | Closed times remain bookable. |
+| [x] | AVS-C004 | P0 | Support business timezone. | Explicit timezone input/output and DST edge cases. | Multi-timezone staff. | Availability is correct across DST transitions. | Timezone tests, `make validate`. | Off-by-one-hour bookings. |
+| [x] | AVS-C005 | P0 | Add Availability API. | Tenant-scoped endpoint for service/staff/date availability. | Booking creation. | API returns bookable slots with stable contract. | API tests, `make validate`. | Clients depend on unstable availability contract. |
+| [x] | AVS-C006 | P0 | Cover availability behavior. | Unit and integration tests for C001-C005. | Load testing. | Empty, full, exception, timezone, and tenant cases pass. | `make validate`. | Edge cases regress silently. |
 
 ### EPIC D - Booking engine
 

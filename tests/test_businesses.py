@@ -56,7 +56,7 @@ def test_admin_can_list_businesses(db, client):
         headers=auth_headers(token),
     )
 
-    response = client.get("/api/v1/businesses", headers=auth_headers(token))
+    response = client.get("/api/v1/businesses", params={"size": 100}, headers=auth_headers(token))
 
     assert response.status_code == 200
     names = [b["name"] for b in response.json()]
