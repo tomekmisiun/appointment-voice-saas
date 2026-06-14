@@ -75,7 +75,8 @@ versa).
 
 ### Dangerous migration operations
 
-New migrations must not contain:
+New migrations must not contain these in **`upgrade()`** (downgrade rollbacks
+may use `op.drop_*` without an override):
 
 - `op.drop_column`
 - `op.drop_table`
@@ -83,8 +84,8 @@ New migrations must not contain:
 - `op.execute("DROP` or `op.execute('DROP`
 
 **Bypass:** update `scripts/ci/allow-migration-drops` in the same PR with a
-one-line reason, or set `CI_ALLOW_MIGRATION_DROPS=1` in a workflow (maintainers
-only).
+one-line reason when `upgrade()` intentionally drops schema, or set
+`CI_ALLOW_MIGRATION_DROPS=1` in a workflow (maintainers only).
 
 ### CI gate regression
 

@@ -23,8 +23,8 @@ SQLAlchemy, Alembic, PostgreSQL, and a separate test database.
   code. Use expand/contract across releases.
 - MUST NOT use `op.drop_*` unless the user explicitly requested a breaking
   migration.
-- CI flags new destructive operations. See `docs/migration-rollback.md` and
-  `docs/ci-policy-guards.md`.
+- CI flags destructive operations in new migration **`upgrade()`** blocks. See
+  `docs/migration-rollback.md` and `docs/ci-policy-guards.md`.
 
 ## Data Access
 
