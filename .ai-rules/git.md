@@ -48,3 +48,21 @@ Feature branch workflow with explicit user approval for remote changes.
 - After `approve`, push, merge, or delete branches only according to the
   rest of these git safety rules.
 - Before merge, show changed files, validation results, and a short summary.
+
+## Auto-Merge
+
+- Repository-level "Allow auto-merge" must already be enabled in GitHub repo
+  settings (or confirmed available). Agents MUST NOT change repository
+  settings to enable it.
+- The agent MAY enable auto-merge for a PR (`gh pr merge --auto --squash`) only
+  when **all** of the following hold:
+  - the branch is pushed and the PR exists,
+  - a local validation summary has been provided to the user,
+  - Reviewer feedback has been addressed (or explicitly waived by the user),
+  - the user explicitly asks for auto-merge, or project rules explicitly allow
+    it for this change.
+- MUST NOT enable auto-merge if local validation failed or unresolved risks
+  remain.
+- MUST NOT bypass branch protection or merge directly to `main`/`master`.
+- `gh pr merge --auto --squash` is the documented command for this; do not run
+  it unless the conditions above are met.
