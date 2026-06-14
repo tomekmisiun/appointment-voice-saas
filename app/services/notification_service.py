@@ -57,3 +57,43 @@ def enqueue_booking_confirmation(
         db.add(intent)
     db.flush()
     return intents
+
+
+def enqueue_booking_cancellation(
+    db: Session,
+    *,
+    booking: Booking,
+    business: Business,
+    customer: Customer,
+    service: Service,
+) -> list[NotificationOutbox]:
+    when = _format_local_time(booking.starts_at, business)
+
+    intents = [
+        NotificationOutbox(
+            tenant_id=booking.tenant_id,
+            business_id=booking.business_id,
+            booking_id=booking.id,
+            channel=NotificationChannel.SMS,
+            purpose=NotificationPurpose.BOOKING_CANCELLATION,
+            recipient_phone=customer.phone,
+            body=f"Your {service.name} appointment at {business.name} on {when} has been cancelled.",
+        )
+    ]
+    if business.phone:
+        intents.append(
+            NotificationOutbox(
+                tenant_id=booking.tenant_id,
+                business_id=booking.business_id,
+                booking_id=booking.id,
+                channel=NotificationChannel.SMS,
+                purpose=NotificationPurpose.BOOKING_CANCELLATION,
+                recipient_phone=business.phone,
+                body=f"Booking cancelled: {service.name} for {customer.phone} on {when}.",
+            )
+        )
+
+    for intent in intents:
+        db.add(intent)
+    db.flush()
+    return intents

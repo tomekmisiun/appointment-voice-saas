@@ -12,9 +12,9 @@ Product backend **partially implemented** — see verified list below and
 - Appointment domain (business → booking) + availability engine: **implemented**
   (code, migrations, tests).
 - Notification outbox model, SMS provider interface, fake SMS adapter, and
-  booking confirmation enqueueing: **implemented** (`AVS-E001`–`AVS-E004`).
+  booking confirmation/cancellation enqueueing: **implemented** (`AVS-E001`–`AVS-E005`).
 - IVR, calendar, transfer, frontend: **not implemented** (roadmap EPIC E–J).
-- **Next milestone:** EPIC E — enqueue cancellation SMS (`AVS-E005`).
+- **Next milestone:** EPIC E — notification worker (`AVS-E006`).
 
 ## Verified Inherited Foundation Capabilities
 
@@ -84,13 +84,16 @@ Notifications outbox (EPIC E — verified 2026-06-14):
 - Booking creation enqueues `BOOKING_CONFIRMATION` SMS intents for the
   customer, and for the business when it has a phone number
   (`app/services/notification_service.py`, `AVS-E004`).
+- Booking cancellation enqueues `BOOKING_CANCELLATION` SMS intents for the
+  customer, and for the business when it has a phone number
+  (`app/services/notification_service.py`, `AVS-E005`).
 - Test coverage in `tests/test_notification_outbox.py`, `tests/test_sms_provider.py`,
   and `tests/test_booking_notifications.py`.
 
 ## Not Implemented Yet
 
 - IVR runtime or local IVR simulation.
-- Enqueue cancellation/change SMS and notification worker.
+- Notification worker to process and send queued outbox entries.
 - Calendar provider interface, calendar event model, fake calendar adapter.
 - Voice session model.
 - Call transfer.
@@ -102,7 +105,7 @@ Notifications outbox (EPIC E — verified 2026-06-14):
 
 ## Next Implementation Milestone
 
-**EPIC E — Notifications outbox** (`AVS-E005` onwards):
+**EPIC E — Notifications outbox** (`AVS-E006` onwards):
 
 See [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md) for
 the detailed task backlog.
