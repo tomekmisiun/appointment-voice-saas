@@ -9,7 +9,10 @@ from app.models.booking import Booking, BookingSource, BookingStatus
 from app.services.audit_log_service import create_audit_log
 from app.services.business_service import require_business
 from app.services.customer_service import require_customer
-from app.services.notification_service import enqueue_booking_confirmation
+from app.services.notification_service import (
+    enqueue_booking_cancellation,
+    enqueue_booking_confirmation,
+)
 from app.services.service_service import require_service
 from app.services.staff_service import require_staff
 
@@ -169,6 +172,16 @@ def cancel_booking(
         target_booking_id=booking.id,
         source=booking.source,
         commit=False,
+    )
+    business = require_business(db, booking.business_id, tenant_id)
+    customer = require_customer(db, booking.customer_id, tenant_id)
+    service = require_service(db, booking.service_id, tenant_id)
+    enqueue_booking_cancellation(
+        db,
+        booking=booking,
+        business=business,
+        customer=customer,
+        service=service,
     )
     db.commit()
     db.refresh(booking)
