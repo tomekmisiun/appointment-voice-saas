@@ -1,3 +1,6 @@
+import re
+from urllib.parse import urlsplit, urlunsplit
+
 from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine, text
@@ -5,6 +8,39 @@ from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
 from app.models.user import User
+
+_SAFE_DATABASE_NAME = re.compile(r"^[A-Za-z0-9_]+$")
+
+
+def _create_database_if_missing(database_url: str) -> None:
+    """Create the target Postgres database if it does not exist yet.
+
+    Used so each pytest-xdist worker can have its own test database
+    (e.g. ``app_test_db_gw0``) without requiring manual provisioning.
+    """
+    parts = urlsplit(database_url)
+    db_name = parts.path.lstrip("/")
+
+    if not _SAFE_DATABASE_NAME.match(db_name):
+        raise ValueError(f"Unsafe test database name: {db_name!r}")
+
+    admin_url = urlunsplit(parts._replace(path="/postgres"))
+    admin_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
+
+    try:
+        with admin_engine.connect() as connection:
+            exists = connection.execute(
+                text("SELECT 1 FROM pg_database WHERE datname = :name"),
+                {"name": db_name},
+            ).first()
+
+            if exists is None:
+                connection.execute(text(f'CREATE DATABASE "{db_name}"'))
+    finally:
+        admin_engine.dispose()
+
+
+_create_database_if_missing(settings.test_database_url)
 
 engine = create_engine(settings.test_database_url)
 

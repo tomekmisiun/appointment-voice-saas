@@ -24,6 +24,14 @@ docker-down:
 test:
 	docker compose exec api pytest -v
 
+# Runs the suite across isolated pytest-xdist workers. Each worker gets its
+# own Postgres database (app_test_db_gwN) and Redis logical DB; see
+# tests/xdist_isolation.py.
+PYTEST_WORKERS ?= 2
+
+test-parallel:
+	docker compose exec api pytest -n $(PYTEST_WORKERS) -v
+
 test-coverage:
 	docker compose run --rm api pytest \
 		--cov=app \
