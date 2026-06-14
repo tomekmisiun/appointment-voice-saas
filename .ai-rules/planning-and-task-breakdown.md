@@ -27,11 +27,32 @@ Each task MUST include:
 
 ## Roadmap and tech debt
 
-- Pick the next item from `ROADMAP.md` in priority order unless the user
-  specifies otherwise.
+- For Appointment Voice SaaS product tasks, pick the next item from
+  `docs/appointment-saas-roadmap.md` (the executable backlog, `AVS-Exxx`
+  items) unless the user specifies otherwise. `ROADMAP.md` is the high-level,
+  non-executable view.
 - Map debt IDs from the roadmap row to `TECH_DEBT.md`; mark **Done** only after
   verification.
 - Do not batch unrelated roadmap numbers in one PR.
+
+## Task sizing
+
+- One PR represents one logical change. Tiny, directly related docs/rules
+  fixes may be grouped with that change.
+- Unrelated changes MUST NOT be bundled into the same PR.
+- The following are always separate tasks/PRs — never combine with an
+  unrelated roadmap item or with each other:
+  - pytest-xdist / test parallelization
+  - test database isolation changes
+  - migrations
+  - auth
+  - CI workflow changes
+  - Docker / Compose changes
+  - booking logic
+  - call flow / IVR
+  - calendar integration
+  - SMS integration
+  - security rules (`.ai-rules/security.md`, `app/core/security.py`, etc.)
 
 ## Estimation hint
 

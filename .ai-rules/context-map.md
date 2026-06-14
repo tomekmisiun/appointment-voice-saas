@@ -91,6 +91,7 @@ Before editing, read the files listed for your **task type**. Start with
 | File | Purpose |
 |------|---------|
 | `PROJECT_STATUS.md` | Verified capabilities only |
-| `ROADMAP.md` | Planned prioritized work |
+| `ROADMAP.md` | High-level, non-executable product roadmap |
+| `docs/appointment-saas-roadmap.md` | Executable AVS backlog (`AVS-Exxx`) — pick the next product task here |
 | `TECH_DEBT.md` | Debt register |
 | `TEMPLATE_FREEZE_CHECKLIST.md` | Template reuse / freeze |

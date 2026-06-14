@@ -4,6 +4,24 @@ Use this file at the **start of every non-trivial task**. It complements
 tool-specific entry points (`AGENTS.md`, `CLAUDE.md`) and binding rules in other
 `.ai-rules/` files.
 
+## 0. Project identity
+
+This repository is the **Appointment Voice SaaS** product
+(`appointment-voice-saas`), not a generic template. When orienting, distinguish:
+
+- **Inherited foundation** — generic FastAPI/auth/tenancy/worker/CI scaffolding
+  (`app/`, `docs/foundation/`, `docs/template-*`, `TEMPLATE_FREEZE_CHECKLIST.md`).
+- **AVS product docs** — `docs/product-scope.md`, `docs/domain-model.md`,
+  `docs/appointment-saas-roadmap.md`, `ROADMAP.md`, `PROJECT_STATUS.md`.
+- **AVS implementation** — product code, tests, and migrations implementing
+  roadmap items (`AVS-Exxx`).
+- **AI workflow/rules** — `.ai-rules/`, `AGENTS.md`, `CLAUDE.md`,
+  `docs/ai-workflows.md`, `.commands/`, `agents/`.
+
+For Appointment Voice SaaS product tasks, pick the next item from
+`docs/appointment-saas-roadmap.md` (the executable backlog), not the
+high-level `ROADMAP.md`, unless the user specifies otherwise.
+
 ## 1. Classify the task
 
 | Type | Examples | Load first |
@@ -27,6 +45,12 @@ tool-specific entry points (`AGENTS.md`, `CLAUDE.md`) and binding rules in other
 ## 3. Define scope
 
 - State the **objective** in one sentence.
+- For Appointment Voice SaaS product tasks, name the affected layer(s): product
+  docs/roadmap, domain model, booking backend, calendar integration, IVR/call
+  flow, SMS notifications, business settings, admin/owner operations,
+  infrastructure/CI, or AI workflow/rules.
+- Classify the task kind for the completion report: docs-only, backend runtime,
+  integration, CI/infra, or rules/workflow.
 - List **in scope** and **out of scope** explicitly.
 - Do not expand scope (no drive-by refactors, no unrelated docs, no P3 work
   unless requested).
@@ -50,12 +74,24 @@ Before adding files, dependencies, abstractions, or large rewrites, apply
 
 ## 6. Pick validation commands
 
-| Change type | Minimum validation |
-|-------------|-------------------|
-| Application code / tests / migrations | `make validate` |
-| CI / scripts / policy only | `make policy-guards` and `make validate-ai-workflows` |
-| Docs / AI rules only | `make validate-ai-workflows`; run `make validate` if docs claim test counts |
-| Docker / Compose | `make validate` if app touched; else build smoke as needed |
+Choose validation based on which files changed. Run the **first** column for
+fast feedback; run the **before PR** column when the change is non-trivial or
+production-impacting.
+
+| Change type | First (fast feedback) | Before PR |
+|-------------|------------------------|-----------|
+| Docs-only (no AI workflow files touched) | none required | — |
+| AI workflow / `.ai-rules` files changed | `make validate-ai-workflows`; `make policy-guards` if commit/policy/CI-sensitive files also changed | none (do not run pytest unless runtime code also changed) |
+| Application code (services, routes, schemas) | targeted pytest for the touched module, e.g. `pytest -k booking`, `pytest tests/test_<module>.py`, `pytest tests/api/...` | `make validate` if non-trivial or production-impacting |
+| Migrations / models | relevant migration/model tests (`tests/test_migrations.py`, matching model tests); verify `alembic upgrade head` | `make validate` |
+| Docker / CI / Makefile | most relevant local check (e.g. `bash scripts/ci/run_policy_guards.sh`, a local `docker compose build`); pytest alone does not validate these | `make policy-guards`; `make validate` if app code also changed |
+
+### CI is the final gate
+
+Targeted local tests give fast feedback during a slice. Full local validation
+(`make validate`) is preferred before opening a PR for application/runtime
+changes, but GitHub Actions CI remains authoritative — local validation does
+not replace a green CI run before merge.
 
 ## 7. Execute incrementally
 
@@ -112,3 +148,30 @@ Before any commit:
 
 Install the commit-msg hook once per clone:
 `uv run pre-commit install --hook-type commit-msg`.
+
+### Auto-merge
+
+See `.ai-rules/git.md` "Auto-Merge" — enabling auto-merge follows the same
+explicit-approval model as push/merge and MUST NOT be used to bypass branch
+protection, CI, or unresolved Reviewer findings.
+
+## 10. Handoff and `/clear`
+
+After completing a task, produce a compact handoff summary:
+
+- Branch
+- Commit(s)
+- PR link (if any)
+- Files changed
+- Validation run (commands + pass/fail)
+- Reviewer result
+- Risks
+- Next steps
+
+`/clear` is a Claude Code session command, not a repository or git rule:
+
+- Recommend `/clear` only before starting an **unrelated** task, to save tokens
+  and avoid context contamination.
+- Do not recommend `/clear` when the next task depends on the current context
+  (e.g. continuing the same PR, addressing review feedback).
+- Never claim `/clear` was executed — only the user can run it.
