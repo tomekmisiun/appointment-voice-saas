@@ -9,6 +9,7 @@ from app.models.booking import Booking, BookingSource, BookingStatus
 from app.services.audit_log_service import create_audit_log
 from app.services.business_service import require_business
 from app.services.customer_service import require_customer
+from app.services.notification_service import enqueue_booking_confirmation
 from app.services.service_service import require_service
 from app.services.staff_service import require_staff
 
@@ -53,8 +54,8 @@ def create_booking(
     source: str = BookingSource.API,
     actor_id: int | None = None,
 ) -> Booking:
-    require_business(db, business_id, tenant_id)
-    require_customer(db, customer_id, tenant_id)
+    business = require_business(db, business_id, tenant_id)
+    customer = require_customer(db, customer_id, tenant_id)
     svc = require_service(db, service_id, tenant_id)
     if staff_id is not None:
         require_staff(db, staff_id, tenant_id)
@@ -90,6 +91,13 @@ def create_booking(
         target_booking_id=booking.id,
         source=source,
         commit=False,
+    )
+    enqueue_booking_confirmation(
+        db,
+        booking=booking,
+        business=business,
+        customer=customer,
+        service=svc,
     )
     try:
         db.commit()
