@@ -38,13 +38,14 @@ writes `approve`.
 **Responsibilities:**
 
 - Review **first** — read-only by default.
-- Use the canonical procedure: **`.commands/two-agent-review.md`**.
-- Read `.ai-rules/review.md` and load relevant personas from `agents/`.
+- Read **only** **`.ai-rules/review-checklist.md`** (checklist + procedure +
+  output format). Do not load `.commands/two-agent-review.md` or full
+  `.ai-rules/`. Load at most one persona from `agents/` when domain-specific.
 - Inspect current git diff, untracked files, validation output, and relevant
   repository files.
 - Check architecture, tests, security, tenancy, migrations, Docker/CI, and
   docs/status consistency against binding rules.
-- Produce the exact sections defined in `.commands/two-agent-review.md`.
+- Produce the exact sections defined in `.ai-rules/review-checklist.md`.
 
 **Must not** modify code, commit, push, merge, delete branches, or fix while
 reviewing. Fix requests go back to the Builder after the user says `fix`.
@@ -69,7 +70,8 @@ Optional handoff context: spec in `docs/specs/` or a ROADMAP item.
 
 ## Reviewer checklist (summary)
 
-Full checklist: `.ai-rules/review.md`. Load personas as needed:
+Reviewer subagent: **`.ai-rules/review-checklist.md`** (1 page). Humans/Builder:
+**`.ai-rules/review.md`**. Load at most one persona when domain-specific:
 
 | Area | Persona |
 |------|---------|
@@ -89,7 +91,7 @@ Also verify:
 ## Reviewer output format
 
 Reviewer output MUST use the sections defined in
-`.commands/two-agent-review.md`:
+`.ai-rules/review-checklist.md`:
 
 - Blockers
 - Should-fix
@@ -111,7 +113,10 @@ Final verdict MUST be one of:
 
 1. Builder addresses **Request changes** items (or user waives them).
 2. Re-run validation; update handoff if the diff changed materially.
-3. Optional second review pass for large fixes.
+3. **Review iteration limit:** max **2** reviewer → fix → reviewer cycles per
+   task (initial review + one re-review). After the second review, if blockers
+   remain, **escalate to the user** — do not auto-loop. User may waive, cut
+   scope, or request a manual follow-up.
 4. Human opens PR; CI and branch protection must pass.
 5. Human merges — agents do not commit, push, merge, force-push, or delete
    branches unless the user explicitly writes `approve`, per
@@ -121,11 +126,12 @@ Final verdict MUST be one of:
 
 | File | Purpose |
 |------|---------|
-| `.commands/builder-handoff.md` | Canonical Builder Agent handoff template |
-| `.commands/two-agent-review.md` | Canonical Reviewer Agent prompt |
-| `.commands/review-current-branch.md` | Single-agent pre-PR review (same output format) |
+| `.commands/builder-handoff.md` | Concise Builder handoff template |
+| `.ai-rules/review-checklist.md` | Reviewer subagent: checklist + procedure + output |
+| `.commands/two-agent-review.md` | Human index (points to review-checklist) |
+| `.commands/review-current-branch.md` | Single-agent pre-PR review |
 | `docs/ai-workflows.md` | Full AI workflow index |
-| `.ai-rules/review.md` | Binding pre-merge checklist |
+| `.ai-rules/review.md` | Full pre-merge checklist (Builder / humans) |
 
 ## What this workflow does not do
 

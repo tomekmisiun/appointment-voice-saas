@@ -2,6 +2,17 @@
 
 Use before opening or merging a PR. Optional deep dives: personas in `agents/`.
 
+**Reviewer subagent:** read `.ai-rules/review-checklist.md` + diff — not the full
+`.ai-rules/` corpus. This file is the detailed reference for humans and Builder.
+
+## Review iteration limit
+
+- Max **2** reviewer → fix → reviewer cycles per task.
+- Cycle 1: initial review after Builder handoff.
+- Cycle 2: re-review after Builder addresses **Request changes** (or material diff change).
+- After cycle 2, if blockers remain: **escalate to the user** — do not loop
+  automatically. User decides waive, scope cut, or another manual review.
+
 ## Checklist
 
 ### Correctness

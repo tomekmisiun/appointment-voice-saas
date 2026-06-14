@@ -60,9 +60,9 @@ Cursor reaches the binding rule through `.cursor/rules/project.mdc`; if native
 subagent review is not available in the active Cursor environment, it must still
 follow `.ai-rules/agent-orchestration.md`.
 
-`.commands/builder-handoff.md` remains the structured Builder handoff format.
-`.commands/two-agent-review.md` remains the Reviewer procedure. They are not a
-manual copy-paste requirement for Codex CLI or Claude Code.
+`.commands/builder-handoff.md` is the concise Builder handoff format (no pasted
+diff). Reviewer reads **only** `.ai-rules/review-checklist.md`. Not a manual
+copy-paste requirement for Codex CLI or Claude Code.
 
 Full workflow: **`docs/two-agent-review-workflow.md`**.
 
@@ -78,7 +78,7 @@ the merge gate.
 | Implement next roadmap item | `.commands/build-next-roadmap-task.md` |
 | Pre-PR review | `.commands/review-current-branch.md` |
 | Two-agent handoff (Builder) | `.commands/builder-handoff.md` |
-| Two-agent review (Reviewer) | `.commands/two-agent-review.md` |
+| Two-agent review (Reviewer) | `.ai-rules/review-checklist.md` |
 | Security audit | `.commands/security-audit.md` |
 | Clone for new product | `.commands/template-onboard.md` |
 | Sync tracking docs | `.commands/update-project-status.md` |

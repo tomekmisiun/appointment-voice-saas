@@ -17,6 +17,7 @@ required_files=(
   ".ai-rules/incremental-work.md"
   ".ai-rules/tdd-and-regression.md"
   ".ai-rules/review.md"
+  ".ai-rules/review-checklist.md"
   ".ai-rules/threat-modeling.md"
   ".codex/agents/reviewer.toml"
   ".claude/agents/code-reviewer.md"
@@ -116,7 +117,7 @@ reviewer_headings=(
 )
 
 for heading in "${reviewer_headings[@]}"; do
-  if ! grep -F "$heading" "$ROOT/.commands/two-agent-review.md" >/dev/null; then
+  if ! grep -F "$heading" "$ROOT/.ai-rules/review-checklist.md" >/dev/null; then
     echo "validate-ai-workflows: missing reviewer heading: $heading" >&2
     missing=1
   fi
