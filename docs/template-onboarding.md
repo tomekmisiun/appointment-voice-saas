@@ -1,4 +1,9 @@
-# Template Onboarding
+# Inherited Foundation Template Onboarding
+
+Appointment Voice SaaS is now the active product repository. This document is
+inherited foundation reference material for understanding the original backend
+template workflow. Active product status, roadmap, and debt live in the root
+`PROJECT_STATUS.md`, `ROADMAP.md`, and `TECH_DEBT.md`.
 
 Use this guide when starting a new project from this repository.
 
@@ -136,7 +141,7 @@ patterns, not your provider accounts.
 
 | Topic | Document |
 |-------|----------|
-| Template reuse / freeze | `TEMPLATE_FREEZE_CHECKLIST.md`, `docs/template-usage.md` |
+| Template reuse / freeze | `docs/foundation/template-freeze-checklist.md`, `docs/template-usage.md` |
 | AI rules and agent workflows | `docs/ai-workflows.md`, `AGENTS.md`, `.ai-rules/`, `agents/`, `.commands/` |
 | Production deployment | `docs/production-deployment.md` |
 | Redis production contract | `docs/redis-production-contract.md` |
@@ -149,4 +154,5 @@ patterns, not your provider accounts.
 | Observability | `docs/observability-production.md` |
 | Load / concurrency | `docs/load-concurrency-testing.md`, `docs/sync-scaling-benchmark.md` |
 | Troubleshooting | `docs/troubleshooting.md` |
-| Current implementation state | `PROJECT_STATUS.md` |
+| Product implementation state | `PROJECT_STATUS.md` |
+| Historical foundation implementation state | `docs/foundation/template-project-status.md` |

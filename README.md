@@ -1,247 +1,150 @@
-# FastAPI Production Foundation
+# Appointment Voice SaaS
 
-AI-ready **FastAPI** production foundation for SaaS/API projects with auth,
-PostgreSQL, Redis, Docker, CI/CD, observability, and agent workflow rules.
-Multi-tenant hooks, background workers, file uploads, and webhooks included.
-Use it as a **reusable foundation** — not as a finished SaaS platform or
-enterprise-grade product.
+Appointment Voice SaaS is a planned mini SaaS for barbers and other local
+service businesses that miss calls while serving customers. The target product
+answers a business phone number with IVR, lets the caller choose a service and
+available slot, creates the booking in the backend, syncs it to a calendar,
+sends SMS notifications, and later supports cancellation, reschedule, and call
+transfer to staff.
 
-**Status (June 2026):** ROADMAP **P0**, **P1**, and **P2** are complete on `main`.
-**P3** and open items in `TECH_DEBT.md` are optional future work. See
-[`PROJECT_STATUS.md`](PROJECT_STATUS.md) for verified capabilities.
+## Current Status
 
----
+This repository is now the Appointment Voice SaaS product repository. It was
+created from a production-oriented FastAPI backend foundation.
 
-## What this is
+Current state:
 
-| | |
-|---|---|
-| **Is** | A testable API foundation with JWT auth, users, audit logs, Alembic migrations, Redis-backed workers, S3-compatible uploads, webhook idempotency, metrics/logging, deployment scripts, and policy-guarded CI |
-| **Is not** | Billing, invites, org membership, managed hosting, or provider-specific production wiring — those belong in your fork |
+- Product documentation and bootstrap planning exist.
+- Appointment Voice SaaS runtime code is not implemented yet unless verified by
+  code and tests.
+- The inherited FastAPI foundation app can run locally.
+- Product-specific booking, IVR, SMS, calendar, transfer, billing, and frontend
+  features are still planned work.
 
-Clone → configure → extend. Start with [`docs/template-onboarding.md`](docs/template-onboarding.md).
+## What Exists Today
 
----
+Inherited foundation capabilities available for reuse:
 
-## Appointment Voice SaaS product status
+- FastAPI application structure with versioned API routing.
+- PostgreSQL, SQLAlchemy, Alembic migrations, and database session patterns.
+- Redis-backed rate limiting, caching, job queue, and idempotency patterns.
+- Worker patterns with retries, delayed jobs, failed-job handling, and
+  maintenance jobs.
+- Auth/users/tenant foundation with JWT auth, RBAC, user management, and tenant
+  scoping patterns.
+- Webhook verification and idempotency patterns.
+- Observability, request IDs, structured logging, health checks, and Prometheus
+  metrics.
+- Docker Compose local stack, production Docker examples, CI, tests, and policy
+  guards.
+- AI workflow rules in `.ai-rules/`, with optional agents and commands.
 
-This repository is being prepared as the backend foundation for **Appointment
-Voice SaaS**, a mini SaaS for barbers and other local service businesses that
-miss calls while serving customers.
+## What Does Not Exist Yet
 
-How to read the repository during this transition:
+Appointment Voice SaaS product runtime gaps:
 
-- The production FastAPI foundation exists and is verified in
-  [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
-- The Appointment Voice SaaS product runtime is not implemented yet.
-- There are no product database models, appointment booking engine,
-  availability engine, IVR runtime, SMS sending, calendar sync, call transfer,
-  billing, or frontend features yet.
-- Product work should follow the executable backlog before adding runtime code.
+- Product-specific Business/Staff/Service/Booking runtime models.
+- Working hours, availability exceptions, and availability engine.
+- Appointment booking APIs or booking creation service.
+- DB-level appointment double-booking protection.
+- IVR runtime flow or local IVR simulation.
+- SMS provider integration or product notification outbox.
+- Calendar sync or product calendar adapter.
+- Call transfer.
+- Product-specific smoke tests.
+- Billing, subscriptions, or frontend.
 
-Product planning:
+## Product Documentation Map
 
 | Document | Purpose |
 |----------|---------|
-| [`docs/product-scope.md`](docs/product-scope.md) | Target users, MVP flow, non-goals, and assumptions |
-| [`docs/domain-model.md`](docs/domain-model.md) | Planned domain vocabulary for bookings, voice sessions, SMS, and calendar events |
-| [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md) | Executable product backlog from template foundation to working Appointment Voice SaaS |
-| [`TECH_DEBT.md`](TECH_DEBT.md#appointment-voice-saas-product-gaps) | Product-specific gaps and roadmap mappings |
+| [`docs/product-scope.md`](docs/product-scope.md) | Product users, problem, MVP flow, non-goals, and assumptions |
+| [`docs/domain-model.md`](docs/domain-model.md) | Planned Appointment Voice SaaS domain vocabulary |
+| [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md) | Detailed executable product backlog |
+| [`PROJECT_STATUS.md`](PROJECT_STATUS.md) | Verified Appointment Voice SaaS status |
+| [`ROADMAP.md`](ROADMAP.md) | High-level Appointment Voice SaaS roadmap |
+| [`TECH_DEBT.md`](TECH_DEBT.md) | Active product technical debt and gaps |
 
----
+## Inherited Foundation References
 
-## Quick start
+The foundation docs are still useful, but they are reference material for the
+backend inherited from the template, not the active product roadmap/status.
 
-**Requirements:** Python 3.13+, [uv](https://docs.astral.sh/uv/), Docker, Docker Compose, Make.
+| Document | Purpose |
+|----------|---------|
+| [`docs/foundation/`](docs/foundation/) | Archived foundation status, roadmap, debt, and freeze checklist |
+| [`docs/template-onboarding.md`](docs/template-onboarding.md) | Historical clone/fork onboarding guide for the foundation |
+| [`docs/template-usage.md`](docs/template-usage.md) | Historical quick reference for using the foundation |
+| [`docs/commands.md`](docs/commands.md) | Makefile command reference |
+| [`docs/production-deployment.md`](docs/production-deployment.md) | Deployment model inherited from the foundation |
+| [`docs/worker-reliability.md`](docs/worker-reliability.md) | Worker reliability patterns |
+| [`docs/webhook-idempotency.md`](docs/webhook-idempotency.md) | Webhook verification/idempotency patterns |
+| [`docs/tenant-isolation.md`](docs/tenant-isolation.md) | Tenant isolation foundation guidance |
+| [`docs/observability-production.md`](docs/observability-production.md) | Observability foundation guidance |
+
+## Local Development
+
+These commands currently run and validate the inherited foundation app, not a
+finished Appointment Voice SaaS product.
+
+Requirements: Python 3.13+, `uv`, Docker, Docker Compose, Make.
 
 ```bash
 cp .env.example .env    # set a strong SECRET_KEY
-make bootstrap          # compose up, migrate, seed, smoke test
-make validate           # ruff + pytest (85% coverage floor)
+make bootstrap          # compose up, migrate, seed, smoke the foundation app
+make validate           # ruff + pytest with coverage floor
 ```
 
-| Resource | URL |
-|----------|-----|
-| API (local) | http://localhost:8000 |
-| OpenAPI / Swagger | http://localhost:8000/docs |
-| Health | http://localhost:8000/health/ready |
-
-Default dev login (after seed): `admin@example.local` / `devpassword123` — change before shared environments. Details: [`app/seed_dev_data.py`](app/seed_dev_data.py).
-
-For day-to-day commands and local modes, see [Local development](#local-development).
-Full Makefile reference: [`docs/commands.md`](docs/commands.md).
-
----
-
-## Feature matrix
-
-| Area | Included in template | Details |
-|------|---------------------|---------|
-| **Auth & users** | Yes | JWT access/refresh, RBAC, user CRUD, password reset, registration policy, token revocation — [`PROJECT_STATUS.md`](PROJECT_STATUS.md) |
-| **PostgreSQL / Alembic** | Yes | SQLAlchemy models, 12 migrations, expand/contract patterns — [`docs/migration-rollback.md`](docs/migration-rollback.md) |
-| **Redis** | Yes | Rate limits, caching, job queue, idempotency markers — [`docs/redis-production-contract.md`](docs/redis-production-contract.md) |
-| **Background worker** | Yes | Retries, DLQ metadata, maintenance jobs — [`docs/worker-reliability.md`](docs/worker-reliability.md) |
-| **File uploads** | Yes | Direct + presigned S3/MinIO, validation hooks — [`docs/file-upload-production.md`](docs/file-upload-production.md) |
-| **Webhooks / idempotency** | Yes | HMAC verification, replay window, Redis locks — [`docs/webhook-idempotency.md`](docs/webhook-idempotency.md) |
-| **Observability** | Partial | Request IDs, structured logs, Prometheus metrics, optional Sentry; local Grafana/Loki/Prometheus configs — [`docs/observability-production.md`](docs/observability-production.md) |
-| **Docker** | Yes | Dev Compose stack (API, worker, Postgres, Redis, MinIO) — [`Dockerfile`](Dockerfile), [`docker-compose.yml`](docker-compose.yml) |
-| **CI/CD** | Yes | Pre-commit, pytest + coverage, policy guards, Trivy, dependency review, deploy/release workflows — [`.github/workflows/`](.github/workflows/), [`docs/ci-policy-guards.md`](docs/ci-policy-guards.md) |
-| **AI workflow** | Yes | Binding rules in [`.ai-rules/`](.ai-rules/), optional [`agents/`](agents/) & [`.commands/`](.commands/) — [`docs/ai-workflows.md`](docs/ai-workflows.md), [`AGENTS.md`](AGENTS.md) |
-
-Multi-tenant isolation, platform admin boundaries, and legacy route policy: [`docs/tenant-isolation.md`](docs/tenant-isolation.md), [`docs/platform-admin-model.md`](docs/platform-admin-model.md), [`docs/legacy-route-deprecation.md`](docs/legacy-route-deprecation.md).
-
----
-
-## Local development
-
-The default path is **Docker Compose-first**: API, worker, Postgres, Redis, and
-MinIO run in containers. Most `make` targets exec into the `api` service.
-
-**First setup** (once after `cp .env.example .env`):
-
-```bash
-make bootstrap    # compose up, migrate, seed, smoke
-```
-
-**Daily commands**:
+Useful commands:
 
 | Command | Purpose |
 |---------|---------|
-| `make docker-up` / `make docker-down` | Start / stop the Compose stack |
-| `make test` / `make test-coverage` | Pytest in the API container |
-| `make lint` / `make lint-fix` | Ruff check (with optional auto-fix) |
-| `make validate` | Ruff + pytest with 85% coverage floor (CI-equivalent gate) |
-| `make migration-upgrade` | Apply Alembic migrations (`upgrade head`) |
+| `make docker-up` / `make docker-down` | Start or stop the local Compose stack |
+| `make migration-upgrade` | Apply inherited foundation migrations |
+| `make seed-tenant` / `make seed` | Seed default tenant and development users |
+| `make smoke` | Smoke test the inherited foundation API |
+| `make validate-ai-workflows` | Validate AI workflow file presence |
+| `make policy-guards` | Run CI policy guard scripts |
+| `make validate` | Run foundation lint/tests/coverage |
 
-**Local modes**
+Local URLs after startup:
 
-| Mode | When to use | Typical flow |
-|------|-------------|--------------|
-| **Compose-first** (default) | Normal development and parity with CI | `make docker-up` → edit code → `make test` / `make lint` / `make validate` |
-| **Host API** | Faster uvicorn reload on the host without the Compose `api` container | `make install` → `make run` — Postgres, Redis, and MinIO must still be reachable (usually `make docker-up` without relying on the `api` service, or external URLs in `.env`) |
+| Resource | URL |
+|----------|-----|
+| API | http://localhost:8000 |
+| OpenAPI / Swagger | http://localhost:8000/docs |
+| Health | http://localhost:8000/health/ready |
 
-Seeding, smoke checks, policy guards, backups, deploy dry-runs, and load tests
-are documented in [`docs/commands.md`](docs/commands.md). Troubleshooting:
-[`docs/troubleshooting.md`](docs/troubleshooting.md).
+Default inherited development login after seed:
+`admin@example.local` / `devpassword123`. Change before shared environments.
 
----
+## Project Structure
 
-## Project structure
+The current code structure is inherited from the foundation and will be extended
+with Appointment Voice SaaS product modules in later implementation tasks.
 
 | Path | Purpose |
 |------|---------|
-| [`app/api/`](app/api/) | Routes, dependencies, OpenAPI helpers |
-| [`app/services/`](app/services/) | Business logic (domain errors, no HTTP in services) |
+| [`app/api/`](app/api/) | FastAPI routes, dependencies, OpenAPI helpers |
+| [`app/services/`](app/services/) | Service layer and domain errors |
 | [`app/models/`](app/models/) | SQLAlchemy models |
-| [`app/schemas/`](app/schemas/) | Pydantic request/response models |
+| [`app/schemas/`](app/schemas/) | Pydantic schemas |
 | [`app/core/`](app/core/) | Config, security, middleware, metrics |
 | [`app/worker.py`](app/worker.py) | Background job consumer |
-| [`alembic/`](alembic/) | Migrations |
-| [`tests/`](tests/) | Pytest suite (~374 tests, ~88% coverage) |
-| [`scripts/`](scripts/) | Deploy, backup, smoke, CI guards |
-| [`.github/workflows/`](.github/workflows/) | CI, release, deploy, backup workflows |
-| [`docs/`](docs/) | Runbooks and onboarding |
+| [`alembic/`](alembic/) | Database migrations |
+| [`tests/`](tests/) | Inherited foundation test suite |
+| [`docs/`](docs/) | Product docs plus inherited foundation references |
 | [`.ai-rules/`](.ai-rules/) | Binding AI/project rules |
-| [`observability/`](observability/) | Example Prometheus / Grafana / Loki configs |
 
-Architecture decision: sync-first API — [`docs/adr/0001-sync-vs-async-architecture.md`](docs/adr/0001-sync-vs-async-architecture.md).
+## Next Implementation Step
 
----
+Start with the product foundation tasks in
+[`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md):
 
-## Documentation map
+1. `AVS-A002` - Product architecture ADR for PostgreSQL source of truth,
+   adapters, queue/outbox, idempotency, and tenancy.
+2. `AVS-A003` - MVP demo flow definition.
+3. `AVS-B001` - Business model as the first runtime slice.
 
-### New project onboarding
-
-| Document | Purpose |
-|----------|---------|
-| [`docs/template-onboarding.md`](docs/template-onboarding.md) | Clone → rename → configure → first deploy path |
-| [`docs/template-usage.md`](docs/template-usage.md) | Quick reuse reference |
-| [`TEMPLATE_FREEZE_CHECKLIST.md`](TEMPLATE_FREEZE_CHECKLIST.md) | Template freeze / validation checklist |
-
-### Local development
-
-| Document | Purpose |
-|----------|---------|
-| [`docs/commands.md`](docs/commands.md) | Full Makefile target reference by category |
-| [`.env.example`](.env.example) | Environment variable reference (full list) |
-| [`docs/troubleshooting.md`](docs/troubleshooting.md) | Common local and CI failures |
-| [`docs/ci-policy-guards.md`](docs/ci-policy-guards.md) | Pre-commit and CI guard rules |
-| [`docs/load-concurrency-testing.md`](docs/load-concurrency-testing.md) | Load and concurrency testing |
-| [`perf/README.md`](perf/README.md) | Load baseline profiles |
-
-### Production deployment
-
-| Document | Purpose |
-|----------|---------|
-| [`docs/production-deployment.md`](docs/production-deployment.md) | Staging/production operating model |
-| [`docs/production-runtime-examples.md`](docs/production-runtime-examples.md) | Reverse proxy and runtime examples |
-| [`docs/migration-rollback.md`](docs/migration-rollback.md) | Migration rollout and rollback |
-| [`docs/database-backup-restore.md`](docs/database-backup-restore.md) | Logical backup and restore |
-| [`docs/backup-restore-automation.md`](docs/backup-restore-automation.md) | Scripted backup workflows |
-| [`docs/pitr-and-scheduled-backups.md`](docs/pitr-and-scheduled-backups.md) | PITR checklist and scheduled backups |
-
-### Security & operations
-
-| Document | Purpose |
-|----------|---------|
-| [`docs/secret-management.md`](docs/secret-management.md) | Secrets and rotation expectations |
-| [`docs/tenant-isolation.md`](docs/tenant-isolation.md) | Tenant scoping and cross-tenant tests |
-| [`docs/malware-scanning.md`](docs/malware-scanning.md) | Upload malware scanner integration |
-| [`docs/redis-production-contract.md`](docs/redis-production-contract.md) | Production Redis expectations |
-| [`docs/webhook-idempotency.md`](docs/webhook-idempotency.md) | Webhook verification patterns |
-
-### AI agent workflow
-
-| Document | Purpose |
-|----------|---------|
-| [`docs/ai-workflows.md`](docs/ai-workflows.md) | How rules, personas, and commands fit together |
-| [`AGENTS.md`](AGENTS.md) / [`CLAUDE.md`](CLAUDE.md) | Tool entry indexes → `.ai-rules/` |
-| [`.ai-rules/`](.ai-rules/) | Binding architecture, security, git, testing rules |
-| [`agents/`](agents/) | Optional review personas |
-| [`.commands/`](.commands/) | Optional copy-paste agent prompts |
-
----
-
-## Production readiness
-
-| Milestone | Status |
-|-----------|--------|
-| **P0** — production blockers (June 2026 audit) | **Complete** — merged PRs #45–#54 |
-| **P1** — adoption hardening | **Complete** — merged PRs #56–#67 |
-| **P2** — scale & maintainability | **Complete** — merged PRs #69–#82 |
-| **P3** — enterprise-scale optional | **Not started** — see [`ROADMAP.md`](ROADMAP.md) |
-| **Open tech debt** | **9 items** — see [`TECH_DEBT.md`](TECH_DEBT.md) |
-| **Template freeze** | **Ready** — tag [`v1.0.0`](https://github.com/tomekmisiun/fastapi-production-foundation/releases/tag/v1.0.0) on freeze commit |
-
-Verified test baseline: **374** pytest tests, **~88%** line coverage, **85%** floor in CI and `make validate`. Authoritative feature list: [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
-
----
-
-## What your fork must still configure
-
-The template ships patterns and runbooks, not a live production environment. Each downstream project still chooses and wires:
-
-| Area | You provide |
-|------|-------------|
-| **Hosting** | Kubernetes, PaaS, VM, or other runtime target |
-| **Secrets** | Secret manager, rotation, and GitHub Environment secrets |
-| **Data stores** | Managed PostgreSQL, HA Redis, and object storage |
-| **Backups** | Provider, RPO/RTO, and PITR policy (scripts exist; PITR is provider-specific) |
-| **Malware scanning** | Concrete scanner URL (production validator requires one) |
-| **Alerting** | PagerDuty, Slack, or other on-call routing (local Alertmanager is an example) |
-| **Tracing** | Sentry, OpenTelemetry, or both beyond the optional Sentry hook |
-| **API clients** | Migration from deprecated unversioned routes to `/api/v1` |
-| **Product policy** | Registration, roles, billing, and tenant lifecycle for your domain |
-
----
-
-## Tracking & roadmap
-
-| File | Purpose |
-|------|---------|
-| [`PROJECT_STATUS.md`](PROJECT_STATUS.md) | **Verified** implemented capabilities only |
-| [`ROADMAP.md`](ROADMAP.md) | Historical/template-oriented foundation roadmap |
-| [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md) | Product roadmap and executable Appointment Voice SaaS backlog |
-| [`TECH_DEBT.md`](TECH_DEBT.md) | Foundation debt plus Appointment Voice SaaS product gaps |
-
-**License:** see repository license file. **Contributing:** feature branches + PR; run `make validate` before merge.
+Do not add booking logic, IVR, SMS, calendar, or frontend code before the core
+domain model and migration/test pattern are established.

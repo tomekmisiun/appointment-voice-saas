@@ -1,4 +1,8 @@
-# Template Usage
+# Inherited Foundation Template Usage
+
+Appointment Voice SaaS is now the active product repository. This file is
+inherited foundation reference material, not the active product roadmap or
+status.
 
 Quick reference for using this repository as a **cloneable backend foundation**.
 It is not a finished product; add your own domain modules and infrastructure
@@ -9,9 +13,10 @@ choices in the fork.
 | Goal | Document |
 |------|----------|
 | First clone → local API running | `docs/template-onboarding.md` |
-| Freeze / reuse decision | `TEMPLATE_FREEZE_CHECKLIST.md` |
-| Verified features | `PROJECT_STATUS.md` |
-| Optional future work | `ROADMAP.md` P3, `TECH_DEBT.md` |
+| Freeze / reuse decision | `docs/foundation/template-freeze-checklist.md` |
+| Historical foundation features | `docs/foundation/template-project-status.md` |
+| Historical foundation future work | `docs/foundation/template-roadmap.md`, `docs/foundation/template-tech-debt.md` |
+| Active product status | `PROJECT_STATUS.md` |
 
 ## Clone → Run (Minimum)
 
@@ -45,7 +50,8 @@ fork.
 
 1. Read `docs/production-deployment.md` and `docs/production-runtime-examples.md`.
 2. Set `ENVIRONMENT=production` with validated secrets (see
-   `TEMPLATE_FREEZE_CHECKLIST.md` → Required Environment Variables).
+   `docs/foundation/template-freeze-checklist.md` -> Required Environment
+   Variables).
 3. Override API process model if needed (multi-worker Uvicorn, Gunicorn, or
    horizontal replicas).
 4. Deploy `api` + `worker` via `docker-compose.prod.yml` or your orchestrator.
@@ -69,6 +75,7 @@ etc.) in the upstream freeze — add those only in your fork.
 
 ## What Not to Expect
 
-See **What Is Intentionally Not Included** in `TEMPLATE_FREEZE_CHECKLIST.md`.
+See **What Is Intentionally Not Included** in
+`docs/foundation/template-freeze-checklist.md`.
 The template gives auth, users, tenancy hooks, workers, uploads, webhooks,
 observability boundaries, and CI — not a complete SaaS.

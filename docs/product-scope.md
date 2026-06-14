@@ -1,7 +1,8 @@
 # Product Scope
 
-Product bootstrap scope for **Appointment Voice SaaS**. This document describes
-the intended product direction, not implemented runtime behavior.
+Product planning scope for **Appointment Voice SaaS**. This document describes
+intended product direction only. Runtime implementation is not done yet unless
+verified by code and tests in `PROJECT_STATUS.md`.
 
 ## Target Users
 

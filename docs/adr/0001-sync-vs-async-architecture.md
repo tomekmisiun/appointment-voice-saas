@@ -90,4 +90,4 @@ Recommended fork workflow:
 - `docs/sync-scaling-benchmark.md`
 - `docs/production-deployment.md`
 - `docs/production-runtime-examples.md`
-- `ROADMAP.md` P2 #23, P2 #24
+- `docs/foundation/template-roadmap.md` P2 #23, P2 #24

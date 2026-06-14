@@ -1,7 +1,9 @@
 # Domain Model
 
 Planned domain vocabulary for **Appointment Voice SaaS**. These are product
-concepts, not database models implemented in the repository today.
+planning concepts, not database models implemented in the repository today.
+Runtime implementation is not done yet unless verified by code and tests in
+`PROJECT_STATUS.md`.
 
 ## Business
 

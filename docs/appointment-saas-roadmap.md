@@ -79,6 +79,19 @@ Each backlog row is intentionally executable:
 
 ## MVP foundation backlog: current repo to working base product
 
+Recommended MVP execution order:
+
+1. `AVS-A002` - Product architecture ADR.
+2. `AVS-A003` - Demo flow definition.
+3. `AVS-B001` to `AVS-B009` - Core SaaS domain and tenant isolation.
+4. `AVS-C001` to `AVS-C006` - Availability engine.
+5. `AVS-D001` to `AVS-D007` - Booking engine and double-booking protection.
+6. `AVS-E001` to `AVS-E008` - Notification outbox and fake SMS.
+7. `AVS-F001` to `AVS-F007` - Calendar adapter and fake provider.
+8. `AVS-G001` to `AVS-G010` - IVR simulation.
+9. `AVS-J001` to `AVS-J006` - Demo and MVP readiness.
+10. `AVS-H001` onward - Real provider pilot integrations.
+
 ### EPIC A - Product foundation from template
 
 | ID | Priority | Goal | Scope | Out | Acceptance | Validation | Risk |

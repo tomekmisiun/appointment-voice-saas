@@ -108,4 +108,4 @@ Before go-live:
 
 - `docs/production-deployment.md` — production env vars and validation
 - `docs/troubleshooting.md` — local and staging Redis connectivity issues
-- `ROADMAP.md` P1 #14 — Redis resilience implementation (`TD-004`)
+- `docs/foundation/template-roadmap.md` P1 #14 — Redis resilience implementation (`TD-004`)
