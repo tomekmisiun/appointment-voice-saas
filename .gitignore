@@ -35,3 +35,9 @@ backups/
 
 .DS_Store
 Thumbs.db
+
+# Prometheus multiprocess metric files (local load tests / misconfigured dir)
+counter_*.db
+gauge_*.db
+histogram_*.db
+prometheus_multiproc/

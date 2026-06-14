@@ -1,3 +1,1 @@
 Drop redundant indexes only; no columns or tables removed (b3c4d5e6f7a8).
-downgrade()-only drop_table for appointment domain rollback; upgrade() is additive only (1a2b3c4d5e6f).
-downgrade()-only drop_column/drop_index for booking audit rollback; upgrade() is additive only (32e2a5c45a2d).
