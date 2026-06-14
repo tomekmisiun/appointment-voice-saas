@@ -1,4 +1,6 @@
+import os
 from functools import lru_cache
+from typing import Self
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -148,6 +150,21 @@ class Settings(BaseSettings):
     test_database_url: str = Field(
         default="postgresql://app_user:app_password@test_db:5432/app_test_db"
     )
+
+    @field_validator("prometheus_multiproc_dir", mode="before")
+    @classmethod
+    def normalize_prometheus_multiproc_dir(cls, value: object) -> str:
+        if value is None:
+            return ""
+
+        return str(value).strip()
+
+    @model_validator(mode="after")
+    def clear_empty_prometheus_multiproc_env(self) -> Self:
+        if not self.prometheus_multiproc_dir:
+            os.environ.pop("PROMETHEUS_MULTIPROC_DIR", None)
+
+        return self
 
     @field_validator("environment")
     @classmethod

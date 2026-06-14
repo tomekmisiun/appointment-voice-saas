@@ -54,6 +54,9 @@ def configure_metrics(app_settings: "Settings | None" = None) -> None:
     active_settings = app_settings or settings
     configured_multiproc_dir = active_settings.prometheus_multiproc_dir.strip()
 
+    if not configured_multiproc_dir:
+        os.environ.pop("PROMETHEUS_MULTIPROC_DIR", None)
+
     if configured_multiproc_dir:
         os.makedirs(configured_multiproc_dir, exist_ok=True)
         os.environ["PROMETHEUS_MULTIPROC_DIR"] = configured_multiproc_dir

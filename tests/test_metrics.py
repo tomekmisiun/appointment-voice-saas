@@ -1,3 +1,36 @@
+import os
+
+from prometheus_client import Gauge
+
+from app.core.config import Settings
+
+
+def test_empty_prometheus_multiproc_env_is_unset(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("PROMETHEUS_MULTIPROC_DIR", "")
+
+    settings = Settings()
+
+    assert settings.prometheus_multiproc_dir == ""
+    assert "PROMETHEUS_MULTIPROC_DIR" not in os.environ
+
+
+def test_empty_prometheus_multiproc_env_does_not_create_db_files(
+    monkeypatch,
+    tmp_path,
+):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("PROMETHEUS_MULTIPROC_DIR", "   ")
+
+    Settings()
+
+    Gauge("test_app_info_no_multiproc", "Probe gauge for empty multiproc env.").set(1)
+
+    assert list(tmp_path.glob("counter_*.db")) == []
+    assert list(tmp_path.glob("gauge_*.db")) == []
+    assert list(tmp_path.glob("histogram_*.db")) == []
+
+
 def test_metrics_endpoint_exposes_prometheus_text(client):
     response = client.get("/metrics")
 
