@@ -9,6 +9,7 @@ required_files=(
   "docs/ai-workflows.md"
   "docs/two-agent-review-workflow.md"
   ".ai-rules/agent-orchestration.md"
+  ".ai-rules/anti-overengineering.md"
   ".ai-rules/context-map.md"
   ".ai-rules/template-onboarding.md"
   ".ai-rules/spec-driven-development.md"

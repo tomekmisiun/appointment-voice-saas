@@ -10,6 +10,7 @@ Binding rules: **`.ai-rules/`** — read before making changes. Do not duplicate
 Workflow guide: **`docs/ai-workflows.md`**
 
 Start tasks with `.ai-rules/agent-orchestration.md` and `.ai-rules/context-map.md`.
+Always apply `.ai-rules/anti-overengineering.md` through those indexes.
 
 Optional (review / prompts, not binding):
 

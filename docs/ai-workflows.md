@@ -6,9 +6,10 @@ How AI tooling should use this repository's rules, personas, and commands.
 
 | Layer | Location | Binding? | Purpose |
 |-------|----------|----------|---------|
-| **Project rules** | `.ai-rules/` | **Yes** | Architecture, security, testing, git, docs — must follow |
-| **Entry indexes** | `AGENTS.md`, `CLAUDE.md` | Pointer only | Tool-specific entry; no duplicated rule bodies |
-| **Cursor wrappers** | `.cursor/rules/*.mdc` | Pointer only | Load `.ai-rules/` context in Cursor |
+| **Project rules** | `.ai-rules/` | **Yes** | Architecture, security, testing, git, docs, anti-overengineering — must follow |
+| **Codex entry index** | `AGENTS.md` | Pointer only | Codex CLI entry; points to `.ai-rules/` |
+| **Claude Code entry index** | `CLAUDE.md` | Pointer only | Claude Code CLI entry; points to `.ai-rules/` |
+| **Cursor wrappers** | `.cursor/rules/*.mdc` | Pointer only | Cursor entry; points to `.ai-rules/` and must not duplicate rule bodies |
 | **Workflow rules** | `.ai-rules/agent-orchestration.md`, etc. | **Yes** | How to start tasks, plan, review, onboard |
 | **Personas** | `agents/` | Optional | Review lenses (backend, security, tenancy, …) |
 | **Commands** | `.commands/` | Optional | Copy-paste prompts for spec/plan/review/onboard |
@@ -19,9 +20,19 @@ How AI tooling should use this repository's rules, personas, and commands.
 
 1. Read `.ai-rules/agent-orchestration.md`
 2. Use `.ai-rules/context-map.md` to open relevant binding rules and code paths
-3. For non-trivial work: `.ai-rules/spec-driven-development.md` →
+3. Always include `.ai-rules/anti-overengineering.md` before adding files,
+   dependencies, abstractions, or large rewrites.
+4. For non-trivial work: `.ai-rules/spec-driven-development.md` →
    `.ai-rules/planning-and-task-breakdown.md` → `.ai-rules/incremental-work.md`
-4. Before merge: `.ai-rules/review.md`
+5. Before merge: `.ai-rules/review.md`
+
+## Tool Entry Points
+
+| Tool | Entry point | Anti-overengineering source |
+|------|-------------|-----------------------------|
+| Cursor | `.cursor/rules/project.mdc` | `.ai-rules/anti-overengineering.md` |
+| Codex CLI | `AGENTS.md` | `.ai-rules/anti-overengineering.md` |
+| Claude Code CLI | `CLAUDE.md` | `.ai-rules/anti-overengineering.md` |
 
 ## Two-agent review (Builder + Reviewer)
 

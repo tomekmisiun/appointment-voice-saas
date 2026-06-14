@@ -1,0 +1,10 @@
+---
+description: Pointer to anti-overengineering binding rule
+globs:
+  - "**/*"
+alwaysApply: true
+---
+
+Source of truth: `.ai-rules/anti-overengineering.md`.
+
+Do not duplicate the rule body here.

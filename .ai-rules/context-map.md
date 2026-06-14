@@ -8,6 +8,7 @@ Before editing, read the files listed for your **task type**. Start with
 | File | When |
 |------|------|
 | `.ai-rules/repository.md` | Every task |
+| `.ai-rules/anti-overengineering.md` | Every task |
 | `.ai-rules/git.md` | Before commit/push/merge |
 | `.ai-rules/context-map.md` | You're here — pick a row below |
 

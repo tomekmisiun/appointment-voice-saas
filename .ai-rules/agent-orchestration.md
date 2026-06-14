@@ -31,13 +31,24 @@ tool-specific entry points (`AGENTS.md`, `CLAUDE.md`) and binding rules in other
 - Do not expand scope (no drive-by refactors, no unrelated docs, no P3 work
   unless requested).
 
-## 4. List assumptions
+## 4. Run the anti-overengineering check
+
+Before adding files, dependencies, abstractions, or large rewrites, apply
+`.ai-rules/anti-overengineering.md`:
+
+- Can existing code or project patterns solve this?
+- Can code be deleted or simplified instead of added?
+- Is a new dependency, file, abstraction, or generic framework actually needed?
+- Are security, validation, errors, tests, tenancy, and production safety still
+  covered?
+
+## 5. List assumptions
 
 - Note defaults you are using (tenant model, env, API version `/api/v1`).
 - If blocked on a product decision, ask **one** focused question; otherwise
   proceed with the smallest safe default and document it.
 
-## 5. Pick validation commands
+## 6. Pick validation commands
 
 | Change type | Minimum validation |
 |-------------|-------------------|
@@ -46,11 +57,11 @@ tool-specific entry points (`AGENTS.md`, `CLAUDE.md`) and binding rules in other
 | Docs / AI rules only | `make validate-ai-workflows`; run `make validate` if docs claim test counts |
 | Docker / Compose | `make validate` if app touched; else build smoke as needed |
 
-## 6. Execute incrementally
+## 7. Execute incrementally
 
 Follow `.ai-rules/incremental-work.md` and `.ai-rules/planning-and-task-breakdown.md`.
 
-## 7. Report completion
+## 8. Report completion
 
 Every task response MUST include:
 
@@ -59,7 +70,7 @@ Every task response MUST include:
 - **Risks** (deployment, security, migration, compatibility)
 - **Remaining work** (if any; do not invent follow-ups)
 
-## 8. Git workflow
+## 9. Git workflow
 
 Follow `.ai-rules/git.md`: no commit/push/merge unless the user explicitly
 requests it.

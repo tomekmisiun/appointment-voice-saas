@@ -20,6 +20,7 @@ Workflow overview: **`docs/ai-workflows.md`** · Two-agent review:
 - `docker.md` — Compose and production runtime safety
 - `documentation.md` — README, docs, tracking files
 - `git.md` — branches, commits (no AI attribution trailers), push/merge approval
+- `anti-overengineering.md` — avoid unnecessary abstractions, files, dependencies
 
 ### Workflow (how to work)
 - `agent-orchestration.md` — start every task here
