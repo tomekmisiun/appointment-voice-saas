@@ -35,53 +35,55 @@ Detailed historical foundation status is preserved in
 
 ## Appointment Voice SaaS Verified Capabilities
 
-Verified product capabilities today:
+Planning and architecture:
 
-- Product scope documentation exists:
-  [`docs/product-scope.md`](docs/product-scope.md).
-- Domain vocabulary documentation exists:
-  [`docs/domain-model.md`](docs/domain-model.md).
-- Product roadmap and executable backlog exist:
-  [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md).
-- Product technical debt/gap register exists:
-  [`TECH_DEBT.md`](TECH_DEBT.md).
+- Product scope documentation: [`docs/product-scope.md`](docs/product-scope.md).
+- Domain vocabulary: [`docs/domain-model.md`](docs/domain-model.md).
+- Product roadmap and executable backlog: [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md).
+- Architecture ADR (PostgreSQL source of truth, adapters, outbox, tenancy): [`docs/adr/0002-appointment-voice-saas-architecture.md`](docs/adr/0002-appointment-voice-saas-architecture.md).
+- Local demo flow script: [`docs/demo-flow.md`](docs/demo-flow.md).
+- Technical debt/gap register: [`TECH_DEBT.md`](TECH_DEBT.md).
 
-No runtime booking capabilities are implemented yet.
+Core domain (EPIC B — merged 2026-06-14):
+
+- **Business** model, service, schema, CRUD API (`/api/v1/businesses`).
+- **Staff** model, service, schema, CRUD API (`/api/v1/businesses/{id}/staff`).
+- **Service** model, service, schema, CRUD API (`/api/v1/businesses/{id}/services`).
+- **WorkingHours** model, service, schema, API (`/api/v1/businesses/{id}/working-hours`).
+- **AvailabilityException** model, service, schema, API (`/api/v1/businesses/{id}/availability-exceptions`).
+- **Customer** model, service, schema with phone normalisation and race-safe deduplication.
+- **Booking** model, service, schema with `CONFIRMED`/`CANCELLED` lifecycle.
+- Alembic migrations for all domain tables with tenant indexes and FK constraints.
+- PostgreSQL `EXCLUDE USING gist` constraint (`btree_gist`) for DB-level double-booking prevention.
+- Booking creation, listing, read, and cancellation APIs (`/api/v1/businesses/{id}/bookings`).
+- Cross-tenant isolation enforced at service layer (`require_business`, `require_staff`) for all nested writes.
+- Cross-tenant isolation tests for all product tables (`tests/test_product_tenant_isolation.py`).
 
 ## Not Implemented Yet
 
-- Business/salon, staff, service, working hours, availability exception,
-  customer, booking, voice session, notification outbox, SMS message, calendar
-  integration, or calendar event product models.
-- Product migrations for appointment scheduling.
-- Availability engine.
-- Booking creation, cancellation, reschedule, or double-booking protection.
-- Appointment APIs.
+- Availability engine (slot generation from working hours, booking exclusion, exception overlay, timezone handling, availability API).
 - IVR runtime or local IVR simulation.
-- SMS provider integration or fake SMS product adapter.
-- Calendar sync or fake calendar product adapter.
+- Notification outbox, SMS provider interface, fake SMS adapter.
+- Calendar provider interface, calendar event model, fake calendar adapter.
+- Voice session model.
 - Call transfer.
+- Booking audit logs (AVS-D006).
+- Working hours and availability exception HTTP route tests.
+- Real provider integrations (Twilio, SMS, Google Calendar).
 - Product smoke tests.
 - Billing/subscriptions.
 - Frontend.
 
 ## Next Implementation Milestone
 
-Recommended implementation sequence:
+**EPIC C — Availability engine** (`AVS-C001` to `AVS-C006`):
 
-1. Core SaaS domain models and migrations.
-2. Availability engine.
-3. Booking engine with DB-level double-booking protection.
-4. Notification outbox and fake SMS.
-5. IVR simulation.
-6. Calendar adapter and fake provider.
-7. Real provider integrations for pilot.
-
-Start with:
-
-- `AVS-A002` - Product architecture ADR.
-- `AVS-A003` - Demo flow definition.
-- `AVS-B001` - Business model.
+1. Slot generation from service duration and staff working hours.
+2. Exclude slots overlapping existing confirmed bookings.
+3. Apply availability exceptions (closures, special hours).
+4. Correct timezone/DST handling per business.
+5. Availability API endpoint.
+6. Full availability test coverage.
 
 See [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md) for
 the detailed task backlog.
