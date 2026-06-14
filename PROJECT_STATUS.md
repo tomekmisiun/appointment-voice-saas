@@ -11,8 +11,10 @@ Product backend **partially implemented** — see verified list below and
 - Inherited FastAPI foundation: **running** (auth, tenants, worker, CI).
 - Appointment domain (business → booking) + availability engine: **implemented**
   (code, migrations, tests).
-- IVR, SMS outbox, calendar, transfer, frontend: **not implemented** (roadmap EPIC E–J).
-- **Next milestone:** EPIC E — notification outbox (`AVS-E001`).
+- Notification outbox model, SMS provider interface, and fake SMS adapter:
+  **implemented** (`AVS-E001`–`AVS-E003`).
+- IVR, calendar, transfer, frontend: **not implemented** (roadmap EPIC E–J).
+- **Next milestone:** EPIC E — enqueue booking confirmation SMS (`AVS-E004`).
 
 ## Verified Inherited Foundation Capabilities
 
@@ -70,10 +72,21 @@ Availability engine (EPIC C — verified 2026-06-14):
 - Availability API endpoint (`GET /api/v1/businesses/{id}/availability`).
 - Full availability test coverage (`tests/test_availability.py`; cross-business/cross-tenant isolation in `tests/test_product_tenant_isolation.py`).
 
+Notifications outbox (EPIC E — verified 2026-06-14):
+
+- `NotificationOutbox` model persisting SMS intent, recipient, template/purpose,
+  status, and attempts before delivery (`app/models/notification_outbox.py`,
+  migration `ad7b35681f01`, `AVS-E001`).
+- Provider-neutral SMS send contract (`SmsMessage`, `SmsSendResult`) and
+  `SmsProvider` protocol (`app/core/sms.py`, `app/services/sms_provider.py`, `AVS-E002`).
+- `NullSmsProvider` (default, reports not configured) and `FakeSmsProvider`
+  (records sent messages for local/dev/test use) (`AVS-E003`).
+- Test coverage in `tests/test_notification_outbox.py` and `tests/test_sms_provider.py`.
+
 ## Not Implemented Yet
 
 - IVR runtime or local IVR simulation.
-- Notification outbox, SMS provider interface, fake SMS adapter.
+- Booking confirmation/cancellation SMS enqueueing and notification worker.
 - Calendar provider interface, calendar event model, fake calendar adapter.
 - Voice session model.
 - Call transfer.
