@@ -36,6 +36,9 @@ backups/
 .DS_Store
 Thumbs.db
 
+# Personal learning notes (not for sharing)
+docs/learning/
+
 # Prometheus multiprocess metric files (local load tests / misconfigured dir)
 counter_*.db
 gauge_*.db
