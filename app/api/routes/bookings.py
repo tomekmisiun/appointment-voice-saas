@@ -32,6 +32,7 @@ def create_booking_endpoint(
         staff_id=body.staff_id,
         starts_at=body.starts_at,
         source=body.source,
+        actor_id=current_user.id,
     )
 
 
@@ -80,4 +81,5 @@ def cancel_booking_endpoint(
         booking_id,
         current_user.tenant_id,
         reason=body.reason,
+        actor_id=current_user.id,
     )

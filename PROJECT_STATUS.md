@@ -56,6 +56,7 @@ Core domain (EPIC B — merged 2026-06-14):
 - Alembic migrations for all domain tables with tenant indexes and FK constraints.
 - PostgreSQL `EXCLUDE USING gist` constraint (`btree_gist`) for DB-level double-booking prevention.
 - Booking creation, listing, read, and cancellation APIs (`/api/v1/businesses/{id}/bookings`).
+- Booking audit logs for create/cancel lifecycle with actor and source (`tests/test_booking_audit.py`; AVS-D006).
 - Cross-tenant isolation enforced at service layer (`require_business`, `require_staff`) for all nested writes.
 - Cross-tenant isolation tests for all product tables (`tests/test_product_tenant_isolation.py`).
 
@@ -76,7 +77,6 @@ Availability engine (EPIC C — in progress 2026-06-14):
 - Calendar provider interface, calendar event model, fake calendar adapter.
 - Voice session model.
 - Call transfer.
-- Booking audit logs (AVS-D006).
 - Working hours and availability exception HTTP route tests.
 - Real provider integrations (Twilio, SMS, Google Calendar).
 - Product smoke tests.
@@ -85,7 +85,7 @@ Availability engine (EPIC C — in progress 2026-06-14):
 
 ## Next Implementation Milestone
 
-**EPIC D (remaining) / EPIC E — Notifications outbox** (`AVS-E001` onwards):
+**EPIC E — Notifications outbox** (`AVS-E001` onwards):
 
 See [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md) for
 the detailed task backlog.

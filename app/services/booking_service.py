@@ -4,7 +4,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.domain_errors import ConflictError, NotFoundError
+from app.models.audit_log import AuditAction
 from app.models.booking import Booking, BookingSource, BookingStatus
+from app.services.audit_log_service import create_audit_log
 from app.services.business_service import require_business
 from app.services.customer_service import require_customer
 from app.services.service_service import require_service
@@ -49,6 +51,7 @@ def create_booking(
     staff_id: int | None,
     starts_at: datetime,
     source: str = BookingSource.API,
+    actor_id: int | None = None,
 ) -> Booking:
     require_business(db, business_id, tenant_id)
     require_customer(db, customer_id, tenant_id)
@@ -78,6 +81,16 @@ def create_booking(
         source=source,
     )
     db.add(booking)
+    db.flush()
+    create_audit_log(
+        db,
+        tenant_id=tenant_id,
+        admin_id=actor_id,
+        action=AuditAction.BOOKING_CREATED,
+        target_booking_id=booking.id,
+        source=source,
+        commit=False,
+    )
     try:
         db.commit()
     except IntegrityError as exc:
@@ -133,12 +146,22 @@ def cancel_booking(
     tenant_id: int,
     *,
     reason: str | None = None,
+    actor_id: int | None = None,
 ) -> Booking:
     booking = require_booking(db, booking_id, tenant_id)
     if booking.status == BookingStatus.CANCELLED:
         raise ConflictError("Booking is already cancelled")
     booking.status = BookingStatus.CANCELLED
     booking.cancel_reason = reason
+    create_audit_log(
+        db,
+        tenant_id=tenant_id,
+        admin_id=actor_id,
+        action=AuditAction.BOOKING_CANCELLED,
+        target_booking_id=booking.id,
+        source=booking.source,
+        commit=False,
+    )
     db.commit()
     db.refresh(booking)
     return booking

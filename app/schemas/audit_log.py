@@ -10,6 +10,8 @@ class AuditLogRead(BaseModel):
     admin_id: int | None
     action: AuditAction
     target_user_id: int | None
+    target_booking_id: int | None
+    source: str | None
     created_at: datetime
 
     model_config = {

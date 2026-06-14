@@ -135,7 +135,7 @@ Recommended MVP execution order:
 | [x] | AVS-D003 | P0 | Add booking creation API. | Tenant/admin or system endpoint for creating bookings. | IVR endpoint. | API returns booking or conflict error envelope. | API tests. | Clients cannot create bookings consistently. |
 | [x] | AVS-D004 | P0 | Add booking list/read API. | Tenant-scoped listing, filtering, and single read. | Dashboard metrics. | Business can inspect bookings. | API tests. | Staff cannot verify schedule. |
 | [x] | AVS-D005 | P0 | Add business cancellation. | Cancel booking with reason and lifecycle state. | Customer self-cancel. | Cancelled booking no longer blocks active availability if policy allows. | API/service tests. | Cancelled slots remain stuck or audit is missing. |
-| [ ] | AVS-D006 | P1 | Add booking audit logs. | Audit lifecycle changes and actor/source. | Full compliance export. | Create/cancel state changes are auditable. | Tests, existing audit patterns. | Disputes cannot be investigated. |
+| [x] | AVS-D006 | P1 | Add booking audit logs. | Audit lifecycle changes and actor/source. | Full compliance export. | Create/cancel state changes are auditable. | Tests, existing audit patterns. | Disputes cannot be investigated. |
 | [x] | AVS-D007 | P0 | Add conflict/concurrency tests. | Race tests for same staff/time and cancellation behavior. | Load benchmark. | Tests prove DB-level double-booking protection. | `make validate`. | Python-only checks fail under concurrency. |
 
 ### EPIC E - Notification outbox and fake SMS

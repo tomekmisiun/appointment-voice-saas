@@ -16,6 +16,8 @@ class AuditAction(StrEnum):
     TENANT_CREATED = "tenant.created"
     TENANT_ACTIVATED = "tenant.activated"
     TENANT_DEACTIVATED = "tenant.deactivated"
+    BOOKING_CREATED = "booking.created"
+    BOOKING_CANCELLED = "booking.cancelled"
 
 
 class AuditLog(Base):
@@ -26,4 +28,6 @@ class AuditLog(Base):
     admin_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     action = Column(String, nullable=False, index=True)
     target_user_id = Column(Integer, nullable=True, index=True)
+    target_booking_id = Column(Integer, ForeignKey("bookings.id"), nullable=True, index=True)
+    source = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
