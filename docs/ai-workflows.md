@@ -10,7 +10,7 @@ How AI tooling should use this repository's rules, personas, and commands.
 | **Codex entry index** | `AGENTS.md` | Pointer only | Codex CLI entry; points to `.ai-rules/` |
 | **Claude Code entry index** | `CLAUDE.md` | Pointer only | Claude Code CLI entry; points to `.ai-rules/` |
 | **Cursor wrappers** | `.cursor/rules/*.mdc` | Pointer only | Cursor entry; points to `.ai-rules/` and must not duplicate rule bodies |
-| **Workflow rules** | `.ai-rules/agent-orchestration.md`, etc. | **Yes** | How to start tasks, plan, review, onboard |
+| **Workflow rules** | `.ai-rules/agent-orchestration.md`, `learning-mode.md`, etc. | **Yes** | How to start tasks, plan, review, explain changes |
 | **Personas** | `agents/` | Optional | Review lenses (backend, security, tenancy, …) |
 | **Commands** | `.commands/` | Optional | Prompt formats and procedures for spec/plan/review/onboard |
 | **Specs** | `docs/specs/` | Optional | Larger feature specs before implementation |
@@ -25,6 +25,8 @@ How AI tooling should use this repository's rules, personas, and commands.
 4. For non-trivial work: `.ai-rules/spec-driven-development.md` →
    `.ai-rules/planning-and-task-breakdown.md` → `.ai-rules/incremental-work.md`
 5. Before merge: `.ai-rules/review.md`
+6. Learning the repo or mentor-style explanations: `docs/learning/` +
+   `.ai-rules/learning-mode.md`
 
 ## Tool Entry Points
 
@@ -82,6 +84,7 @@ the merge gate.
 | Security audit | `.commands/security-audit.md` |
 | Clone for new product | `.commands/template-onboard.md` |
 | Sync tracking docs | `.commands/update-project-status.md` |
+| Learn the codebase | `docs/learning/00-current-state-audit.md` |
 
 ## Personas (review only)
 

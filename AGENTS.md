@@ -36,6 +36,7 @@ trivial tasks may skip Reviewer only with an explicit reason.
 - `incremental-work.md` — thin slices and validation cadence
 - `tdd-and-regression.md` — failing test first, coverage expectations
 - `review.md` — pre-merge checklist
+- `learning-mode.md` — mentor-style completion format for non-trivial tasks
 - `threat-modeling.md` — auth, tenancy, uploads, webhooks, workers
 - `template-onboarding.md` — clone into a new product (agent workflow)
 
@@ -45,6 +46,7 @@ trivial tasks may skip Reviewer only with an explicit reason.
 - **`.commands/`** — prompt formats and procedures (spec, plan, builder
   handoff, two-agent review, audit, onboard)
 - **`docs/two-agent-review-workflow.md`** — Builder / Reviewer handoff pattern
+- **`docs/learning/`** — code-verified mental maps and interview defense
 - **`docs/specs/`** — feature spec conventions
 - **`docs/decisions/`** → ADRs in **`docs/adr/`**
 

@@ -65,7 +65,12 @@ Before editing, read the files listed for your **task type**. Start with
 - `.ai-rules/documentation.md`, `.ai-rules/review.md`
 - `README.md`, `PROJECT_STATUS.md`, `ROADMAP.md`, `TECH_DEBT.md`
 - Matching `docs/` topic file
+- `docs/learning/00-current-state-audit.md` when implementation status changes
 - `TEMPLATE_FREEZE_CHECKLIST.md` if template-scope wording changes
+
+### Learning / mental map / onboarding docs
+- `docs/learning/` (see `00-current-state-audit.md` for truth)
+- `.ai-rules/learning-mode.md` when changing agent completion format
 
 ### AI rules / workflow change
 - `.ai-rules/documentation.md`, `docs/ai-workflows.md`

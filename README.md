@@ -9,17 +9,14 @@ transfer to staff.
 
 ## Current Status
 
-This repository is now the Appointment Voice SaaS product repository. It was
-created from a production-oriented FastAPI backend foundation.
+See **[`PROJECT_STATUS.md`](PROJECT_STATUS.md)** (verified section) and
+**[`docs/learning/00-current-state-audit.md`](docs/learning/00-current-state-audit.md)**
+for code-verified state. Do not trust this README's high-level bullets alone.
 
-Current state:
-
-- Product documentation and bootstrap planning exist.
-- Appointment Voice SaaS runtime code is not implemented yet unless verified by
-  code and tests.
-- The inherited FastAPI foundation app can run locally.
-- Product-specific booking, IVR, SMS, calendar, transfer, billing, and frontend
-  features are still planned work.
+- **Implemented:** foundation app + appointment domain (business, staff, service,
+  hours, availability, bookings, audit) with tests and migrations.
+- **Planned:** IVR, SMS outbox, calendar adapter, call transfer, smoke demos,
+  billing, frontend (roadmap EPIC E–J).
 
 ## What Exists Today
 
@@ -41,23 +38,21 @@ Inherited foundation capabilities available for reuse:
 
 ## What Does Not Exist Yet
 
-Appointment Voice SaaS product runtime gaps:
+Appointment Voice SaaS gaps (verify in [`docs/learning/00-current-state-audit.md`](docs/learning/00-current-state-audit.md)):
 
-- Product-specific Business/Staff/Service/Booking runtime models.
-- Working hours, availability exceptions, and availability engine.
-- Appointment booking APIs or booking creation service.
-- DB-level appointment double-booking protection.
 - IVR runtime flow or local IVR simulation.
 - SMS provider integration or product notification outbox.
 - Calendar sync or product calendar adapter.
 - Call transfer.
-- Product-specific smoke tests.
+- Product-specific end-to-end smoke tests (demo scripts).
+- Dedicated Customer HTTP CRUD API (customers exist via booking flow only).
 - Billing, subscriptions, or frontend.
 
 ## Product Documentation Map
 
 | Document | Purpose |
 |----------|---------|
+| [`docs/learning/`](docs/learning/) | Code-verified mental maps and interview defense (start here to learn the repo) |
 | [`docs/product-scope.md`](docs/product-scope.md) | Product users, problem, MVP flow, non-goals, and assumptions |
 | [`docs/domain-model.md`](docs/domain-model.md) | Planned Appointment Voice SaaS domain vocabulary |
 | [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md) | Detailed executable product backlog |
@@ -84,8 +79,7 @@ backend inherited from the template, not the active product roadmap/status.
 
 ## Local Development
 
-These commands currently run and validate the inherited foundation app, not a
-finished Appointment Voice SaaS product.
+These commands run the full app (foundation + appointment product routes):
 
 Requirements: Python 3.13+, `uv`, Docker, Docker Compose, Make.
 

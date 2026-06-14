@@ -81,7 +81,8 @@ user prompt, pasted handoff, local runner command, or separate CLI window.
 - `.commands/builder-handoff.md` remains the Builder handoff format when a
   structured handoff is needed; do not duplicate that template here.
 
-Every task response MUST include:
+Every task response MUST include the sections in **`.ai-rules/learning-mode.md`**
+(for non-trivial file-changing tasks) and at minimum:
 
 - **Files changed** (created / modified)
 - **Tests / validation run** (exact commands and pass/fail)
@@ -89,6 +90,9 @@ Every task response MUST include:
 - **Remaining work** (if any; do not invent follow-ups)
 - **Builder summary** (what changed and why)
 - **Reviewer verdict** (or explicit skip reason for read-only/trivial tasks)
+
+See `learning-mode.md` for mentor sections: why each file, what calls it, what
+could break, manual verification, interview-defense explanation.
 
 ## 9. Git workflow
 

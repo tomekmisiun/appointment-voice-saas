@@ -5,14 +5,14 @@ planned product capabilities as implemented.
 
 ## Current Status
 
-- This product repository was created from an inherited production FastAPI
-  backend foundation.
-- Product planning docs exist.
-- Appointment Voice SaaS runtime is not implemented yet.
-- No product database models or migrations exist yet.
-- No product IVR, SMS, calendar, booking, availability, call transfer, billing,
-  or frontend implementation exists yet.
-- Current next milestone: core product domain model.
+Product backend **partially implemented** — see verified list below and
+[`docs/learning/00-current-state-audit.md`](docs/learning/00-current-state-audit.md).
+
+- Inherited FastAPI foundation: **running** (auth, tenants, worker, CI).
+- Appointment domain (business → booking) + availability engine: **implemented**
+  (code, migrations, tests).
+- IVR, SMS outbox, calendar, transfer, frontend: **not implemented** (roadmap EPIC E–J).
+- **Next milestone:** EPIC E — notification outbox (`AVS-E001`).
 
 ## Verified Inherited Foundation Capabilities
 
@@ -60,7 +60,7 @@ Core domain (EPIC B — merged 2026-06-14):
 - Cross-tenant isolation enforced at service layer (`require_business`, `require_staff`) for all nested writes.
 - Cross-tenant isolation tests for all product tables (`tests/test_product_tenant_isolation.py`).
 
-Availability engine (EPIC C — in progress 2026-06-14):
+Availability engine (EPIC C — verified 2026-06-14):
 
 - Slot generation from service duration and staff working hours (`app/services/availability_service.py`).
 - Confirmed booking exclusion with half-open interval overlap check.
