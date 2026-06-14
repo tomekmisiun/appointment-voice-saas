@@ -1,0 +1,144 @@
+from datetime import datetime, timedelta
+
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from app.core.domain_errors import ConflictError, NotFoundError
+from app.models.booking import Booking, BookingSource, BookingStatus
+from app.services.business_service import require_business
+from app.services.customer_service import require_customer
+from app.services.service_service import require_service
+from app.services.staff_service import require_staff
+
+
+def _check_double_booking(
+    db: Session,
+    *,
+    staff_id: int | None,
+    business_id: int,
+    starts_at: datetime,
+    ends_at: datetime,
+    exclude_booking_id: int | None = None,
+) -> None:
+    if staff_id is None:
+        return
+    query = (
+        db.query(Booking)
+        .filter(
+            Booking.staff_id == staff_id,
+            Booking.business_id == business_id,
+            Booking.status == BookingStatus.CONFIRMED,
+            Booking.starts_at < ends_at,
+            Booking.ends_at > starts_at,
+        )
+    )
+    if exclude_booking_id is not None:
+        query = query.filter(Booking.id != exclude_booking_id)
+    conflict = query.first()
+    if conflict is not None:
+        raise ConflictError("This time slot is already booked for the selected staff")
+
+
+def create_booking(
+    db: Session,
+    *,
+    tenant_id: int,
+    business_id: int,
+    customer_id: int,
+    service_id: int,
+    staff_id: int | None,
+    starts_at: datetime,
+    source: str = BookingSource.API,
+) -> Booking:
+    require_business(db, business_id, tenant_id)
+    require_customer(db, customer_id, tenant_id)
+    svc = require_service(db, service_id, tenant_id)
+    if staff_id is not None:
+        require_staff(db, staff_id, tenant_id)
+
+    ends_at = starts_at + timedelta(minutes=svc.duration_minutes)
+
+    _check_double_booking(
+        db,
+        staff_id=staff_id,
+        business_id=business_id,
+        starts_at=starts_at,
+        ends_at=ends_at,
+    )
+
+    booking = Booking(
+        tenant_id=tenant_id,
+        business_id=business_id,
+        customer_id=customer_id,
+        service_id=service_id,
+        staff_id=staff_id,
+        starts_at=starts_at,
+        ends_at=ends_at,
+        status=BookingStatus.CONFIRMED,
+        source=source,
+    )
+    db.add(booking)
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        if "no_overlapping_staff_bookings" in str(exc.orig):
+            raise ConflictError("This time slot is already booked for the selected staff")
+        raise
+    db.refresh(booking)
+    return booking
+
+
+def get_booking(db: Session, booking_id: int, tenant_id: int) -> Booking | None:
+    return (
+        db.query(Booking)
+        .filter(Booking.id == booking_id, Booking.tenant_id == tenant_id)
+        .first()
+    )
+
+
+def require_booking(db: Session, booking_id: int, tenant_id: int) -> Booking:
+    booking = get_booking(db, booking_id, tenant_id)
+    if booking is None:
+        raise NotFoundError("Booking not found")
+    return booking
+
+
+def list_bookings(
+    db: Session,
+    business_id: int,
+    tenant_id: int,
+    *,
+    status: str | None = None,
+    staff_id: int | None = None,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[Booking]:
+    query = db.query(Booking).filter(
+        Booking.business_id == business_id,
+        Booking.tenant_id == tenant_id,
+    )
+    if status is not None:
+        query = query.filter(Booking.status == status)
+    if staff_id is not None:
+        query = query.filter(Booking.staff_id == staff_id)
+    return (
+        query.order_by(Booking.starts_at.asc()).offset(skip).limit(limit).all()
+    )
+
+
+def cancel_booking(
+    db: Session,
+    booking_id: int,
+    tenant_id: int,
+    *,
+    reason: str | None = None,
+) -> Booking:
+    booking = require_booking(db, booking_id, tenant_id)
+    if booking.status == BookingStatus.CANCELLED:
+        raise ConflictError("Booking is already cancelled")
+    booking.status = BookingStatus.CANCELLED
+    booking.cancel_reason = reason
+    db.commit()
+    db.refresh(booking)
+    return booking
