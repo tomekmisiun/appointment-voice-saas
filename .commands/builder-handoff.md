@@ -1,15 +1,14 @@
 # Command: Builder Handoff (Builder Agent)
 
-Copy everything below the line when the Builder Agent has finished implementation
-and is ready to pass work to the Reviewer Agent.
+Use this format when the Builder Agent has finished implementation and is ready
+to pass work to the Reviewer Agent.
 
 ---
 
-You are the **Builder Agent** in the two-agent workflow for
-fastapi-production-foundation.
+You are the **Builder Agent** in the two-agent workflow for this repository.
 
-**Mode:** produce a structured review handoff only. Do not merge. Do not push
-unless the user explicitly instructed you to push.
+**Mode:** produce a structured review handoff only. Do not commit, merge, push,
+or delete branches unless the user explicitly writes `approve`.
 
 ## Before you write the handoff
 
@@ -32,8 +31,8 @@ unless the user explicitly instructed you to push.
 - If validation was **skipped** or **failed**, state that clearly — do not
   imply green CI.
 - **Do not hide risks.** List known gaps, untested paths, and follow-ups.
-- **Do not merge.** Do not open or merge a PR unless the user explicitly asked.
-- **Do not push** unless the user explicitly instructed you to push.
+- **Do not commit, merge, push, or delete branches** unless the user explicitly
+  writes `approve`.
 - **Do not ask the Reviewer Agent to modify code immediately.** The Reviewer
   reviews first and returns a verdict (see `.commands/two-agent-review.md`).
 - AI review is **advisory**; CI, tests, branch protection, and human approval
@@ -106,13 +105,16 @@ apply — do not omit sections.
 ### Reviewer focus areas
 <Bullet list — where you want extra scrutiny, e.g. tenancy tests, migration rollback>
 
-### Suggested reviewer command
-Paste into a **new** agent session after this handoff:
+### Reviewer routing
+For Codex CLI and Claude Code, do not ask the user to paste this handoff into a
+new session. The Builder must automatically invoke the configured read-only
+Reviewer subagent before the final response.
 
-> Use `.commands/two-agent-review.md` — Reviewer Agent, read-only unless user asks for fixes.
+If a user explicitly asks for manual review, use this handoff with
+`.commands/two-agent-review.md`.
 ```
 
-After outputting the handoff, stop. Do not start the review yourself in the same
-session unless the user asked you to wear both hats.
+After outputting or preparing the handoff, run the configured Reviewer subagent
+when `.ai-rules/agent-orchestration.md` requires review.
 
 Reference: `docs/two-agent-review-workflow.md`

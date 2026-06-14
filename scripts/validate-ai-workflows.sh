@@ -18,6 +18,8 @@ required_files=(
   ".ai-rules/tdd-and-regression.md"
   ".ai-rules/review.md"
   ".ai-rules/threat-modeling.md"
+  ".codex/agents/reviewer.toml"
+  ".claude/agents/code-reviewer.md"
 )
 
 required_dirs=(
@@ -73,6 +75,62 @@ agent_files=(
 for file in "${agent_files[@]}"; do
   if [[ ! -f "$ROOT/$file" ]]; then
     echo "validate-ai-workflows: missing persona: $file" >&2
+    missing=1
+  fi
+done
+
+runner_terms=(
+  "make ai-two-agent"
+  "make ai-review"
+  ".ai-runs"
+  "scripts/ai-two-agent.sh"
+  "scripts/ai-review-latest.sh"
+)
+
+runner_scan_paths=(
+  "AGENTS.md"
+  "CLAUDE.md"
+  ".ai-rules"
+  ".commands"
+  "docs"
+  "Makefile"
+  ".gitignore"
+)
+
+for term in "${runner_terms[@]}"; do
+  if grep -R --exclude-dir=foundation --exclude-dir=.git -F "$term" \
+    "${runner_scan_paths[@]/#/$ROOT/}" >/dev/null; then
+    echo "validate-ai-workflows: stale local runner reference: $term" >&2
+    missing=1
+  fi
+done
+
+reviewer_headings=(
+  "## Blockers"
+  "## Should-fix"
+  "## Nice-to-have"
+  "## Validation concerns"
+  "## Security/production risks"
+  "## Overengineering/scope creep"
+  "## Final verdict"
+)
+
+for heading in "${reviewer_headings[@]}"; do
+  if ! grep -F "$heading" "$ROOT/.commands/two-agent-review.md" >/dev/null; then
+    echo "validate-ai-workflows: missing reviewer heading: $heading" >&2
+    missing=1
+  fi
+done
+
+approve_gate_files=(
+  ".ai-rules/git.md"
+  ".ai-rules/agent-orchestration.md"
+  "docs/two-agent-review-workflow.md"
+)
+
+for file in "${approve_gate_files[@]}"; do
+  if ! grep -F "approve" "$ROOT/$file" >/dev/null; then
+    echo "validate-ai-workflows: missing approve gate: $file" >&2
     missing=1
   fi
 done

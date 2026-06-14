@@ -6,13 +6,16 @@ Feature branch workflow with explicit user approval for remote changes.
 
 - MUST NOT do feature work directly on `main` unless the user explicitly
   requested it.
-- Create or use a dedicated branch before meaningful changes.
+- Builder may create or use a dedicated feature branch before non-trivial work.
 
 ## Commits
 
 - MUST NOT commit failing tests, secrets, `.env`, caches, virtual environments,
   local database files, or generated junk.
-- MUST NOT commit automatically unless the user explicitly requested it.
+- MUST NOT commit automatically unless the user explicitly writes
+  `approve`.
+- After `approve`, commit only according to the rest of these git safety
+  rules.
 - Use Conventional Commits with a short, focused subject.
 
 ### No AI attribution in commit messages
@@ -40,6 +43,8 @@ Feature branch workflow with explicit user approval for remote changes.
 
 ## Push And Merge
 
-- MUST NOT push, merge, or force-push without explicit user approval.
-- MUST NOT delete branches without explicit user approval.
+- MUST NOT push, merge, force-push, or delete branches unless the user
+  explicitly writes `approve`.
+- After `approve`, push, merge, or delete branches only according to the
+  rest of these git safety rules.
 - Before merge, show changed files, validation results, and a short summary.

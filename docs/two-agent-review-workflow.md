@@ -1,12 +1,15 @@
 # Two-Agent Review Workflow
 
 Lightweight pattern for AI-assisted development: one agent **builds**, a second
-agent **reviews** before a PR. No automation — humans still merge.
+read-only subagent **reviews** before the Builder gives the final response.
+Humans still decide whether to approve commits, pushes, merges, and branch
+deletion.
 
 ## When to use it
 
-Use for non-trivial branch work (features, security, migrations, tenancy,
-multi-file refactors). Skip for one-line fixes the author can self-review.
+Use for non-trivial file-changing work (features, security, migrations, tenancy,
+multi-file refactors). Skip only for read-only work or trivial changes the
+author can self-review, and state the skip reason explicitly.
 
 ## Roles
 
@@ -19,29 +22,32 @@ multi-file refactors). Skip for one-line fixes the author can self-review.
 - Follow `.ai-rules/agent-orchestration.md` and binding rules in `.ai-rules/`.
 - Run validation before handoff (`make validate` for app changes; add
   `make policy-guards` when CI, scripts, or AI workflow files change).
-- Output the **review handoff** using the canonical template:
-  **`.commands/builder-handoff.md`** (do not improvise a shorter format).
+- Prepare the **review handoff** using the canonical format:
+  **`.commands/builder-handoff.md`** when structured context is needed.
+- Automatically invoke the configured Reviewer subagent before the final
+  response.
+- Include the Builder summary and Reviewer verdict in the final response.
 - Do **not** open or merge the PR until review feedback is addressed or
   explicitly waived by the user.
 
-**Does not:** push, merge, delete branches, or commit unless the user asked.
+**Does not:** commit, push, merge, or delete branches unless the user explicitly
+writes `approve`.
 
 ### Reviewer Agent
 
 **Responsibilities:**
 
 - Review **first** — read-only by default.
-- Use the canonical prompt: **`.commands/two-agent-review.md`** (in a fresh
-  agent session, after the Builder handoff).
+- Use the canonical procedure: **`.commands/two-agent-review.md`**.
 - Read `.ai-rules/review.md` and load relevant personas from `agents/`.
-- Inspect the handoff: objective, changed files, `git diff main...HEAD`,
-  validation output.
+- Inspect current git diff, untracked files, validation output, and relevant
+  repository files.
 - Check architecture, tests, security, tenancy, migrations, Docker/CI, and
   docs/status consistency against binding rules.
-- Produce findings in the standard table and a final verdict.
+- Produce the exact sections defined in `.commands/two-agent-review.md`.
 
-**Must not** modify code, commit, push, merge, or “fix while reviewing” unless
-the user explicitly asks the Reviewer Agent to implement fixes.
+**Must not** modify code, commit, push, merge, delete branches, or fix while
+reviewing. Fix requests go back to the Builder after the user says `fix`.
 
 **Advisory only:** AI review does not replace CI, tests, branch protection, or
 human approval. A Reviewer verdict is input for the author and reviewer human;
@@ -49,10 +55,14 @@ the merge gate remains green CI + project policy + explicit user decision.
 
 ## Review handoff (Builder → Reviewer)
 
-1. **Builder Agent** — run **`.commands/builder-handoff.md`** and paste the
-   completed handoff (objective, branch, diff, validation, impact sections).
-2. **Reviewer Agent** — open a **new** agent session; paste the handoff, then
-   **`.commands/two-agent-review.md`**.
+1. **Builder Agent** — prepare context using **`.commands/builder-handoff.md`**
+   when structured handoff context is useful.
+2. **Reviewer Agent** — the active tool invokes the native read-only Reviewer
+   subagent automatically:
+   - Codex CLI: `.codex/agents/reviewer.toml`
+   - Claude Code: `.claude/agents/code-reviewer.md`
+3. **Builder Agent** — waits for the Reviewer result and includes the verdict in
+   the final response.
 
 Command bodies live in `.commands/` only — this doc does not duplicate them.
 Optional handoff context: spec in `docs/specs/` or a ROADMAP item.
@@ -76,9 +86,20 @@ Also verify:
   `make policy-guards`).
 - `PROJECT_STATUS.md`, `ROADMAP.md`, and `TECH_DEBT.md` stay accurate if touched.
 
-## Verdict format
+## Reviewer output format
 
-Reviewer output MUST end with one of:
+Reviewer output MUST use the sections defined in
+`.commands/two-agent-review.md`:
+
+- Blockers
+- Should-fix
+- Nice-to-have
+- Validation concerns
+- Security/production risks
+- Overengineering/scope creep
+- Final verdict
+
+Final verdict MUST be one of:
 
 | Verdict | Meaning |
 |---------|---------|
@@ -86,16 +107,14 @@ Reviewer output MUST end with one of:
 | **Approve with nits** | Merge acceptable; minor follow-ups optional |
 | **Request changes** | Block merge until listed issues are fixed or waived |
 
-Use the output template in `.ai-rules/review.md` (Summary, Findings table,
-Validation, Verdict).
-
 ## After review
 
 1. Builder addresses **Request changes** items (or user waives them).
 2. Re-run validation; update handoff if the diff changed materially.
 3. Optional second review pass for large fixes.
 4. Human opens PR; CI and branch protection must pass.
-5. Human merges — agents do not merge unless explicitly instructed per
+5. Human merges — agents do not commit, push, merge, force-push, or delete
+   branches unless the user explicitly writes `approve`, per
    `.ai-rules/git.md`.
 
 ## Related files

@@ -63,17 +63,37 @@ Follow `.ai-rules/incremental-work.md` and `.ai-rules/planning-and-task-breakdow
 
 ## 8. Report completion
 
+For every non-trivial task that changes files, the Builder Agent MUST
+automatically run the configured read-only Reviewer subagent before the final
+response. Do not ask the user whether to run review, and do not require a second
+user prompt, pasted handoff, local runner command, or separate CLI window.
+
+- Codex CLI uses the `reviewer` subagent configured in
+  `.codex/agents/reviewer.toml`.
+- Claude Code uses the `code-reviewer` subagent configured in
+  `.claude/agents/code-reviewer.md`.
+- The Reviewer is read-only and must inspect the current git diff, untracked
+  files, validation output, security and production risks, overengineering,
+  tests, docs drift, and scope creep.
+- The Builder must wait for the Reviewer result before final response.
+- Read-only or trivial tasks may skip Reviewer, but MUST explicitly say
+  `Reviewer skipped: <reason>`.
+- `.commands/builder-handoff.md` remains the Builder handoff format when a
+  structured handoff is needed; do not duplicate that template here.
+
 Every task response MUST include:
 
 - **Files changed** (created / modified)
 - **Tests / validation run** (exact commands and pass/fail)
 - **Risks** (deployment, security, migration, compatibility)
 - **Remaining work** (if any; do not invent follow-ups)
+- **Builder summary** (what changed and why)
+- **Reviewer verdict** (or explicit skip reason for read-only/trivial tasks)
 
 ## 9. Git workflow
 
-Follow `.ai-rules/git.md`: no commit/push/merge unless the user explicitly
-requests it.
+Follow `.ai-rules/git.md`: no commit, push, merge, force-push, or branch delete
+unless the user explicitly writes `approve`.
 
 Before any commit:
 

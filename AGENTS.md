@@ -6,6 +6,12 @@ making changes. Do not duplicate rule bodies here.
 Workflow overview: **`docs/ai-workflows.md`** · Two-agent review:
 **`docs/two-agent-review-workflow.md`**
 
+After every non-trivial file-changing task, Codex MUST spawn the native
+`reviewer` subagent before the final response. No second user prompt, pasted
+handoff, local runner command, or separate CLI window is required. The final
+response must include the Builder summary and Reviewer verdict. Read-only or
+trivial tasks may skip Reviewer only with an explicit reason.
+
 ## Binding rules (`.ai-rules/`)
 
 ### Core
@@ -36,8 +42,8 @@ Workflow overview: **`docs/ai-workflows.md`** · Two-agent review:
 ## Optional (not binding)
 
 - **`agents/`** — review personas (backend, security, tenancy, DB, CI, onboarding)
-- **`.commands/`** — copy-paste prompts (spec, plan, builder handoff, two-agent
-  review, audit, onboard)
+- **`.commands/`** — prompt formats and procedures (spec, plan, builder
+  handoff, two-agent review, audit, onboard)
 - **`docs/two-agent-review-workflow.md`** — Builder / Reviewer handoff pattern
 - **`docs/specs/`** — feature spec conventions
 - **`docs/decisions/`** → ADRs in **`docs/adr/`**
