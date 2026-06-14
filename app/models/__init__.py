@@ -4,6 +4,7 @@ from app.models.booking import Booking
 from app.models.business import Business
 from app.models.customer import Customer
 from app.models.idempotency_record import IdempotencyRecord
+from app.models.notification_outbox import NotificationOutbox
 from app.models.password_reset_job_completion import PasswordResetJobCompletion
 from app.models.password_reset_token import PasswordResetToken
 from app.models.service import Service
@@ -21,6 +22,7 @@ __all__ = [
     "Business",
     "Customer",
     "IdempotencyRecord",
+    "NotificationOutbox",
     "PasswordResetJobCompletion",
     "PasswordResetToken",
     "Service",

@@ -142,7 +142,7 @@ Recommended MVP execution order:
 
 | Status | ID | Priority | Goal | Scope | Out | Acceptance | Validation | Risk |
 |--------|----|----------|------|-------|-----|------------|------------|------|
-| [ ] | AVS-E001 | P0 | Add notification outbox model. | Persist SMS intent, recipient, template/purpose, status, attempts. | Real SMS provider. | Intent is stored before delivery attempt. | Migration/tests. | Lost confirmations on worker/provider failure. |
+| [x] | AVS-E001 | P0 | Add notification outbox model. | Persist SMS intent, recipient, template/purpose, status, attempts. | Real SMS provider. | Intent is stored before delivery attempt. | Migration/tests. | Lost confirmations on worker/provider failure. |
 | [ ] | AVS-E002 | P0 | Add SMS provider interface. | Provider-neutral send contract and result mapping. | Twilio implementation. | Code can send through fake or real adapter later. | Unit tests. | Business logic couples to one vendor. |
 | [ ] | AVS-E003 | P0 | Add fake SMS provider. | Local/dev/test provider that records messages. | Real delivery. | Tests can assert sent/intended messages without network. | Unit/integration tests. | Local demos require paid provider. |
 | [ ] | AVS-E004 | P0 | Enqueue booking confirmation SMS. | Customer and business confirmation intents after booking. | Reminder SMS. | Booking create enqueues expected intents idempotently. | Service tests. | Bookings happen without notification. |
