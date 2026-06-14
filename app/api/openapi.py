@@ -1,5 +1,6 @@
 from fastapi import FastAPI, status
 
+from app.core.config import settings
 from app.schemas.errors import ErrorResponse
 
 
@@ -104,9 +105,11 @@ def configure_openapi(app: FastAPI) -> None:
 
         schema = FastAPI.openapi(app)
         schema["info"]["description"] = (
-            "Production-oriented FastAPI backend template with versioned routes, "
-            "JWT auth, admin workflows, audit logs, Redis-backed rate limiting, "
-            "and object storage uploads."
+            f"{settings.app_name} — multi-tenant booking and availability "
+            "backend built on a production FastAPI foundation (JWT auth, admin "
+            "workflows, audit logs, Redis rate limiting, object storage). "
+            "Salon domain: businesses, staff, services, hours, availability slots, "
+            "bookings with DB-level double-booking protection. IVR/SMS/calendar: planned."
         )
         schema["components"]["securitySchemes"]["HTTPBearer"] = {
             **schema["components"]["securitySchemes"].get("HTTPBearer", {}),

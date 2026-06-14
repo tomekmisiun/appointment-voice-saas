@@ -1,4 +1,5 @@
 from app.api.v1 import API_V1_PREFIX
+from app.core.config import settings
 
 
 def get_openapi_schema(client):
@@ -12,7 +13,8 @@ def get_openapi_schema(client):
 def test_openapi_includes_api_description_and_security_scheme(client):
     schema = get_openapi_schema(client)
 
-    assert "Production-oriented FastAPI backend template" in schema["info"]["description"]
+    assert schema["info"]["title"] == settings.app_name
+    assert settings.app_name in schema["info"]["description"]
     assert schema["components"]["securitySchemes"]["HTTPBearer"]["scheme"] == "bearer"
 
 

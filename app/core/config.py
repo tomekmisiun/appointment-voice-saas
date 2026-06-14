@@ -32,7 +32,7 @@ def parse_csv_setting(value: str) -> list[str]:
 
 
 class Settings(BaseSettings):
-    app_name: str = "FastAPI Production Foundation"
+    app_name: str = "Appointment Voice SaaS API"
     environment: str = "development"
     database_url: str = Field(default=LOCAL_DATABASE_URL)
     secret_key: str = Field(min_length=1)

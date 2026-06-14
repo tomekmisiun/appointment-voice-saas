@@ -41,7 +41,7 @@ async def lifespan(application: FastAPI):
 app = FastAPI(
     title=settings.app_name,
     version="1.0.0",
-    summary="Reusable FastAPI backend template",
+    summary="Multi-tenant booking and availability backend for local service businesses",
     lifespan=lifespan,
 )
 configure_openapi(app)
