@@ -11,10 +11,10 @@ Product backend **partially implemented** — see verified list below and
 - Inherited FastAPI foundation: **running** (auth, tenants, worker, CI).
 - Appointment domain (business → booking) + availability engine: **implemented**
   (code, migrations, tests).
-- Notification outbox model, SMS provider interface, and fake SMS adapter:
-  **implemented** (`AVS-E001`–`AVS-E003`).
+- Notification outbox model, SMS provider interface, fake SMS adapter, and
+  booking confirmation enqueueing: **implemented** (`AVS-E001`–`AVS-E004`).
 - IVR, calendar, transfer, frontend: **not implemented** (roadmap EPIC E–J).
-- **Next milestone:** EPIC E — enqueue booking confirmation SMS (`AVS-E004`).
+- **Next milestone:** EPIC E — enqueue cancellation SMS (`AVS-E005`).
 
 ## Verified Inherited Foundation Capabilities
 
@@ -81,12 +81,16 @@ Notifications outbox (EPIC E — verified 2026-06-14):
   `SmsProvider` protocol (`app/core/sms.py`, `app/services/sms_provider.py`, `AVS-E002`).
 - `NullSmsProvider` (default, reports not configured) and `FakeSmsProvider`
   (records sent messages for local/dev/test use) (`AVS-E003`).
-- Test coverage in `tests/test_notification_outbox.py` and `tests/test_sms_provider.py`.
+- Booking creation enqueues `BOOKING_CONFIRMATION` SMS intents for the
+  customer, and for the business when it has a phone number
+  (`app/services/notification_service.py`, `AVS-E004`).
+- Test coverage in `tests/test_notification_outbox.py`, `tests/test_sms_provider.py`,
+  and `tests/test_booking_notifications.py`.
 
 ## Not Implemented Yet
 
 - IVR runtime or local IVR simulation.
-- Booking confirmation/cancellation SMS enqueueing and notification worker.
+- Enqueue cancellation/change SMS and notification worker.
 - Calendar provider interface, calendar event model, fake calendar adapter.
 - Voice session model.
 - Call transfer.
@@ -98,7 +102,7 @@ Notifications outbox (EPIC E — verified 2026-06-14):
 
 ## Next Implementation Milestone
 
-**EPIC E — Notifications outbox** (`AVS-E001` onwards):
+**EPIC E — Notifications outbox** (`AVS-E005` onwards):
 
 See [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md) for
 the detailed task backlog.
