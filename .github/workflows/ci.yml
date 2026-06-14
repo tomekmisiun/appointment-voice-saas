@@ -144,7 +144,8 @@ jobs:
   load-smoke:
     runs-on: ubuntu-latest
     needs:
-      - test
+      - pre-commit
+      - policy-guards
 
     steps:
       - name: Checkout code
