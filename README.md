@@ -23,13 +23,21 @@ Clone → configure → extend. Start with [`docs/template-onboarding.md`](docs/
 
 ---
 
-## Appointment Voice SaaS direction
+## Appointment Voice SaaS product status
 
 This repository is being prepared as the backend foundation for **Appointment
 Voice SaaS**, a mini SaaS for barbers and other local service businesses that
-miss calls while serving customers. Current work is product bootstrap
-documentation only; appointment booking runtime code, domain models, Twilio,
-SMS, Google Calendar, AI voice agent, and frontend work have not been added.
+miss calls while serving customers.
+
+How to read the repository during this transition:
+
+- The production FastAPI foundation exists and is verified in
+  [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
+- The Appointment Voice SaaS product runtime is not implemented yet.
+- There are no product database models, appointment booking engine,
+  availability engine, IVR runtime, SMS sending, calendar sync, call transfer,
+  billing, or frontend features yet.
+- Product work should follow the executable backlog before adding runtime code.
 
 Product planning:
 
@@ -37,7 +45,8 @@ Product planning:
 |----------|---------|
 | [`docs/product-scope.md`](docs/product-scope.md) | Target users, MVP flow, non-goals, and assumptions |
 | [`docs/domain-model.md`](docs/domain-model.md) | Planned domain vocabulary for bookings, voice sessions, SMS, and calendar events |
-| [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md) | Phase-based roadmap with task IDs, priorities, acceptance criteria, validation, and risks |
+| [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md) | Executable product backlog from template foundation to working Appointment Voice SaaS |
+| [`TECH_DEBT.md`](TECH_DEBT.md#appointment-voice-saas-product-gaps) | Product-specific gaps and roadmap mappings |
 
 ---
 
@@ -231,7 +240,8 @@ The template ships patterns and runbooks, not a live production environment. Eac
 | File | Purpose |
 |------|---------|
 | [`PROJECT_STATUS.md`](PROJECT_STATUS.md) | **Verified** implemented capabilities only |
-| [`ROADMAP.md`](ROADMAP.md) | Prioritized planned work (P3 next) |
-| [`TECH_DEBT.md`](TECH_DEBT.md) | Known debt register |
+| [`ROADMAP.md`](ROADMAP.md) | Historical/template-oriented foundation roadmap |
+| [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md) | Product roadmap and executable Appointment Voice SaaS backlog |
+| [`TECH_DEBT.md`](TECH_DEBT.md) | Foundation debt plus Appointment Voice SaaS product gaps |
 
 **License:** see repository license file. **Contributing:** feature branches + PR; run `make validate` before merge.

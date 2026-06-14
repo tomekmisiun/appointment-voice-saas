@@ -65,7 +65,8 @@ Key responsibilities:
 
 - Belongs to a Business and Customer.
 - References selected Service and optionally Staff.
-- Tracks start time, end time, status, source, and confirmation state.
+- Tracks start time, end time, status, source, confirmation state, cancellation
+  reason, and reschedule lineage where needed.
 - Must be protected against overlapping bookings for the same staff/resource.
 - May originate from a VoiceSession.
 
@@ -91,6 +92,7 @@ Key responsibilities:
   service, selected slot, linked booking, and terminal outcome.
 - Provides idempotency and recovery for provider retries or repeated keypad
   inputs.
+- Can represent transfer intent when the caller requests staff transfer.
 
 ## SMSMessage
 
@@ -103,6 +105,8 @@ Key responsibilities:
   error details.
 - Supports customer confirmations, business notifications, and later reminders.
 - Should be written before provider delivery is attempted.
+- Should represent booking, cancellation, and reschedule message intents before
+  any real provider send attempt.
 
 ## CalendarEvent
 
@@ -114,3 +118,5 @@ Key responsibilities:
 - Tracks provider, external event identifier, sync status, last synced time, and
   error details.
 - Supports later Google Calendar or other calendar adapters.
+- Represents an integration view of Booking; PostgreSQL Booking remains the
+  source of truth.

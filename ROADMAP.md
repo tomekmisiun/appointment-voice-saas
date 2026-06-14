@@ -4,6 +4,11 @@ Prioritized engineering work for **FastAPI Production Foundation**
 (`fastapi-production-foundation`).
 Full issue register: `TECH_DEBT.md`. Verified capabilities: `PROJECT_STATUS.md`.
 
+**Appointment Voice SaaS note:** this roadmap is historical/template-oriented
+foundation work. The product roadmap lives in
+`docs/appointment-saas-roadmap.md`. Product gaps live in `TECH_DEBT.md` under
+"Appointment Voice SaaS Product Gaps".
+
 **Status key:** Not started | In progress | Done  
 **Effort key:** S (<1 day) · M (1–3 days) · L (1–2 weeks) · XL (>2 weeks)  
 **Risk key:** Low · Medium · High (regression or behavioral change risk)  

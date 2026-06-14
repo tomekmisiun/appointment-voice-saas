@@ -30,6 +30,10 @@ customer wants a same-day or next-day slot and calls the next available provider
 8. The business receives an SMS notification with booking details.
 9. The business can later view or manage the booking through an API or future
    admin experience.
+10. The business can cancel or reschedule the appointment in later MVP/pilot
+    tasks, which sends SMS updates and updates the calendar adapter/outbox.
+11. If call transfer is enabled, the caller can press 2 to request transfer to
+    staff; transfer remains planned work, not current runtime behavior.
 
 ## Non-Goals
 
@@ -38,6 +42,8 @@ customer wants a same-day or next-day slot and calls the next available provider
 - No Twilio, SMS provider, Google Calendar, AI voice agent, or frontend in the
   bootstrap phase.
 - No natural-language conversation in the MVP.
+- No real calendar sync until the calendar adapter foundation exists.
+- No real call transfer until the provider integration and transfer tasks exist.
 - No payments, subscriptions, deposits, coupons, or billing workflows.
 - No complex resource scheduling, rooms, equipment, packages, or multi-location
   chains in the MVP.
@@ -61,7 +67,10 @@ customer wants a same-day or next-day slot and calls the next available provider
   tenant.
 - Booking correctness depends on database transactions and constraints, not only
   application-side availability checks.
+- PostgreSQL is the booking source of truth; external calendars are integrations
+  and must not decide booking correctness.
 - Voice, SMS, and calendar providers will be integrated through adapter
   boundaries after core domain logic exists.
+- SMS and calendar side effects should use an outbox/queue/worker path.
 - Timezone handling is required from the first booking implementation.
 - The MVP can start with API/admin workflows before a frontend is built.

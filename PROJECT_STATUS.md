@@ -33,15 +33,6 @@ coverage floor enforced in CI and `make validate`.
 - **Template freeze (June 2026)** — suitable as a cloneable, AI-ready foundation;
   see `TEMPLATE_FREEZE_CHECKLIST.md` and `docs/ai-workflows.md`.
 
-**Appointment Voice SaaS direction:**
-
-- Product bootstrap documentation is in progress for Appointment Voice SaaS.
-- No appointment booking runtime code has been implemented yet.
-- No appointment booking database models, migrations, Twilio/SMS integration,
-  Google Calendar sync, AI voice agent, or frontend have been added.
-- Next product task should be the core domain model design and implementation
-  plan before adding models or migrations.
-
 **Architecture:**
 
 - API routes: `app/api/routes`
@@ -63,6 +54,42 @@ coverage floor enforced in CI and `make validate`.
 - `agents/`, `.commands/` — optional review personas and copy-paste prompts
 - `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/*.mdc` — thin wrappers pointing to `.ai-rules`
 - `TEMPLATE_FREEZE_CHECKLIST.md` — template reuse and validation checklist
+
+---
+
+## Appointment Voice SaaS Product Status
+
+This section tracks the product fork direction only. It must not be read as
+verified runtime capability.
+
+**Current product state:**
+
+- Appointment Voice SaaS product runtime is not implemented yet.
+- Completed product work is documentation/bootstrap only.
+- No product database models or migrations exist yet for businesses/salons,
+  staff, services, working hours, availability exceptions, customers, bookings,
+  voice sessions, notification outbox, SMS messages, calendar integrations, or
+  calendar events.
+- No appointment booking engine, availability engine, booking creation flow,
+  booking cancellation/reschedule flow, IVR runtime, SMS sending, calendar sync,
+  call transfer, product-specific smoke tests, billing, or frontend exists yet.
+- No Twilio, SMS provider, Google Calendar, Stripe, or AI voice product
+  integration exists yet.
+
+**Planning documents:**
+
+- Product scope: `docs/product-scope.md`
+- Domain vocabulary: `docs/domain-model.md`
+- Executable product roadmap: `docs/appointment-saas-roadmap.md`
+- Product gaps: `TECH_DEBT.md` under
+  "Appointment Voice SaaS Product Gaps"
+
+**Next implementation milestone:**
+
+Start the MVP foundation backlog in `docs/appointment-saas-roadmap.md`, beginning
+with **EPIC B - Core SaaS domain** after the product architecture ADR/demo-flow
+cleanup tasks are accepted. The first implementation slice should define the
+Business model and related migration/test pattern before adding booking logic.
 
 ---
 

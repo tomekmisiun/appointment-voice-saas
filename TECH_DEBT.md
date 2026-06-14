@@ -94,7 +94,58 @@ For verified current capabilities, see `PROJECT_STATUS.md`.
 
 ---
 
-## Summary
+## Appointment Voice SaaS Product Gaps
+
+These are product-specific gaps for the Appointment Voice SaaS fork. They do
+not replace the foundation debt above. Do not mark any item Done unless product
+code and tests exist.
+
+### Product Critical
+
+| ID | Issue | Impact | Recommendation | Roadmap mapping | Effort | Status |
+|----|-------|--------|----------------|-----------------|--------|--------|
+| AVS-TD-001 | No core product domain models. | The system cannot represent businesses/salons, staff, services, hours, customers, bookings, voice sessions, notifications, or calendar events. | Implement EPIC B models, migrations, schemas, services, and tenant isolation tests. | AVS-B001 to AVS-B009 | L | Open |
+| AVS-TD-002 | No booking engine. | The product cannot create, list, cancel, or audit appointments. | Implement booking service/API and lifecycle rules. | AVS-D001, AVS-D003 to AVS-D006 | L | Open |
+| AVS-TD-003 | No double-booking protection for appointments. | Concurrent callers/admins could book the same staff and slot once booking exists. | Enforce conflict protection with DB transactions/constraints and concurrency tests. | AVS-D002, AVS-D007 | L | Open |
+| AVS-TD-004 | No IVR runtime or simulation. | The core phone-first product flow cannot be developed or demonstrated locally. | Build provider-neutral IVR session model and local simulation before real Twilio. | AVS-G001 to AVS-G010 | L | Open |
+| AVS-TD-005 | No notification/calendar side-effect pipeline. | Confirmations and calendar sync cannot be reliably queued, retried, or audited. | Implement outbox-backed fake SMS and fake calendar adapters using worker patterns. | AVS-E001 to AVS-E008, AVS-F001 to AVS-F007 | XL | Open |
+
+### Product High
+
+| ID | Issue | Impact | Recommendation | Roadmap mapping | Effort | Status |
+|----|-------|--------|----------------|-----------------|--------|--------|
+| AVS-TD-006 | No reminder SMS. | Pilot customers may forget appointments; business value is weaker. | Add scheduled reminder intents and worker delivery. | P1-001 | M | Open |
+| AVS-TD-007 | No customer or business reschedule flow. | Schedule changes require manual work outside the product. | Add IVR and admin reschedule workflows with SMS/calendar updates. | P1-003, P1-004 | L | Open |
+| AVS-TD-008 | No IVR fallback handling. | Timeouts, invalid input, repeat requests, or backend outages can create poor caller experience. | Add timeout, invalid-input, repeat, and backend-unavailable fallback paths. | P1-005 to P1-008 | M | Open |
+| AVS-TD-009 | No provider-specific webhook verification for product flows. | Real voice/SMS provider callbacks could be spoofed or replayed. | Add Twilio signature validation, webhook idempotency, and rate limiting before pilot. | AVS-H002, AVS-H005, AVS-H006 | M | Open |
+| AVS-TD-010 | No product smoke tests. | The full simulated booking flow cannot be verified before pilot. | Add deterministic manual, IVR, and cancellation smoke tests. | AVS-J002 to AVS-J004 | M | Open |
+
+### Product Medium
+
+| ID | Issue | Impact | Recommendation | Roadmap mapping | Effort | Status |
+|----|-------|--------|----------------|-----------------|--------|--------|
+| AVS-TD-011 | No CRM/client profile model. | Returning-customer history and personalization are limited. | Add basic CRM clients and link bookings to clients. | P2-001, P2-002 | M | Open |
+| AVS-TD-012 | No returning-customer recognition. | Repeat callers must go through the same full flow every time. | Match caller by phone and use booking history safely. | P2-003, P2-004 | M | Open |
+| AVS-TD-013 | No preferred staff flow. | Customers cannot choose or reuse preferred staff. | Add preferred staff selection and last-staff suggestion. | P2-006, P2-007 | M | Open |
+| AVS-TD-014 | No multi-service appointments. | Longer or combined services cannot be booked as one appointment. | Add multi-service booking model and combined-duration availability. | P2-008, P2-009 | L | Open |
+| AVS-TD-015 | No waitlist. | Fully booked businesses cannot recover demand after cancellations. | Add waitlist model, offer flow, and timeout/escalation. | P2-010 to P2-012 | L | Open |
+| AVS-TD-016 | No owner dashboard metrics API. | Businesses cannot measure missed-call conversion or booking volume. | Add tenant-safe metrics API. | P2-013 | M | Open |
+| AVS-TD-017 | No salon hours versus staff hours model. | Availability cannot distinguish business closures from staff schedules. | Add salon hours/closures and intersect with staff hours. | P3-001 to P3-003 | M | Open |
+| AVS-TD-018 | No staff time blocks or recurring blocks. | Breaks, PTO, and recurring unavailable periods are hard to represent. | Add one-off and recurring staff blocks. | P3-004, P3-005 | M | Open |
+
+### Product Low/Future
+
+| ID | Issue | Impact | Recommendation | Roadmap mapping | Effort | Status |
+|----|-------|--------|----------------|-----------------|--------|--------|
+| AVS-TD-019 | No deposits/prepayments architecture. | Businesses cannot reduce no-shows with deposits. | Write payment ADR before adding Stripe payment links or pending-payment holds. | P3-006 to P3-008 | L | Open |
+| AVS-TD-020 | No multilingual IVR architecture. | Non-English callers require duplicated prompt logic later. | Add prompt-key architecture before translation content. | P3-009 | M | Open |
+| AVS-TD-021 | No private staff calendar visibility policy. | Calendar integration could leak staff private event details. | Define busy/free-only rules and privacy tests. | P3-010 | M | Open |
+| AVS-TD-022 | No billing/subscriptions. | The SaaS cannot enforce paid plans or limits. | Add Stripe Billing model, webhooks, plans, and limit enforcement after product MVP. | P4-007 to P4-010 | L | Open |
+| AVS-TD-023 | No advanced SaaS onboarding. | Salon setup, phone provisioning, and compatibility management remain manual. | Add onboarding APIs, phone provisioning workflow, and compatibility checklist. | P4-004 to P4-006, P4-011 | L | Open |
+
+---
+
+## Foundation Summary
 
 | Severity | Open | Done |
 |----------|------|------|
@@ -107,3 +158,6 @@ For verified current capabilities, see `PROJECT_STATUS.md`.
 Open counts reflect post-P2 state (374 tests, June 2026). These items are
 **non-blocking** for using the repository as a frozen template; see
 `TEMPLATE_FREEZE_CHECKLIST.md`.
+
+Appointment Voice SaaS product gaps are tracked separately above and are all
+Open until product runtime code and tests are implemented.
