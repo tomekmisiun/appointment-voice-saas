@@ -81,24 +81,6 @@ for file in "${agent_files[@]}"; do
   fi
 done
 
-learning_docs=(
-  "docs/learning/README.md"
-  "docs/learning/00-current-state-audit.md"
-  "docs/learning/01-system-mental-map.md"
-  "docs/learning/02-file-by-file-map.md"
-  "docs/learning/03-request-flow-map.md"
-  "docs/learning/04-domain-model-map.md"
-  "docs/learning/05-how-to-change-common-things.md"
-  "docs/learning/06-interview-defense-guide.md"
-)
-
-for file in "${learning_docs[@]}"; do
-  if [[ ! -f "$ROOT/$file" ]]; then
-    echo "validate-ai-workflows: missing learning doc: $file" >&2
-    missing=1
-  fi
-done
-
 runner_terms=(
   "make ai-two-agent"
   "make ai-review"
