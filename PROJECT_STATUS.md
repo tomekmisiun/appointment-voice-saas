@@ -59,9 +59,18 @@ Core domain (EPIC B — merged 2026-06-14):
 - Cross-tenant isolation enforced at service layer (`require_business`, `require_staff`) for all nested writes.
 - Cross-tenant isolation tests for all product tables (`tests/test_product_tenant_isolation.py`).
 
+Availability engine (EPIC C — in progress 2026-06-14):
+
+- Slot generation from service duration and staff working hours (`app/services/availability_service.py`).
+- Confirmed booking exclusion with half-open interval overlap check.
+- Availability exception overlay: closures return empty; special hours override working hours.
+- Correct timezone/DST handling via `zoneinfo.ZoneInfo` (Python 3.13 stdlib).
+- Intra-tenant cross-business isolation: `service_id` and `staff_id` validated against `business_id`.
+- Availability API endpoint (`GET /api/v1/businesses/{id}/availability`).
+- Full availability test coverage (`tests/test_availability.py`; cross-business/cross-tenant isolation in `tests/test_product_tenant_isolation.py`).
+
 ## Not Implemented Yet
 
-- Availability engine (slot generation from working hours, booking exclusion, exception overlay, timezone handling, availability API).
 - IVR runtime or local IVR simulation.
 - Notification outbox, SMS provider interface, fake SMS adapter.
 - Calendar provider interface, calendar event model, fake calendar adapter.
@@ -76,14 +85,7 @@ Core domain (EPIC B — merged 2026-06-14):
 
 ## Next Implementation Milestone
 
-**EPIC C — Availability engine** (`AVS-C001` to `AVS-C006`):
-
-1. Slot generation from service duration and staff working hours.
-2. Exclude slots overlapping existing confirmed bookings.
-3. Apply availability exceptions (closures, special hours).
-4. Correct timezone/DST handling per business.
-5. Availability API endpoint.
-6. Full availability test coverage.
+**EPIC D (remaining) / EPIC E — Notifications outbox** (`AVS-E001` onwards):
 
 See [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md) for
 the detailed task backlog.

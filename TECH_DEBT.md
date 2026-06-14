@@ -12,15 +12,15 @@ Historical inherited foundation debt is preserved in
 
 | ID | Issue | Impact | Recommendation | Priority | Related roadmap task | Effort | Status |
 |----|-------|--------|----------------|----------|----------------------|--------|--------|
-| AVS-TD-001 | No core product domain models. | The product cannot represent businesses, staff, services, hours, customers, bookings, voice sessions, notifications, or calendar events. | Implement the core SaaS domain models, schemas, services, migrations, indexes, and tenant isolation tests. | Critical | AVS-B001 to AVS-B009 | L | Open |
-| AVS-TD-002 | No appointment availability engine. | Customers cannot see valid bookable slots. | Build slot generation from working hours, bookings, exceptions, and business timezone. | Critical | AVS-C001 to AVS-C006 | L | Open |
-| AVS-TD-003 | No booking creation flow. | The product cannot create appointments. | Implement booking service/API and booking lifecycle state. | Critical | AVS-D001, AVS-D003, AVS-D004 | L | Open |
-| AVS-TD-004 | No DB-level double-booking protection for appointments. | Concurrent callers or admins could book the same staff and slot. | Enforce booking conflict protection with database transactions/constraints and concurrency tests. | Critical | AVS-D002, AVS-D007 | L | Open |
+| AVS-TD-001 | No core product domain models. | The product cannot represent businesses, staff, services, hours, customers, bookings, voice sessions, notifications, or calendar events. | Implement the core SaaS domain models, schemas, services, migrations, indexes, and tenant isolation tests. | Critical | AVS-B001 to AVS-B009 | L | Done |
+| AVS-TD-002 | No appointment availability engine. | Customers cannot see valid bookable slots. | Build slot generation from working hours, bookings, exceptions, and business timezone. | Critical | AVS-C001 to AVS-C006 | L | Done |
+| AVS-TD-003 | No booking creation flow. | The product cannot create appointments. | Implement booking service/API and booking lifecycle state. | Critical | AVS-D001, AVS-D003, AVS-D004 | L | Done |
+| AVS-TD-004 | No DB-level double-booking protection for appointments. | Concurrent callers or admins could book the same staff and slot. | Enforce booking conflict protection with database transactions/constraints and concurrency tests. | Critical | AVS-D002, AVS-D007 | L | Done |
 | AVS-TD-005 | No notification outbox for product SMS/calendar side effects. | Confirmations and calendar sync can be lost or coupled to request handling. | Add product outbox/worker path for SMS and calendar side effects. | Critical | AVS-E001, AVS-E004 to AVS-E008, AVS-F005 to AVS-F007 | XL | Open |
 | AVS-TD-006 | No IVR runtime or simulation flow. | The phone-first product cannot be developed or demoed locally. | Build provider-neutral voice session and local IVR simulation before real Twilio. | Critical | AVS-G001 to AVS-G010 | L | Open |
 | AVS-TD-007 | No product smoke test. | The full simulated booking flow cannot be verified end to end. | Add deterministic manual, IVR, booking, cancellation, fake SMS, and fake calendar smoke tests. | Critical | AVS-J002 to AVS-J004 | M | Open |
 | AVS-TD-008 | No product calendar adapter. | Bookings cannot be represented in a calendar integration. | Add calendar provider interface, integration model, event table, and fake calendar provider. | Critical | AVS-F001 to AVS-F004 | L | Open |
-| AVS-TD-009 | No product-specific tenant isolation tests. | Product tables/APIs may leak data across businesses or tenants once implemented. | Add cross-tenant denial tests for every product model and API. | Critical | AVS-B009, P4-001 to P4-003 | M | Open |
+| AVS-TD-009 | No product-specific tenant isolation tests. | Product tables/APIs may leak data across businesses or tenants once implemented. | Add cross-tenant denial tests for every product model and API. | Critical | AVS-B009, P4-001 to P4-003 | M | Done |
 
 ## High Product Gaps
 

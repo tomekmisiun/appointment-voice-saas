@@ -1,16 +1,20 @@
 """Cross-tenant isolation tests for product tables (AVS-B009)."""
 
 import uuid
+from datetime import date, datetime, time, timezone
 
+import pytest
+
+from app.core.domain_errors import NotFoundError
 from app.models.tenant import Tenant
+from app.services.availability_service import get_available_slots
+from app.services.booking_service import create_booking, get_booking
 from app.services.business_service import create_business, get_business, list_businesses
 from app.services.customer_service import get_or_create_customer
 from app.services.service_service import create_service
 from app.services.staff_service import create_staff
-from app.services.booking_service import create_booking, get_booking
+from app.services.working_hours_service import create_working_hours
 from tests.database import auth_headers, login_user, promote_to_admin, register_user
-
-from datetime import datetime, timezone
 
 
 def _create_second_tenant(db):
@@ -188,3 +192,83 @@ def test_same_phone_different_businesses_are_separate(db):
     )
 
     assert c1.id != c2.id
+
+
+# ── AVS-C006: availability tenant/business isolation ────────────────────────
+
+_AVAIL_DATE = date(2027, 7, 7)  # Wednesday, UTC+2 in Warsaw
+
+
+def test_availability_cross_tenant_raises(db):
+    default_tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
+    other_tenant = _create_second_tenant(db)
+
+    biz = create_business(db, tenant_id=default_tenant.id, name="Iso Salon", timezone="Europe/Warsaw")
+    staff = create_staff(db, tenant_id=default_tenant.id, business_id=biz.id, name="Iso Staff")
+    svc = create_service(db, tenant_id=default_tenant.id, business_id=biz.id, name="Cut", duration_minutes=30)
+    create_working_hours(
+        db,
+        tenant_id=default_tenant.id,
+        business_id=biz.id,
+        staff_id=staff.id,
+        day_of_week=2,
+        start_time=time(9, 0),
+        end_time=time(17, 0),
+    )
+
+    with pytest.raises(NotFoundError):
+        get_available_slots(
+            db,
+            tenant_id=other_tenant.id,
+            business_id=biz.id,
+            service_id=svc.id,
+            staff_id=staff.id,
+            query_date=_AVAIL_DATE,
+        )
+
+
+def test_availability_cross_business_service_raises(db):
+    default_tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
+
+    biz_a = create_business(db, tenant_id=default_tenant.id, name="Biz A", timezone="Europe/Warsaw")
+    biz_b = create_business(db, tenant_id=default_tenant.id, name="Biz B", timezone="Europe/Warsaw")
+    staff_a = create_staff(db, tenant_id=default_tenant.id, business_id=biz_a.id, name="Staff A")
+    svc_b = create_service(db, tenant_id=default_tenant.id, business_id=biz_b.id, name="Biz B Svc", duration_minutes=30)
+    create_working_hours(
+        db,
+        tenant_id=default_tenant.id,
+        business_id=biz_a.id,
+        staff_id=staff_a.id,
+        day_of_week=2,
+        start_time=time(9, 0),
+        end_time=time(17, 0),
+    )
+
+    with pytest.raises(NotFoundError):
+        get_available_slots(
+            db,
+            tenant_id=default_tenant.id,
+            business_id=biz_a.id,
+            service_id=svc_b.id,  # service belongs to biz_b, not biz_a
+            staff_id=staff_a.id,
+            query_date=_AVAIL_DATE,
+        )
+
+
+def test_availability_cross_business_staff_raises(db):
+    default_tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
+
+    biz_a = create_business(db, tenant_id=default_tenant.id, name="Biz C", timezone="Europe/Warsaw")
+    biz_b = create_business(db, tenant_id=default_tenant.id, name="Biz D", timezone="Europe/Warsaw")
+    staff_b = create_staff(db, tenant_id=default_tenant.id, business_id=biz_b.id, name="Staff B")
+    svc_a = create_service(db, tenant_id=default_tenant.id, business_id=biz_a.id, name="Biz A Svc", duration_minutes=30)
+
+    with pytest.raises(NotFoundError):
+        get_available_slots(
+            db,
+            tenant_id=default_tenant.id,
+            business_id=biz_a.id,
+            service_id=svc_a.id,
+            staff_id=staff_b.id,  # staff belongs to biz_b, not biz_a
+            query_date=_AVAIL_DATE,
+        )
