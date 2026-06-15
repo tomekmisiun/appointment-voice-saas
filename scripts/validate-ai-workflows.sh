@@ -20,8 +20,10 @@ required_files=(
   ".ai-rules/review.md"
   ".ai-rules/review-checklist.md"
   ".ai-rules/threat-modeling.md"
-  ".codex/agents/reviewer.toml"
+  ".ai-rules/model-routing.md"
   ".claude/agents/code-reviewer.md"
+  ".claude/hooks/codex-stop-review.sh"
+  "scripts/ai/invoke-cross-reviewer.sh"
 )
 
 required_dirs=(
@@ -136,6 +138,47 @@ for file in "${approve_gate_files[@]}"; do
     missing=1
   fi
 done
+
+if [[ ! -x "$ROOT/scripts/ai/invoke-cross-reviewer.sh" ]]; then
+  echo "validate-ai-workflows: scripts/ai/invoke-cross-reviewer.sh is not executable" >&2
+  missing=1
+fi
+
+if [[ ! -x "$ROOT/.claude/hooks/codex-stop-review.sh" ]]; then
+  echo "validate-ai-workflows: .claude/hooks/codex-stop-review.sh is not executable" >&2
+  missing=1
+fi
+
+cross_provider_refs=(
+  "AGENTS.md:scripts/ai/invoke-cross-reviewer.sh"
+  "CLAUDE.md:scripts/ai/invoke-cross-reviewer.sh"
+  ".ai-rules/agent-orchestration.md:.ai-rules/model-routing.md"
+  ".ai-rules/agent-orchestration.md:scripts/ai/invoke-cross-reviewer.sh"
+  ".ai-rules/model-routing.md:AI_REVIEW_MODEL"
+  "scripts/ai/invoke-cross-reviewer.sh:AI_REVIEW_MODEL"
+  "scripts/ai/invoke-cross-reviewer.sh:AI_REVIEW_TIER"
+  "scripts/ai/invoke-cross-reviewer.sh:default_model_for_tier"
+  ".ai-rules/model-routing.md:default_model_for_tier"
+)
+
+for entry in "${cross_provider_refs[@]}"; do
+  file="${entry%%:*}"
+  term="${entry#*:}"
+  if ! grep -F "$term" "$ROOT/$file" >/dev/null; then
+    echo "validate-ai-workflows: $file does not reference $term" >&2
+    missing=1
+  fi
+done
+
+two_agent_doc="$ROOT/docs/two-agent-review-workflow.md"
+if ! grep -F "invoke-cross-reviewer.sh claude" "$two_agent_doc" >/dev/null; then
+  echo "validate-ai-workflows: docs/two-agent-review-workflow.md missing Codex -> Claude review (invoke-cross-reviewer.sh claude)" >&2
+  missing=1
+fi
+if ! grep -F "invoke-cross-reviewer.sh codex" "$two_agent_doc" >/dev/null; then
+  echo "validate-ai-workflows: docs/two-agent-review-workflow.md missing Claude -> Codex review (invoke-cross-reviewer.sh codex)" >&2
+  missing=1
+fi
 
 if [[ "$missing" -ne 0 ]]; then
   exit 1

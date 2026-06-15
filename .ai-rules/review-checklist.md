@@ -1,6 +1,6 @@
-# Review Checklist (Reviewer Agent)
+# Review Checklist (Reviewer)
 
-**Audience:** read-only Reviewer subagent only. Builder uses full `.ai-rules/`.
+**Audience:** read-only Reviewer process only. Builder uses full `.ai-rules/`.
 
 Read **this file only** (+ git diff via tools + Builder handoff). Load **at most
 one** persona from `agents/` when the diff is narrow and domain-specific. Do

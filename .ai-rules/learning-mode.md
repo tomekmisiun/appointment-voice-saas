@@ -27,7 +27,7 @@ One short paragraph: what changed and why (user goal → outcome).
 
 ### Reviewer verdict
 
-Verdict from the read-only Reviewer subagent, or `Reviewer skipped: <reason>`.
+Verdict from the read-only Reviewer, or `Reviewer skipped: <reason>`.
 
 ### Changed files
 

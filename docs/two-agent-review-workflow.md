@@ -1,7 +1,7 @@
 # Two-Agent Review Workflow
 
 Lightweight pattern for AI-assisted development: one agent **builds**, a second
-read-only subagent **reviews** before the Builder gives the final response.
+read-only Reviewer **reviews** before the Builder gives the final response.
 Humans still decide whether to approve commits, pushes, merges, and branch
 deletion.
 
@@ -24,7 +24,7 @@ author can self-review, and state the skip reason explicitly.
   `make policy-guards` when CI, scripts, or AI workflow files change).
 - Prepare the **review handoff** using the canonical format:
   **`.commands/builder-handoff.md`** when structured context is needed.
-- Automatically invoke the configured Reviewer subagent before the final
+- Automatically invoke the configured Reviewer before the final
   response.
 - Include the Builder summary and Reviewer verdict in the final response.
 - Do **not** open or merge the PR until review feedback is addressed or
@@ -58,19 +58,86 @@ the merge gate remains green CI + project policy + explicit user decision.
 
 1. **Builder Agent** — prepare context using **`.commands/builder-handoff.md`**
    when structured handoff context is useful.
-2. **Reviewer Agent** — the active tool invokes the native read-only Reviewer
-   subagent automatically:
-   - Codex CLI: `.codex/agents/reviewer.toml`
-   - Claude Code: `.claude/agents/code-reviewer.md`
+2. **Reviewer Agent** — the active tool first tries **cross-provider review**,
+   then falls back to its native same-provider read-only Reviewer path:
+   - Codex CLI (Builder = Codex): try
+     `scripts/ai/invoke-cross-reviewer.sh claude [handoff-file]`; if Claude is
+     unavailable or the script exits non-zero, fall back to native
+     `codex review --uncommitted` via
+     `scripts/ai/invoke-cross-reviewer.sh codex [handoff-file]`.
+   - Claude Code (Builder = Claude): try
+     `scripts/ai/invoke-cross-reviewer.sh codex [handoff-file]`; if Codex is
+     unavailable or the script exits non-zero, fall back to
+     `.claude/agents/code-reviewer.md`.
 3. **Builder Agent** — waits for the Reviewer result and includes the verdict in
-   the final response.
+   the final response. The Builder does **not** apply Reviewer feedback
+   automatically — feedback is presented to the user, who decides whether to
+   request fixes (`fix`) or approve as-is.
+
+## Cross-provider review (Codex ↔ Claude)
+
+`scripts/ai/invoke-cross-reviewer.sh <claude|codex> [handoff-file]` runs the
+opposite-provider CLI as an **advisory, read-only** Reviewer over the current
+diff:
+
+- **Codex Builder → Claude Reviewer**: from a Codex CLI session,
+  `scripts/ai/invoke-cross-reviewer.sh claude` runs
+  `claude -p --permission-mode plan` against the current diff,
+  `.ai-rules/review-checklist.md`, and `.commands/builder-handoff.md`.
+- **Claude Builder → Codex Reviewer**: from a Claude Code session,
+  `scripts/ai/invoke-cross-reviewer.sh codex` runs
+  native `codex review --uncommitted` with global `-s read-only -a never`.
+  Codex CLI 0.139.0 rejects a custom prompt when scoped review flags such as
+  `--uncommitted` or `--base` are present, so this path uses the native Codex
+  review prompt rather than injecting `.ai-rules/review-checklist.md`.
+
+In both directions:
+
+- The invoked CLI runs in a read-only mode (`--permission-mode plan` for
+  Claude, global `-s read-only -a never` for Codex) and must not edit files,
+  commit, push, merge, or delete branches.
+- The Claude `-p` path checks the output for the required
+  `.ai-rules/review-checklist.md` section headings and exits non-zero with a
+  warning if any are missing. The native Codex `review --uncommitted` path may
+  return CLI-native review formatting because it cannot receive a custom prompt
+  together with `--uncommitted` in Codex CLI 0.139.0.
+- If the opposite-provider CLI is not installed, or its non-interactive mode
+  is unavailable, or the invocation fails, the script exits non-zero with a
+  message instructing the Builder to fall back according to
+  `.ai-rules/agent-orchestration.md`.
+- Reviewer feedback (from either path) is presented to the user; the Builder
+  applies fixes only after explicit user approval.
+
+### Verification status (read before relying on this)
+
+- **Verified**: `claude -p --permission-mode plan --output-format text` is the
+  Claude CLI non-interactive path used here. `codex review --uncommitted` is
+  the native Codex CLI review path; Codex read-only is forced with global
+  `-s read-only -a never` before the `review` subcommand.
+- **Codex prompt limitation**: although `codex review --help` displays a
+  positional `[PROMPT]`, Codex CLI 0.139.0 rejects `[PROMPT]` when
+  `--uncommitted`, `--base`, or other scoped review flags are present. The
+  native Codex path therefore cannot inject `.ai-rules/review-checklist.md`
+  while also using the required uncommitted-change scope.
+- **`.codex/agents/reviewer.toml` removed**: Codex CLI 0.139.0 ignored the
+  prior TOML role definition as malformed (`unknown field prompt`), so Codex
+  review now relies on native `codex review` plus invocation-level sandbox
+  flags instead of a role file.
+- Large diffs: the Claude `-p` path embeds unstaged diff, staged diff, and
+  untracked file contents in the prompt because Claude Code has no local native
+  uncommitted-review command equivalent to `codex review --uncommitted`. The
+  Codex path uses native `--uncommitted` scope and does not embed a manual diff
+  in the prompt.
+
+See `.ai-rules/model-routing.md` §7 for when cross-provider review is
+preferred and how model tiers map to Builder/Reviewer roles.
 
 Command bodies live in `.commands/` only — this doc does not duplicate them.
 Optional handoff context: spec in `docs/specs/` or a ROADMAP item.
 
 ## Reviewer checklist (summary)
 
-Reviewer subagent: **`.ai-rules/review-checklist.md`** (1 page). Humans/Builder:
+Reviewer: **`.ai-rules/review-checklist.md`** (1 page). Humans/Builder:
 **`.ai-rules/review.md`**. Load at most one persona when domain-specific:
 
 | Area | Persona |
@@ -127,7 +194,7 @@ Final verdict MUST be one of:
 | File | Purpose |
 |------|---------|
 | `.commands/builder-handoff.md` | Concise Builder handoff template |
-| `.ai-rules/review-checklist.md` | Reviewer subagent: checklist + procedure + output |
+| `.ai-rules/review-checklist.md` | Reviewer: checklist + procedure + output |
 | `.commands/two-agent-review.md` | Human index (points to review-checklist) |
 | `.commands/review-current-branch.md` | Single-agent pre-PR review |
 | `docs/ai-workflows.md` | Full AI workflow index |
