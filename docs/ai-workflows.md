@@ -11,6 +11,8 @@ How AI tooling should use this repository's rules, personas, and commands.
 | **Claude Code entry index** | `CLAUDE.md` | Pointer only | Claude Code CLI entry; points to `.ai-rules/` |
 | **Cursor wrappers** | `.cursor/rules/*.mdc` | Pointer only | Cursor entry; points to `.ai-rules/` and must not duplicate rule bodies |
 | **Workflow rules** | `.ai-rules/agent-orchestration.md`, `learning-mode.md`, etc. | **Yes** | How to start tasks, plan, review, explain changes |
+| **Model routing** | `.ai-rules/model-routing.md` | **Yes** | Model/tier selection and cross-provider review decision tree |
+| **Cross-provider review** | `scripts/ai/invoke-cross-reviewer.sh` | Tooling | Read-only opposite-provider Reviewer invocation |
 | **Personas** | `agents/` | Optional | Review lenses (backend, security, tenancy, …) |
 | **Commands** | `.commands/` | Optional | Prompt formats and procedures for spec/plan/review/onboard |
 | **Specs** | `docs/specs/` | Optional | Larger feature specs before implementation |
@@ -19,13 +21,15 @@ How AI tooling should use this repository's rules, personas, and commands.
 ## Start every task
 
 1. Read `.ai-rules/agent-orchestration.md`
-2. Use `.ai-rules/context-map.md` to open relevant binding rules and code paths
-3. Always include `.ai-rules/anti-overengineering.md` before adding files,
+2. Check `.ai-rules/model-routing.md` for model/tier selection and the
+   cross-provider review decision tree
+3. Use `.ai-rules/context-map.md` to open relevant binding rules and code paths
+4. Always include `.ai-rules/anti-overengineering.md` before adding files,
    dependencies, abstractions, or large rewrites.
-4. For non-trivial work: `.ai-rules/spec-driven-development.md` →
+5. For non-trivial work: `.ai-rules/spec-driven-development.md` →
    `.ai-rules/planning-and-task-breakdown.md` → `.ai-rules/incremental-work.md`
-5. Before merge: `.ai-rules/review.md`
-6. Learning the repo or mentor-style explanations: `docs/learning/` +
+6. Before merge: `.ai-rules/review.md`
+7. Learning the repo or mentor-style explanations: `docs/learning/` +
    `.ai-rules/learning-mode.md`
 
 ## Tool Entry Points
@@ -39,32 +43,42 @@ How AI tooling should use this repository's rules, personas, and commands.
 ## Two-agent review (Builder + Reviewer)
 
 For non-trivial file-changing tasks, the active Builder Agent completes the
-work, runs applicable validation, then automatically invokes the native
-read-only Reviewer subagent before the final response.
+work, runs applicable validation, then automatically invokes a read-only
+Reviewer before the final response — preferring **cross-provider review**,
+with a native same-provider read-only Reviewer fallback.
 
 1. The user gives one normal task.
 2. Builder follows the relevant `.ai-rules/`, edits the workspace if needed,
    and runs validation.
-3. Builder invokes the Reviewer subagent automatically.
+3. Builder first tries `scripts/ai/invoke-cross-reviewer.sh <opposite-provider>`
+   (see `.ai-rules/model-routing.md` §7); if unavailable or it exits non-zero,
+   Builder invokes the same-provider read-only Reviewer path.
 4. Reviewer stays read-only and inspects current git diff, untracked files,
    validation output, security and production risks, tests, docs drift,
    overengineering, and scope creep.
 5. Builder waits for the Reviewer result.
 6. Builder returns a combined final response with Builder summary and Reviewer
-   verdict.
+   verdict, without applying any fixes automatically.
 7. The user can say `fix` to request fixes or `approve` to allow
    commit/push/merge/delete operations under `.ai-rules/git.md`.
 
-Codex CLI reaches this through `AGENTS.md` and the native `reviewer` subagent in
-`.codex/agents/reviewer.toml`. Claude Code reaches it through `CLAUDE.md` and
+Codex CLI reaches this through `AGENTS.md`: try
+`scripts/ai/invoke-cross-reviewer.sh claude`, then fall back to native
+same-provider `codex review --uncommitted` via
+`scripts/ai/invoke-cross-reviewer.sh codex`. Claude Code reaches it through
+`CLAUDE.md`: try `scripts/ai/invoke-cross-reviewer.sh codex`, then fall back to
 the native `code-reviewer` subagent in `.claude/agents/code-reviewer.md`.
-Cursor reaches the binding rule through `.cursor/rules/project.mdc`; if native
-subagent review is not available in the active Cursor environment, it must still
-follow `.ai-rules/agent-orchestration.md`.
+Cursor reaches the binding rule through `.cursor/rules/project.mdc` and follows
+the same model-routing policy (`.ai-rules/model-routing.md`); if neither
+cross-provider nor native same-provider review is available in the active
+Cursor environment, it must produce a `.commands/builder-handoff.md` handoff
+and tell the user how to run cross-provider review manually.
 
 `.commands/builder-handoff.md` is the concise Builder handoff format (no pasted
-diff). Reviewer reads **only** `.ai-rules/review-checklist.md`. Not a manual
-copy-paste requirement for Codex CLI or Claude Code.
+diff). Claude Reviewer reads **only** `.ai-rules/review-checklist.md`; native
+Codex `review --uncommitted` cannot receive a custom checklist prompt together
+with its scoped review flag in Codex CLI 0.139.0. Not a manual copy-paste
+requirement for Codex CLI or Claude Code.
 
 Full workflow: **`docs/two-agent-review-workflow.md`**.
 

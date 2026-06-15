@@ -6,11 +6,16 @@ making changes. Do not duplicate rule bodies here.
 Workflow overview: **`docs/ai-workflows.md`** · Two-agent review:
 **`docs/two-agent-review-workflow.md`**
 
-After every non-trivial file-changing task, Codex MUST spawn the native
-`reviewer` subagent before the final response. No second user prompt, pasted
-handoff, local runner command, or separate CLI window is required. The final
-response must include the Builder summary and Reviewer verdict. Read-only or
-trivial tasks may skip Reviewer only with an explicit reason.
+After every non-trivial file-changing task, Codex MUST run a read-only
+Reviewer before the final response: first try cross-provider review via
+`scripts/ai/invoke-cross-reviewer.sh claude`, falling back to native
+same-provider `codex review --uncommitted` via
+`scripts/ai/invoke-cross-reviewer.sh codex` if Claude is unavailable. No
+second user prompt, pasted handoff, local runner command, or separate CLI
+window is required. The final response must include the Builder summary and
+Reviewer verdict. Read-only or trivial tasks may skip Reviewer only with an
+explicit reason. See `.ai-rules/agent-orchestration.md` §8 for the full
+decision tree and `.ai-rules/model-routing.md` for model/tier selection.
 
 ## Binding rules (`.ai-rules/`)
 
@@ -30,6 +35,7 @@ trivial tasks may skip Reviewer only with an explicit reason.
 
 ### Workflow (how to work)
 - `agent-orchestration.md` — start every task here
+- `model-routing.md` — model/tier selection and cross-provider review
 - `context-map.md` — task type → files to read
 - `spec-driven-development.md` — specs for non-trivial work
 - `planning-and-task-breakdown.md` — task cards and ordering

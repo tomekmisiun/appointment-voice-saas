@@ -1,6 +1,6 @@
 # Command: Builder Handoff (Builder Agent)
 
-Use when passing work to the Reviewer subagent. Keep it **short** — Reviewer
+Use when passing work to the Reviewer. Keep it **short** — Reviewer
 runs `git diff` locally; do **not** paste diff or conversation history.
 
 ---
@@ -20,7 +20,7 @@ runs `git diff` locally; do **not** paste diff or conversation history.
 - State SKIPPED/FAILED clearly.
 - Do not paste full `git diff` — Reviewer inspects diff via tools.
 - Do not paste chat history — objective + summary only.
-- Invoke Reviewer subagent automatically (see `.ai-rules/agent-orchestration.md`).
+- Invoke Reviewer automatically (see `.ai-rules/agent-orchestration.md`).
 
 ## Output format (concise)
 
@@ -52,7 +52,7 @@ runs `git diff` locally; do **not** paste diff or conversation history.
 **Reviewer focus:** <bullets — where extra scrutiny helps>
 ```
 
-After handoff, invoke the configured Reviewer subagent. Reviewer reads
+After handoff, invoke the configured Reviewer. Reviewer reads
 `.ai-rules/review-checklist.md` only.
 
 Reference: `docs/two-agent-review-workflow.md`

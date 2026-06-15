@@ -100,14 +100,52 @@ Follow `.ai-rules/incremental-work.md` and `.ai-rules/planning-and-task-breakdow
 ## 8. Report completion
 
 For every non-trivial task that changes files, the Builder Agent MUST
-automatically run the configured read-only Reviewer subagent before the final
-response. Do not ask the user whether to run review, and do not require a second
-user prompt, pasted handoff, local runner command, or separate CLI window.
+automatically run a read-only Reviewer before the final response. Do not ask
+the user whether to run review, and do not require a second user prompt,
+pasted handoff, local runner command, or separate CLI window.
 
-- Codex CLI uses the `reviewer` subagent configured in
-  `.codex/agents/reviewer.toml`.
-- Claude Code uses the `code-reviewer` subagent configured in
-  `.claude/agents/code-reviewer.md`.
+### Reviewer selection (cross-provider first, same-provider fallback)
+
+Prefer **cross-provider review**: a different AI provider/CLI than the
+Builder reviews the diff. See `.ai-rules/model-routing.md` §7 for why, and
+`docs/two-agent-review-workflow.md` "Verification status" for what is and is
+not confirmed to work in a given environment.
+
+**When running under Codex CLI (Builder = Codex):**
+
+1. For non-trivial tasks, first try:
+   `scripts/ai/invoke-cross-reviewer.sh claude [handoff-file]`
+2. If the Claude CLI is unavailable, or its non-interactive mode is
+   unavailable, or the script exits non-zero: fall back to native
+   same-provider `codex review --uncommitted` via
+   `scripts/ai/invoke-cross-reviewer.sh codex [handoff-file]`. The script
+   invokes Codex with global `-s read-only -a never`.
+3. Do not apply Reviewer feedback automatically.
+4. Present the Reviewer's output to the user as-is.
+5. Apply fixes only after the user explicitly approves them.
+
+**When running under Claude Code (Builder = Claude):**
+
+1. For non-trivial tasks, first try:
+   `scripts/ai/invoke-cross-reviewer.sh codex [handoff-file]`
+2. If the Codex CLI is unavailable, or its non-interactive mode is
+   unavailable, or the script exits non-zero: fall back to the
+   `code-reviewer` subagent configured in `.claude/agents/code-reviewer.md`.
+3. Do not apply Reviewer feedback automatically.
+4. Present the Reviewer's output to the user as-is.
+5. Apply fixes only after the user explicitly approves them.
+
+**When running under Cursor (Builder = Cursor):**
+
+- Follow this same decision tree where the environment allows running the
+  cross-reviewer script or a native subagent.
+- If Cursor cannot spawn either a cross-provider or same-provider Reviewer
+  automatically, produce the `.commands/builder-handoff.md` handoff and tell
+  the user how to run `scripts/ai/invoke-cross-reviewer.sh <claude|codex>`
+  manually, or to use the other tool's CLI directly.
+
+### Reviewer behavior (all paths)
+
 - The Reviewer is read-only and must inspect the current git diff, untracked
   files, validation output, security and production risks, overengineering,
   tests, docs drift, and scope creep.
@@ -116,6 +154,8 @@ user prompt, pasted handoff, local runner command, or separate CLI window.
   `Reviewer skipped: <reason>`.
 - `.commands/builder-handoff.md` remains the Builder handoff format when a
   structured handoff is needed; do not duplicate that template here.
+- For model/tier selection of both Builder and Reviewer, see
+  `.ai-rules/model-routing.md`.
 
 Every task response MUST include the sections in **`.ai-rules/learning-mode.md`**
 (for non-trivial file-changing tasks) and at minimum:

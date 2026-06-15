@@ -2,7 +2,7 @@
 
 Use before opening or merging a PR. Optional deep dives: personas in `agents/`.
 
-**Reviewer subagent:** read `.ai-rules/review-checklist.md` + diff — not the full
+**Reviewer:** read `.ai-rules/review-checklist.md` + diff — not the full
 `.ai-rules/` corpus. This file is the detailed reference for humans and Builder.
 
 ## Review iteration limit
