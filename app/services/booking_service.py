@@ -12,6 +12,7 @@ from app.services.customer_service import require_customer
 from app.services.notification_service import (
     enqueue_booking_cancellation,
     enqueue_booking_confirmation,
+    enqueue_send_notification_job,
 )
 from app.services.service_service import require_service
 from app.services.staff_service import require_staff
@@ -95,13 +96,14 @@ def create_booking(
         source=source,
         commit=False,
     )
-    enqueue_booking_confirmation(
+    confirmation_intents = enqueue_booking_confirmation(
         db,
         booking=booking,
         business=business,
         customer=customer,
         service=svc,
     )
+    confirmation_intent_ids = [intent.id for intent in confirmation_intents]
     try:
         db.commit()
     except IntegrityError as exc:
@@ -110,6 +112,8 @@ def create_booking(
             raise ConflictError("This time slot is already booked for the selected staff")
         raise
     db.refresh(booking)
+    for notification_id in confirmation_intent_ids:
+        enqueue_send_notification_job(notification_id)
     return booking
 
 
@@ -176,13 +180,16 @@ def cancel_booking(
     business = require_business(db, booking.business_id, tenant_id)
     customer = require_customer(db, booking.customer_id, tenant_id)
     service = require_service(db, booking.service_id, tenant_id)
-    enqueue_booking_cancellation(
+    cancellation_intents = enqueue_booking_cancellation(
         db,
         booking=booking,
         business=business,
         customer=customer,
         service=service,
     )
+    cancellation_intent_ids = [intent.id for intent in cancellation_intents]
     db.commit()
     db.refresh(booking)
+    for notification_id in cancellation_intent_ids:
+        enqueue_send_notification_job(notification_id)
     return booking
