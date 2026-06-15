@@ -1,3 +1,4 @@
+import os
 import re
 from urllib.parse import urlsplit, urlunsplit
 
@@ -40,7 +41,12 @@ def _create_database_if_missing(database_url: str) -> None:
         admin_engine.dispose()
 
 
-_create_database_if_missing(settings.test_database_url)
+# Only pytest-xdist workers use a per-worker database name (app_test_db_gwN)
+# that needs provisioning on the fly. Serial runs use the pre-provisioned
+# TEST_DATABASE_URL as-is, so they don't need (or want) a maintenance-DB
+# connection.
+if os.environ.get("PYTEST_XDIST_WORKER"):
+    _create_database_if_missing(settings.test_database_url)
 
 engine = create_engine(settings.test_database_url)
 

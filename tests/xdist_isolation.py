@@ -32,5 +32,16 @@ def configure_worker_isolation() -> None:
     os.environ["TEST_DATABASE_URL"] = f"{test_database_url}_{worker_id}"
 
     # Reserve Redis DB 0 for serial (non-xdist) runs; workers start at 1.
+    # Redis ships with 16 logical DBs (0-15) by default, so this caps the
+    # usable worker count at 15.
     base_redis_db = int(os.environ.get("REDIS_DB", "0"))
-    os.environ["REDIS_DB"] = str(base_redis_db + worker_index + 1)
+    worker_redis_db = base_redis_db + worker_index + 1
+
+    if worker_redis_db > 15:
+        raise RuntimeError(
+            f"pytest-xdist worker {worker_id!r} would use Redis DB "
+            f"{worker_redis_db}, which exceeds Redis's default 16 logical "
+            "DBs (0-15). Reduce the worker count."
+        )
+
+    os.environ["REDIS_DB"] = str(worker_redis_db)
