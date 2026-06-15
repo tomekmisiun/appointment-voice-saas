@@ -1,6 +1,7 @@
 """Tests for booking notification enqueueing (AVS-E004, AVS-E005)."""
 
 from datetime import datetime, timezone
+from types import SimpleNamespace
 
 from app.models.notification_outbox import (
     NotificationChannel,
@@ -71,6 +72,35 @@ def test_create_booking_enqueues_customer_and_business_confirmation(db):
         assert intent.purpose == NotificationPurpose.BOOKING_CONFIRMATION
         assert intent.status == NotificationStatus.PENDING
         assert intent.body
+
+
+def test_create_booking_enqueues_send_notification_jobs(db, monkeypatch):
+    tenant_id, biz, staff_id, svc, customer = _setup(db)
+
+    enqueued_jobs = []
+    monkeypatch.setattr(
+        "app.services.notification_service.enqueue_job",
+        lambda job_type, payload: enqueued_jobs.append(
+            {"type": job_type, "payload": payload}
+        )
+        or SimpleNamespace(id="job-id"),
+    )
+
+    booking = create_booking(
+        db,
+        tenant_id=tenant_id,
+        business_id=biz.id,
+        customer_id=customer.id,
+        service_id=svc.id,
+        staff_id=staff_id,
+        starts_at=_STARTS_AT,
+    )
+
+    intents = _outbox_for_booking(db, booking.id)
+    assert [job["payload"]["notification_id"] for job in enqueued_jobs] == [
+        intent.id for intent in intents
+    ]
+    assert {job["type"] for job in enqueued_jobs} == {"send_notification"}
 
 
 def test_create_booking_skips_business_intent_without_business_phone(db):

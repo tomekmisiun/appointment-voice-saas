@@ -27,6 +27,10 @@ from app.core.shutdown import (
 from app.db.session import SessionLocal
 from app.services.audit_log_service import cleanup_old_audit_logs
 from app.services.idempotency_service import cleanup_expired_idempotency_records
+from app.services.notification_service import (
+    SEND_NOTIFICATION_JOB,
+    send_notification_in_worker,
+)
 from app.services.password_reset_service import (
     SEND_PASSWORD_RESET_EMAIL_JOB,
     cleanup_expired_password_reset_tokens,
@@ -62,6 +66,17 @@ def handle_job(job: Job) -> None:
                 user_id,
                 job_id=job.id,
             )
+        finally:
+            db.close()
+
+        return
+
+    if job.type == SEND_NOTIFICATION_JOB:
+        notification_id = job.payload["notification_id"]
+
+        db = SessionLocal()
+        try:
+            send_notification_in_worker(db, notification_id=notification_id)
         finally:
             db.close()
 
