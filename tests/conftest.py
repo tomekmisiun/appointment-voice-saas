@@ -7,6 +7,10 @@ from fastapi.testclient import TestClient
 ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR))
 
+from tests.xdist_isolation import configure_worker_isolation  # noqa: E402
+
+configure_worker_isolation()
+
 from app.db.session import get_db  # noqa: E402
 from app.main import app  # noqa: E402
 from tests.database import (  # noqa: E402

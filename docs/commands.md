@@ -19,6 +19,7 @@ by purpose. For day-to-day local work, start with the
 | `make docker-down` | Stop and remove Compose containers (`docker compose down`). |
 | `make run` | Run the API on the host with `uvicorn --reload` (without the Compose `api` service). Supporting services (Postgres, Redis, MinIO) must still be reachable via `.env`. |
 | `make test` | Run pytest inside the running `api` container (`docker compose exec api pytest -v`). |
+| `make test-parallel` | Run pytest across `PYTEST_WORKERS` (default 2) isolated pytest-xdist workers, each with its own test database and Redis DB (see `tests/xdist_isolation.py`). |
 | `make test-coverage` | Pytest with coverage report and an **85%** floor (`--cov-fail-under=85`). |
 | `make lint` | Ruff check inside the `api` container. |
 | `make lint-fix` | Ruff check with `--fix` inside the `api` container. |

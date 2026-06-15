@@ -125,6 +125,7 @@ jobs:
       - name: Run tests with coverage
         run: |
           uv run pytest \
+            -n 2 \
             --cov=app \
             --cov-report=term-missing \
             --cov-report=xml \
