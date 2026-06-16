@@ -4,8 +4,6 @@ Proves cancel flow works locally:
   create booking → cancel via API → booking CANCELLED in DB,
   cancellation SMS enqueued.
 """
-from datetime import datetime, timezone
-
 import pytest
 
 from app.models.booking import Booking, BookingSource, BookingStatus
