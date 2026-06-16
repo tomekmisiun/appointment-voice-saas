@@ -4,7 +4,7 @@ Verified as of 2026-06-16. Updated during `audit/roadmap-reality-check`.
 
 ## Current Status
 
-All MVP foundation epics (A–J) implemented. 613 tests pass. CI green.
+All MVP foundation epics (A–K) implemented. 631 tests pass. CI green.
 
 The product can be fully demonstrated locally using fake SMS and fake calendar
 providers. Real Twilio voice and SMS providers are wired and configured via env
@@ -107,6 +107,22 @@ vars. A pilot can be set up against the `docs/mvp-pilot-deployment-checklist.md`
 - Cancellation smoke: `tests/test_avs_j004_smoke_cancellation.py`.
 - README demo scenario documented.
 - MVP pilot deployment checklist: `docs/mvp-pilot-deployment-checklist.md`.
+
+### Booking Mode and Subscription Plan (EPIC K — done)
+
+Two independent dimensions added to `Business`:
+
+- **`booking_mode`** (operational): `internal_booking` (default) or `external_booking_link`.
+  - `internal_booking`: press 1 drives full internal service→slot→booking flow (unchanged).
+  - `external_booking_link`: press 1 sends SMS with `external_booking_url` and ends call (`EXTERNAL_LINK_SENT` terminal step). No Booking row is created.
+- **`subscription_plan`** (commercial): `booksy_lite`, `booksy_pro`, `full_booking` (default), `full_booking_pro`. Stored only — no feature enforcement yet.
+- `external_booking_url`, `external_booking_label`, `external_booking_provider` fields for the external link.
+- `BusinessCreate` model_validator: `external_booking_url` required when `booking_mode=external_booking_link`.
+- `PlanPolicyService` stub (`app/services/plan_policy_service.py`): single seam for future billing enforcement.
+- `enqueue_external_booking_link_sms()` in notification service: `booking_id=None`, purpose=`EXTERNAL_BOOKING_LINK`.
+- IVR main menu prompt is mode-aware.
+- Migration: `k001a2b3c4d5e` — all 5 columns with `server_default` for backward compat.
+- 18 tests in `tests/test_avs_k001_booking_mode.py`.
 
 ## Known Limitations and Gaps
 

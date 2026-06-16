@@ -95,6 +95,7 @@ All MVP epics completed (2026-06-16). Original execution order (completed):
 9. `AVS-H001`–`AVS-H007` – Real provider integrations ✓
 10. `AVS-I001`–`AVS-I005` – Call transfer ✓
 11. `AVS-J001`–`AVS-J006` – Demo and MVP readiness ✓
+12. `AVS-K001` – Booking mode and subscription plan ✓
 
 Remaining work: P1–P4 production expansion backlog.
 
@@ -216,6 +217,12 @@ Remaining work: P1–P4 production expansion backlog.
 | [x] | AVS-J004 | P0 | Smoke cancellation flow. | Cancel booking and verify notification/calendar update. | Customer self-cancel. | Script proves cancellation side effects. | Smoke command/test. | Lifecycle changes diverge. |
 | [x] | AVS-J005 | P0 | Document README demo scenario. | Local setup and expected demo outputs. | Marketing landing page. | New developer can run the demo. | Docs review. | Product appears unusable locally. |
 | [x] | AVS-J006 | P1 | Add MVP pilot deployment checklist. | Env, secrets, provider config, worker, monitoring, backup, rollback. | Full SRE program. | Pilot operator has checklist before real calls. | Docs review, policy guards. | Pilot launches with missing safeguards. |
+
+### EPIC K - Booking mode and subscription plan
+
+| Status | ID | Priority | Goal | Scope | Out | Acceptance | Validation | Risk |
+|--------|----|----------|------|-------|-----|------------|------------|------|
+| [x] | AVS-K001 | P0 | Add booking_mode and subscription_plan to Business. | Two independent dimensions: booking_mode (operational — internal vs external link) and subscription_plan (commercial — stored only). IVR press-1 dispatches on booking_mode. External mode sends SMS with booking URL. PlanPolicyService stub as future billing seam. | Billing enforcement, plan limits. | Model, migration, schema, API, IVR dispatch, notification, tests all done. | `make validate`, 631 tests pass. | booking_mode conflated with pricing; kept strictly separate. |
 
 ## Production expansion backlog
 
