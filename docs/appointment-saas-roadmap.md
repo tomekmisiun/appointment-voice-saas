@@ -194,11 +194,11 @@ Recommended MVP execution order:
 
 | Status | ID | Priority | Goal | Scope | Out | Acceptance | Validation | Risk |
 |--------|----|----------|------|-------|-----|------------|------------|------|
-| [ ] | AVS-I001 | P1 | Add business transfer settings. | Enable/disable transfer, destination policy, hours. | Staff acceptance flow. | Transfer can be configured per business. | Model/API tests. | Calls transfer when business opted out. |
-| [ ] | AVS-I002 | P1 | Add staff transfer eligibility. | Staff phone, availability, active status, acceptance requirement. | Complex routing. | Eligible staff list is tenant/business scoped. | Service tests. | Calls route to wrong/unavailable staff. |
-| [ ] | AVS-I003 | P1 | Transfer call from IVR. | Provider-neutral transfer intent from press 2 branch. | Provider-specific adapter details. | IVR emits transfer intent when allowed. | IVR tests. | Transfer branch dead-ends. |
-| [ ] | AVS-I004 | P1 | Add unavailable fallback. | Message or return-to-menu when transfer unavailable/declined. | Voicemail transcription. | Caller gets clear fallback. | IVR tests. | Caller hangs up without path forward. |
-| [ ] | AVS-I005 | P1 | Cover transfer behavior. | Settings, eligibility, IVR branch, fallback tests. | Live call tests. | Transfer logic passes without real provider. | `make validate`. | Transfer behavior regresses. |
+| [x] | AVS-I001 | P1 | Add business transfer settings. | Enable/disable transfer, destination policy, hours. | Staff acceptance flow. | Transfer can be configured per business. | Model/API tests. | Calls transfer when business opted out. |
+| [x] | AVS-I002 | P1 | Add staff transfer eligibility. | Staff phone, availability, active status, acceptance requirement. | Complex routing. | Eligible staff list is tenant/business scoped. | Service tests. | Calls route to wrong/unavailable staff. |
+| [x] | AVS-I003 | P1 | Transfer call from IVR. | Provider-neutral transfer intent from press 2 branch. | Provider-specific adapter details. | IVR emits transfer intent when allowed. | IVR tests. | Transfer branch dead-ends. |
+| [x] | AVS-I004 | P1 | Add unavailable fallback. | Message or return-to-menu when transfer unavailable/declined. | Voicemail transcription. | Caller gets clear fallback. | IVR tests. | Caller hangs up without path forward. |
+| [x] | AVS-I005 | P1 | Cover transfer behavior. | Settings, eligibility, IVR branch, fallback tests. | Live call tests. | Transfer logic passes without real provider. | `make validate`. | Transfer behavior regresses. |
 
 ### EPIC J - End-to-end demo and production MVP readiness
 
