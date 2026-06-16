@@ -16,10 +16,12 @@ from app.models.uploaded_file import UploadedFile
 from app.models.user import User
 from app.models.webhook_event import WebhookEvent
 from app.models.voice_session import VoiceSession
+from app.models.business_transfer_hours import BusinessTransferHours
 from app.models.working_hours import WorkingHours
 
 __all__ = [
     "AuditLog",
+    "BusinessTransferHours",
     "AvailabilityException",
     "Booking",
     "Business",
