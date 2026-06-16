@@ -2,6 +2,7 @@ from app.models.audit_log import AuditLog
 from app.models.availability_exception import AvailabilityException
 from app.models.booking import Booking
 from app.models.business import Business
+from app.models.calendar_integration import CalendarIntegration
 from app.models.customer import Customer
 from app.models.idempotency_record import IdempotencyRecord
 from app.models.notification_outbox import NotificationOutbox
@@ -20,6 +21,7 @@ __all__ = [
     "AvailabilityException",
     "Booking",
     "Business",
+    "CalendarIntegration",
     "Customer",
     "IdempotencyRecord",
     "NotificationOutbox",
