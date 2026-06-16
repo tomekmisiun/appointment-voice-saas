@@ -32,7 +32,8 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 FROM base AS production
 
-RUN uv sync --frozen --no-install-project --no-dev
+RUN uv sync --frozen --no-install-project --no-dev --no-cache
+RUN rm -rf /root/.cache/uv
 
 COPY --chown=app:app . .
 
