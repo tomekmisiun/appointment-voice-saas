@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.core.calendar import CalendarEvent as CalendarEventPayload
+from app.core.config import settings
 from app.core.job_queue import Job, enqueue_job
 from app.models.booking import Booking
 from app.models.business import Business
@@ -13,7 +14,6 @@ from app.models.staff import Staff
 from app.services.calendar_provider import CalendarProvider, get_calendar_provider
 
 SYNC_CALENDAR_EVENT_JOB = "sync_calendar_event"
-MAX_CALENDAR_SYNC_ATTEMPTS = 3
 
 
 class CalendarSyncError(Exception):
@@ -43,7 +43,6 @@ def enqueue_calendar_event(
     *,
     booking: Booking,
     business: Business,
-    service: Service,
 ) -> CalendarEvent:
     provider_name = _get_provider_name(db, business.id, booking.tenant_id)
     event = CalendarEvent(
@@ -58,7 +57,7 @@ def enqueue_calendar_event(
 
 
 def _build_event_payload(
-    booking: Booking, business: Business, service: Service, staff: Staff | None
+    booking: Booking, service: Service, staff: Staff | None
 ) -> CalendarEventPayload:
     title_parts = [service.name]
     if staff is not None:
@@ -88,7 +87,11 @@ def sync_calendar_event_in_worker(
     calendar_provider = calendar_provider or get_calendar_provider()
 
     booking = db.query(Booking).filter(Booking.id == event.booking_id).one()
-    business = db.query(Business).filter(Business.id == event.business_id).one()
+
+    # Cross-check tenant to guard against a tampered job payload.
+    if booking.tenant_id != event.tenant_id:
+        return
+
     service = db.query(Service).filter(Service.id == booking.service_id).one()
     staff = (
         db.query(Staff).filter(Staff.id == booking.staff_id).one()
@@ -96,7 +99,7 @@ def sync_calendar_event_in_worker(
         else None
     )
 
-    payload = _build_event_payload(booking, business, service, staff)
+    payload = _build_event_payload(booking, service, staff)
     result = calendar_provider.create_event(payload)
 
     event.attempts += 1
@@ -108,8 +111,8 @@ def sync_calendar_event_in_worker(
         db.commit()
         return
 
-    event.last_error = result.error
-    if event.attempts >= MAX_CALENDAR_SYNC_ATTEMPTS:
+    event.last_error = (result.error or "")[:500]
+    if event.attempts >= settings.worker_max_retries:
         event.status = CalendarSyncStatus.FAILED
         db.commit()
         return

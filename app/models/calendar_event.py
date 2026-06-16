@@ -12,7 +12,6 @@ class CalendarSyncStatus(StrEnum):
     PENDING = "pending"
     SYNCED = "synced"
     FAILED = "failed"
-    CANCELLED = "cancelled"
 
 
 class CalendarEvent(Base):

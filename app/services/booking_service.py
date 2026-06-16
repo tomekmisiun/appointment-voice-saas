@@ -108,8 +108,8 @@ def create_booking(
         service=svc,
     )
     confirmation_intent_ids = [intent.id for intent in confirmation_intents]
-    calendar_event = enqueue_calendar_event(db, booking=booking, business=business, service=svc)
     try:
+        calendar_event = enqueue_calendar_event(db, booking=booking, business=business)
         db.commit()
     except IntegrityError as exc:
         db.rollback()

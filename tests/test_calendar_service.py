@@ -7,12 +7,11 @@ import pytest
 from app.models.booking import Booking, BookingSource, BookingStatus
 from app.models.calendar_event import CalendarEvent, CalendarSyncStatus
 from app.models.calendar_integration import CalendarIntegration
-from app.models.tenant import Tenant
+from app.models.tenant import Tenant  # used in _setup
 from app.services.booking_service import create_booking
 from app.services.business_service import create_business
 from app.services.calendar_provider import FakeCalendarProvider
 from app.services.calendar_service import (
-    MAX_CALENDAR_SYNC_ATTEMPTS,
     CalendarSyncError,
     enqueue_calendar_event,
     sync_calendar_event_in_worker,
@@ -44,10 +43,13 @@ def _setup(db):
 
 def _bare_booking(db, *, tenant_id, biz, svc, staff, starts_at):
     """Insert a booking without triggering the booking service side-effects."""
+    customer = get_or_create_customer(
+        db, tenant_id=tenant_id, business_id=biz.id, phone="+48600299001"
+    )
     booking = Booking(
         tenant_id=tenant_id,
         business_id=biz.id,
-        customer_id=db.query(Tenant).get(tenant_id).id,  # placeholder reuse
+        customer_id=customer.id,
         service_id=svc.id,
         staff_id=staff.id,
         starts_at=starts_at,
@@ -55,11 +57,6 @@ def _bare_booking(db, *, tenant_id, biz, svc, staff, starts_at):
         status=BookingStatus.CONFIRMED,
         source=BookingSource.API,
     )
-    # customer_id must be valid; reuse the one from setup if available
-    customer = get_or_create_customer(
-        db, tenant_id=tenant_id, business_id=biz.id, phone="+48600299001"
-    )
-    booking.customer_id = customer.id
     db.add(booking)
     db.commit()
     db.refresh(booking)
@@ -73,7 +70,7 @@ def test_enqueue_calendar_event_creates_pending_record(db):
         starts_at=datetime(2027, 9, 3, 9, 0, tzinfo=timezone.utc),
     )
 
-    event = enqueue_calendar_event(db, booking=bare, business=biz, service=svc)
+    event = enqueue_calendar_event(db, booking=bare, business=biz)
     db.commit()
 
     assert event.id is not None
@@ -99,7 +96,7 @@ def test_enqueue_calendar_event_uses_integration_provider(db):
         starts_at=datetime(2027, 9, 4, 10, 0, tzinfo=timezone.utc),
     )
 
-    event = enqueue_calendar_event(db, booking=bare, business=biz, service=svc)
+    event = enqueue_calendar_event(db, booking=bare, business=biz)
     db.commit()
 
     assert event.provider == "fake"
@@ -187,15 +184,17 @@ def test_sync_calendar_event_marks_failed_after_max_attempts(db):
             from app.core.calendar import CalendarResult
             return CalendarResult(success=False, error="provider_timeout")
 
+    from app.core.config import settings
+
     event = db.query(CalendarEvent).filter(CalendarEvent.booking_id == booking.id).one()
-    event.attempts = MAX_CALENDAR_SYNC_ATTEMPTS - 1
+    event.attempts = settings.worker_max_retries - 1
     db.commit()
 
     sync_calendar_event_in_worker(db, event_id=event.id, calendar_provider=FailingProvider())
 
     db.refresh(event)
     assert event.status == CalendarSyncStatus.FAILED
-    assert event.attempts == MAX_CALENDAR_SYNC_ATTEMPTS
+    assert event.attempts == settings.worker_max_retries
 
 
 def test_sync_calendar_event_skips_already_synced(db):

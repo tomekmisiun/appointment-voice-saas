@@ -157,9 +157,9 @@ Recommended MVP execution order:
 |--------|----|----------|------|-------|-----|------------|------------|------|
 | [x] | AVS-F001 | P0 | Add calendar provider interface. | Provider-neutral create/update/cancel contract. | Google OAuth. | Booking code depends on interface only. | Unit tests. | Calendar provider dictates domain design. |
 | [x] | AVS-F002 | P0 | Add calendar integration model. | Business/staff calendar settings and fake provider config. | Real OAuth tokens. | Business can have configured calendar integration state. | Migration/tests. | Sync runs without known destination. |
-| [ ] | AVS-F003 | P0 | Add calendar event table. | Map booking to provider event/status/errors. | Two-way sync. | Calendar event record tracks sync lifecycle. | Migration/tests. | Duplicate or orphaned calendar events. |
-| [ ] | AVS-F004 | P0 | Add fake calendar provider. | Local/dev/test provider storing fake events. | Real Google Calendar. | Demo and tests can verify sync without network. | Unit/integration tests. | Calendar path cannot be tested locally. |
-| [ ] | AVS-F005 | P0 | Create calendar event after booking. | Enqueue/create fake calendar event from booking. | External calendar as source of truth. | Booking produces event intent/result. | Worker/service tests. | Business calendar misses bookings. |
+| [x] | AVS-F003 | P0 | Add calendar event table. | Map booking to provider event/status/errors. | Two-way sync. | Calendar event record tracks sync lifecycle. | Migration/tests. | Duplicate or orphaned calendar events. |
+| [x] | AVS-F004 | P0 | Add fake calendar provider. | Local/dev/test provider storing fake events. | Real Google Calendar. | Demo and tests can verify sync without network. | Unit/integration tests. | Calendar path cannot be tested locally. |
+| [x] | AVS-F005 | P0 | Create calendar event after booking. | Enqueue/create fake calendar event from booking. | External calendar as source of truth. | Booking produces event intent/result. | Worker/service tests. | Business calendar misses bookings. |
 | [ ] | AVS-F006 | P1 | Cancel/update calendar event. | Reflect cancellation/reschedule in calendar adapter. | Two-way external updates. | Cancellation updates fake calendar event state. | Worker/service tests. | Calendar diverges after lifecycle changes. |
 | [ ] | AVS-F007 | P1 | Cover calendar retry/DLQ. | Retry/backoff/DLQ tests for sync failures. | Real provider status polling. | Failed sync is visible and retryable. | Worker tests. | Calendar failures remain silent. |
 
