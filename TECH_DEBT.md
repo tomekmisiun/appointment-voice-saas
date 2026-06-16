@@ -8,6 +8,12 @@ Historical inherited foundation debt is preserved in
 
 **Status legend:** Open | In Progress | Done
 
+## Fixed During Audit
+
+| ID | Issue | Fixed | Notes |
+|----|-------|-------|-------|
+| AVS-BUG-001 | Twilio `twilio_voice_keypress` route passed `business.phone` to TwiML `<Dial>` regardless of transfer policy. When `STAFF` policy selected a staff phone, the real Twilio webhook would transfer to the wrong number. | Fixed in `audit/roadmap-reality-check` | `transfer_to = ivr_response.transfer_destination or business.phone` |
+
 ## Critical Product Gaps
 
 | ID | Issue | Impact | Recommendation | Priority | Related roadmap task | Effort | Status |
@@ -17,9 +23,9 @@ Historical inherited foundation debt is preserved in
 | AVS-TD-003 | No booking creation flow. | The product cannot create appointments. | Implement booking service/API and booking lifecycle state. | Critical | AVS-D001, AVS-D003, AVS-D004 | L | Done |
 | AVS-TD-004 | No DB-level double-booking protection for appointments. | Concurrent callers or admins could book the same staff and slot. | Enforce booking conflict protection with database transactions/constraints and concurrency tests. | Critical | AVS-D002, AVS-D007 | L | Done |
 | AVS-TD-005 | No notification outbox for product SMS/calendar side effects. | Confirmations and calendar sync can be lost or coupled to request handling. | Add product outbox/worker path for SMS and calendar side effects. | Critical | AVS-E001, AVS-E004 to AVS-E008, AVS-F005 to AVS-F007 | XL | Open |
-| AVS-TD-006 | No IVR runtime or simulation flow. | The phone-first product cannot be developed or demoed locally. | Build provider-neutral voice session and local IVR simulation before real Twilio. | Critical | AVS-G001 to AVS-G010 | L | Open |
-| AVS-TD-007 | No product smoke test. | The full simulated booking flow cannot be verified end to end. | Add deterministic manual, IVR, booking, cancellation, fake SMS, and fake calendar smoke tests. | Critical | AVS-J002 to AVS-J004 | M | Open |
-| AVS-TD-008 | Calendar adapter partially implemented. | Calendar event table, fake provider, and booking sync not yet built. | Complete AVS-F003 to AVS-F007. Calendar provider interface (F001) and integration model (F002) done. | Critical | AVS-F003 to AVS-F007 | L | Open |
+| AVS-TD-006 | No IVR runtime or simulation flow. | The phone-first product cannot be developed or demoed locally. | Build provider-neutral voice session and local IVR simulation before real Twilio. | Critical | AVS-G001 to AVS-G010 | L | Done |
+| AVS-TD-007 | No product smoke test. | The full simulated booking flow cannot be verified end to end. | Add deterministic manual, IVR, booking, cancellation, fake SMS, and fake calendar smoke tests. | Critical | AVS-J002 to AVS-J004 | M | Done |
+| AVS-TD-008 | Calendar adapter fully implemented. | (Resolved) Calendar event table, fake provider, and booking sync built. | — | Critical | AVS-F003 to AVS-F007 | L | Done |
 | AVS-TD-028 | CalendarIntegration staff_id ownership not enforced at DB level. | A service layer bug could insert a staff_id from a different tenant/business with no DB rejection. | When the service that creates CalendarIntegration rows is added (AVS-F005), it must validate staff.tenant_id == tenant_id and staff.business_id == business_id before INSERT. | Medium | AVS-F005 | S | Open |
 | AVS-TD-009 | No product-specific tenant isolation tests. | Product tables/APIs may leak data across businesses or tenants once implemented. | Add cross-tenant denial tests for every product model and API. | Critical | AVS-B009, P4-001 to P4-003 | M | Done |
 
@@ -30,8 +36,8 @@ Historical inherited foundation debt is preserved in
 | AVS-TD-010 | No reminder SMS. | No-show reduction is weaker for pilot businesses. | Add scheduled reminder intents and worker delivery. | High | P1-001 | M | Open |
 | AVS-TD-011 | No reschedule flow. | Customers and businesses cannot move appointments without manual work. | Implement customer IVR reschedule and business/admin reschedule with SMS/calendar updates. | High | P1-003, P1-004 | L | Open |
 | AVS-TD-012 | No IVR timeout or invalid-input fallback. | Callers can get stuck, abandon calls, or trigger incorrect state. | Add timeout, invalid input, repeat menu, and backend-unavailable fallback. | High | P1-005 to P1-008 | M | Open |
-| AVS-TD-013 | No real SMS provider. | Pilot confirmations cannot be delivered outside local fake provider. | Add provider adapter, status webhook, idempotency, and delivery monitoring. | High | AVS-H003, AVS-H004, AVS-H005 | M | Open |
-| AVS-TD-014 | No real voice provider. | Live callers cannot use the IVR. | Add Twilio voice webhook adapter, signature validation, and provider runbook. | High | AVS-H001, AVS-H002, AVS-H007 | M | Open |
+| AVS-TD-013 | No real SMS provider. | Pilot confirmations cannot be delivered outside local fake provider. | Add provider adapter, status webhook, idempotency, and delivery monitoring. | High | AVS-H003, AVS-H004, AVS-H005 | M | Done |
+| AVS-TD-014 | No real voice provider. | Live callers cannot use the IVR. | Add Twilio voice webhook adapter, signature validation, and provider runbook. | High | AVS-H001, AVS-H002, AVS-H007 | M | Done |
 | AVS-TD-015 | No SMS/calendar retry/DLQ for product side effects. | Failed notifications or calendar updates can disappear silently. | Add retry/backoff, DLQ, and alerting for product side effects. | High | AVS-E007, AVS-F007, P1-009 to P1-011 | M | Open |
 | AVS-TD-016 | No product monitoring/alerting. | Pilot failures may not be visible. | Add metrics/logs/alerts for booking failures, IVR failures, SMS failures, and calendar sync failures. | High | P1-012, AVS-J006 | M | Open |
 

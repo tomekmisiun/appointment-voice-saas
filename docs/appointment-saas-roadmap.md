@@ -6,16 +6,19 @@ foundation capabilities from planned product runtime work.
 
 ## Current repository reality
 
-The repository currently contains a production-oriented FastAPI foundation plus
-product bootstrap documentation. Verified foundation capabilities include
-FastAPI, PostgreSQL, SQLAlchemy, Alembic, Redis, worker patterns,
-webhook/idempotency patterns, observability, Docker, CI, tests, and AI workflow
-rules.
+Updated 2026-06-16 (audit/roadmap-reality-check). All MVP foundation epics A–J
+are implemented. 613 tests pass, CI green.
 
-The Appointment Voice SaaS product runtime is not implemented yet. There are no
-product-specific business/salon, staff, service, availability, booking, voice
-session, SMS, calendar, call transfer, billing, or frontend runtime features in
-the codebase today.
+Verified implemented: FastAPI + PostgreSQL foundation, core SaaS domain (Business,
+Staff, Service, WorkingHours, AvailabilityException, Customer, Booking), availability
+engine with timezone/DST tests, DB-level double-booking constraint (btree_gist EXCLUDE),
+notification outbox + fake/real SMS, calendar adapter + fake provider + worker, IVR
+simulation harness, full booking flow via IVR, Twilio voice/SMS real provider adapters,
+Twilio signature validation, call transfer (business_phone and staff policies),
+transfer unavailable fallback, demo seed script, and smoke tests.
+
+Not implemented: reminder SMS, SMS reply handling, reschedule, IVR timeout/invalid-input
+explicit recovery, DLQ alerting, CRM, waitlist, billing, frontend.
 
 ## Product goal
 
@@ -79,25 +82,28 @@ Each backlog row is intentionally executable:
 
 ## MVP foundation backlog: current repo to working base product
 
-Recommended MVP execution order:
+All MVP epics completed (2026-06-16). Original execution order (completed):
 
-1. `AVS-A002` - Product architecture ADR.
-2. `AVS-A003` - Demo flow definition.
-3. `AVS-B001` to `AVS-B009` - Core SaaS domain and tenant isolation.
-4. `AVS-C001` to `AVS-C006` - Availability engine.
-5. `AVS-D001` to `AVS-D007` - Booking engine and double-booking protection.
-6. `AVS-E001` to `AVS-E008` - Notification outbox and fake SMS.
-7. `AVS-F001` to `AVS-F007` - Calendar adapter and fake provider.
-8. `AVS-G001` to `AVS-G010` - IVR simulation.
-9. `AVS-J001` to `AVS-J006` - Demo and MVP readiness.
-10. `AVS-H001` onward - Real provider pilot integrations.
+1. `AVS-A002` – Architecture ADR ✓
+2. `AVS-A003` – Demo flow definition ✓
+3. `AVS-B001`–`AVS-B009` – Core SaaS domain ✓
+4. `AVS-C001`–`AVS-C006` – Availability engine ✓
+5. `AVS-D001`–`AVS-D007` – Booking engine ✓
+6. `AVS-E001`–`AVS-E008` – Notification outbox and fake SMS ✓
+7. `AVS-F001`–`AVS-F007` – Calendar adapter ✓
+8. `AVS-G001`–`AVS-G010` – IVR simulation ✓
+9. `AVS-H001`–`AVS-H007` – Real provider integrations ✓
+10. `AVS-I001`–`AVS-I005` – Call transfer ✓
+11. `AVS-J001`–`AVS-J006` – Demo and MVP readiness ✓
+
+Remaining work: P1–P4 production expansion backlog.
 
 ### EPIC A - Product foundation from template
 
 | Status | ID | Priority | Goal | Scope | Out | Acceptance | Validation | Risk |
 |--------|----|----------|------|-------|-----|------------|------------|------|
-| [ ] | AVS-A000 | P0 | Clean up bootstrap status. | Align roadmap, status, README, and debt docs. | Runtime code. | Docs clearly separate foundation from planned product runtime. | `make validate-ai-workflows`, `make policy-guards`. | False readiness claims mislead implementation. |
-| [ ] | AVS-A001 | P0 | Align product fork naming/status. | Review README/status wording for Appointment Voice SaaS transition. | Renaming packages or env defaults. | Readers know this is a foundation transitioning to product. | Docs review, policy guards. | Operators confuse template features with product features. |
+| [x] | AVS-A000 | P0 | Clean up bootstrap status. | Align roadmap, status, README, and debt docs. | Runtime code. | Docs clearly separate foundation from planned product runtime. | `make validate-ai-workflows`, `make policy-guards`. | False readiness claims mislead implementation. |
+| [x] | AVS-A001 | P0 | Align product fork naming/status. | Review README/status wording for Appointment Voice SaaS transition. | Renaming packages or env defaults. | Readers know this is a foundation transitioning to product. | Docs review, policy guards. | Operators confuse template features with product features. |
 | [x] | AVS-A002 | P0 | Record core architecture decision. | ADR for PostgreSQL source of truth, adapters, queue/outbox, idempotency, tenancy. | Implementing models/adapters. | ADR accepted before domain implementation starts. | Docs review, policy guards. | Later integrations bypass core booking invariants. |
 | [x] | AVS-A003 | P0 | Define MVP demo flow. | Document local simulated call-to-booking-to-notification-to-calendar scenario. | Real Twilio/SMS/calendar. | Demo script steps and expected records are described. | Docs review, later smoke test. | Team builds tasks without a shared product target. |
 

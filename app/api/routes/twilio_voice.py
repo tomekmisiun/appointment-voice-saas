@@ -76,8 +76,9 @@ async def twilio_voice_inbound(
             db, session_id=existing.id, tenant_id=existing.tenant_id, key=""
         )
         gather_url = _gather_url(business_id, existing.id)
+        transfer_to = ivr_response.transfer_destination or business.phone
         return Response(
-            content=ivr_to_twiml(ivr_response, gather_action_url=gather_url, transfer_to=business.phone),
+            content=ivr_to_twiml(ivr_response, gather_action_url=gather_url, transfer_to=transfer_to),
             media_type=_TWIML,
         )
 
@@ -127,7 +128,6 @@ async def twilio_voice_keypress(
         return Response(content=twiml, media_type=_TWIML)
 
     business = get_business_global(db, business_id)
-    transfer_to = business.phone if business else None
 
     try:
         ivr_response = handle_keypress(
@@ -140,6 +140,8 @@ async def twilio_voice_keypress(
         )
         return Response(content=twiml, media_type=_TWIML)
 
+    # Prefer the IVR-resolved destination (respects STAFF policy); fall back to business phone.
+    transfer_to = ivr_response.transfer_destination or (business.phone if business else None)
     gather_url = _gather_url(business_id, session_id)
     return Response(
         content=ivr_to_twiml(ivr_response, gather_action_url=gather_url, transfer_to=transfer_to),
