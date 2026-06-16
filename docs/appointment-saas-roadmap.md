@@ -182,13 +182,13 @@ Recommended MVP execution order:
 
 | Status | ID | Priority | Goal | Scope | Out | Acceptance | Validation | Risk |
 |--------|----|----------|------|-------|-----|------------|------------|------|
-| [ ] | AVS-H001 | P1 | Add Twilio voice webhook adapter. | Convert Twilio requests/responses to provider-neutral IVR contract. | AI voice. | Twilio can drive existing IVR flow. | Adapter/API tests. | Provider details leak into domain logic. |
-| [ ] | AVS-H002 | P1 | Validate voice webhook signatures. | Verify Twilio signatures and reject invalid requests. | IP allowlisting only. | Invalid signatures fail consistently. | Security tests. | Spoofed calls create bookings. |
-| [ ] | AVS-H003 | P1 | Add real SMS provider adapter. | Production SMS provider implementation behind interface. | Marketing campaigns. | Confirmation/cancel messages can be delivered. | Adapter tests, sandbox smoke. | SMS vendor failures block launch. |
-| [ ] | AVS-H004 | P1 | Add SMS status webhook. | Persist delivery status callbacks. | Reply parsing. | Message status is visible and idempotent. | Webhook tests. | Failed delivery is invisible. |
-| [ ] | AVS-H005 | P1 | Add provider webhook idempotency. | Deduplicate voice/SMS provider callbacks. | Generic webhook rewrite. | Retries do not duplicate bookings/messages. | Idempotency tests. | Provider retries cause duplicates. |
-| [ ] | AVS-H006 | P1 | Add public webhook rate limiting. | Provider/IP-aware limits for product webhooks. | WAF setup. | Abuse is bounded without blocking expected provider traffic. | API tests. | Public endpoints are DoS-prone. |
-| [ ] | AVS-H007 | P1 | Add pilot provider runbook. | Phone numbers, secrets, webhooks, retries, test calls, incident steps. | Full on-call program. | Operator can configure pilot safely. | Docs review. | Misconfiguration breaks pilot. |
+| [x] | AVS-H001 | P1 | Add Twilio voice webhook adapter. | Convert Twilio requests/responses to provider-neutral IVR contract. | AI voice. | Twilio can drive existing IVR flow. | Adapter/API tests. | Provider details leak into domain logic. |
+| [x] | AVS-H002 | P1 | Validate voice webhook signatures. | Verify Twilio signatures and reject invalid requests. | IP allowlisting only. | Invalid signatures fail consistently. | Security tests. | Spoofed calls create bookings. |
+| [x] | AVS-H003 | P1 | Add real SMS provider adapter. | Production SMS provider implementation behind interface. | Marketing campaigns. | Confirmation/cancel messages can be delivered. | Adapter tests, sandbox smoke. | SMS vendor failures block launch. |
+| [x] | AVS-H004 | P1 | Add SMS status webhook. | Persist delivery status callbacks. | Reply parsing. | Message status is visible and idempotent. | Webhook tests. | Failed delivery is invisible. |
+| [x] | AVS-H005 | P1 | Add provider webhook idempotency. | Deduplicate voice/SMS provider callbacks. | Generic webhook rewrite. | Retries do not duplicate bookings/messages. | Idempotency tests. | Provider retries cause duplicates. |
+| [x] | AVS-H006 | P1 | Add public webhook rate limiting. | Provider/IP-aware limits for product webhooks. | WAF setup. | Abuse is bounded without blocking expected provider traffic. | API tests. | Public endpoints are DoS-prone. |
+| [x] | AVS-H007 | P1 | Add pilot provider runbook. | Phone numbers, secrets, webhooks, retries, test calls, incident steps. | Full on-call program. | Operator can configure pilot safely. | Docs review. | Misconfiguration breaks pilot. |
 
 ### EPIC I - Call transfer
 
