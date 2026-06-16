@@ -34,7 +34,7 @@ plików."
 
 OUTPUT_FILE="$(mktemp)"
 RAW_OUTPUT="$(
-  timeout 150 codex exec -s read-only -a never \
+  timeout 150 codex exec -s read-only \
     -c model_reasoning_effort=\"low\" \
     -m gpt-5.5 \
     --output-last-message "$OUTPUT_FILE" \
