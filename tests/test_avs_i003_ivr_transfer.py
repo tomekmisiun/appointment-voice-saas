@@ -28,21 +28,22 @@ def domain(db):
 # Transfer disabled
 # ---------------------------------------------------------------------------
 
-def test_press_2_transfer_disabled_returns_end(domain):
+def test_press_2_transfer_disabled_returns_unavailable_fallback(domain):
     db, tid, biz = domain["db"], domain["tenant_id"], domain["biz"]
     # transfer_enabled defaults to False
     session = _make_session(db, biz.id, tid)
     resp = handle_keypress(db, session_id=session.id, tenant_id=tid, key="2")
-    assert resp.action == IvrAction.END
+    assert resp.action == IvrAction.CONTINUE
     assert resp.transfer_destination is None
+    assert any(o.key == "1" for o in resp.options)
 
 
-def test_press_2_transfer_disabled_session_not_set_to_abandoned(domain):
+def test_press_2_transfer_disabled_sets_transfer_unavailable(domain):
     db, tid, biz = domain["db"], domain["tenant_id"], domain["biz"]
     session = _make_session(db, biz.id, tid)
     handle_keypress(db, session_id=session.id, tenant_id=tid, key="2")
     db.refresh(session)
-    assert session.step != IvrStep.ABANDONED
+    assert session.step == IvrStep.TRANSFER_UNAVAILABLE
 
 
 # ---------------------------------------------------------------------------
@@ -63,7 +64,7 @@ def test_press_2_business_phone_policy_transfers_to_business_phone(domain):
     assert resp.transfer_destination == "+48100200300"
 
 
-def test_press_2_business_phone_policy_no_phone_returns_end(domain):
+def test_press_2_business_phone_policy_no_phone_returns_unavailable_fallback(domain):
     db, tid, biz = domain["db"], domain["tenant_id"], domain["biz"]
     update_business(
         db, biz.id, tid,
@@ -73,11 +74,12 @@ def test_press_2_business_phone_policy_no_phone_returns_end(domain):
     # phone remains None
     session = _make_session(db, biz.id, tid)
     resp = handle_keypress(db, session_id=session.id, tenant_id=tid, key="2")
-    assert resp.action == IvrAction.END
+    assert resp.action == IvrAction.CONTINUE
     assert resp.transfer_destination is None
+    assert any(o.key == "1" for o in resp.options)
 
 
-def test_press_2_business_phone_whitespace_returns_end(domain):
+def test_press_2_business_phone_whitespace_returns_unavailable_fallback(domain):
     db, tid, biz = domain["db"], domain["tenant_id"], domain["biz"]
     update_business(
         db, biz.id, tid,
@@ -87,7 +89,7 @@ def test_press_2_business_phone_whitespace_returns_end(domain):
     )
     session = _make_session(db, biz.id, tid)
     resp = handle_keypress(db, session_id=session.id, tenant_id=tid, key="2")
-    assert resp.action == IvrAction.END
+    assert resp.action == IvrAction.CONTINUE
     assert resp.transfer_destination is None
 
 
@@ -109,7 +111,7 @@ def test_press_2_staff_policy_transfers_to_first_eligible_staff(domain):
     assert resp.transfer_destination == "+48777888999"
 
 
-def test_press_2_staff_policy_no_eligible_staff_returns_end(domain):
+def test_press_2_staff_policy_no_eligible_staff_returns_unavailable_fallback(domain):
     db, tid, biz = domain["db"], domain["tenant_id"], domain["biz"]
     update_business(
         db, biz.id, tid,
@@ -119,7 +121,7 @@ def test_press_2_staff_policy_no_eligible_staff_returns_end(domain):
     # no staff with phone
     session = _make_session(db, biz.id, tid)
     resp = handle_keypress(db, session_id=session.id, tenant_id=tid, key="2")
-    assert resp.action == IvrAction.END
+    assert resp.action == IvrAction.CONTINUE
     assert resp.transfer_destination is None
 
 
@@ -135,7 +137,7 @@ def test_press_2_staff_policy_inactive_staff_not_used(domain):
     db.commit()
     session = _make_session(db, biz.id, tid)
     resp = handle_keypress(db, session_id=session.id, tenant_id=tid, key="2")
-    assert resp.action == IvrAction.END
+    assert resp.action == IvrAction.CONTINUE
 
 
 # ---------------------------------------------------------------------------
