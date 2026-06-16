@@ -1,4 +1,6 @@
-"""Tests for the notification outbox worker (AVS-E006)."""
+"""Tests for the notification outbox worker (AVS-E006, AVS-E007, AVS-E008)."""
+
+import pytest
 
 from datetime import datetime, timezone
 
@@ -13,7 +15,9 @@ from app.models.notification_outbox import (
 from app.models.tenant import Tenant
 from app.services.business_service import create_business
 from app.services.notification_service import (
+    MAX_NOTIFICATION_ATTEMPTS,
     SEND_NOTIFICATION_JOB,
+    SmsDeliveryError,
     send_notification_in_worker,
 )
 from app.services.sms_provider import FakeSmsProvider
@@ -61,18 +65,48 @@ class _FailingSmsProvider:
         return SmsSendResult(success=False, error="provider_unavailable")
 
 
-def test_send_notification_in_worker_marks_intent_failed_on_provider_error(db):
+def test_send_notification_in_worker_keeps_pending_and_raises_on_first_failure(db):
     intent = _create_pending_intent(db)
 
+    with pytest.raises(SmsDeliveryError):
+        send_notification_in_worker(
+            db, notification_id=intent.id, sms_provider=_FailingSmsProvider()
+        )
+
+    db.refresh(intent)
+    assert intent.status == NotificationStatus.PENDING
+    assert intent.attempts == 1
+    assert intent.last_error == "provider_unavailable"
+    assert intent.sent_at is None
+
+
+def test_send_notification_in_worker_marks_failed_after_max_attempts(db):
+    intent = _create_pending_intent(db)
+    intent.attempts = MAX_NOTIFICATION_ATTEMPTS - 1
+    db.commit()
+
+    # No exception raised — terminal failure should not trigger another worker retry
     send_notification_in_worker(
         db, notification_id=intent.id, sms_provider=_FailingSmsProvider()
     )
 
     db.refresh(intent)
     assert intent.status == NotificationStatus.FAILED
-    assert intent.attempts == 1
+    assert intent.attempts == MAX_NOTIFICATION_ATTEMPTS
     assert intent.last_error == "provider_unavailable"
-    assert intent.sent_at is None
+
+
+def test_send_notification_in_worker_updates_last_error_on_each_attempt(db):
+    intent = _create_pending_intent(db)
+    provider = _FailingSmsProvider()
+
+    for expected_attempts in range(1, MAX_NOTIFICATION_ATTEMPTS):
+        with pytest.raises(SmsDeliveryError):
+            send_notification_in_worker(db, notification_id=intent.id, sms_provider=provider)
+        db.refresh(intent)
+        assert intent.attempts == expected_attempts
+        assert intent.last_error == "provider_unavailable"
+        assert intent.status == NotificationStatus.PENDING
 
 
 def test_send_notification_in_worker_is_idempotent_for_non_pending_intents(db):

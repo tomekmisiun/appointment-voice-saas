@@ -148,8 +148,8 @@ Recommended MVP execution order:
 | [x] | AVS-E004 | P0 | Enqueue booking confirmation SMS. | Customer and business confirmation intents after booking. | Reminder SMS. | Booking create enqueues expected intents idempotently. | Service tests. | Bookings happen without notification. |
 | [x] | AVS-E005 | P0 | Enqueue cancellation SMS. | Customer and business cancellation/change intent. | Reschedule messages. | Cancellation enqueues expected intents. | Service tests. | Cancelled appointments are not communicated. |
 | [x] | AVS-E006 | P0 | Add notification worker. | Use existing worker pattern to process outbox/send jobs. | Separate queue system. | Worker transitions pending/sent/failed statuses. | Worker tests. | Side effects block API or disappear. |
-| [ ] | AVS-E007 | P1 | Add retry/backoff/DLQ. | Retry failed sends and route exhausted attempts to DLQ. | Provider status webhooks. | Failed notifications are recoverable/visible. | Worker tests. | Silent notification loss. |
-| [ ] | AVS-E008 | P0 | Cover notification behavior. | Outbox, fake provider, enqueue, worker tests. | Provider certification. | Happy path and failure path pass. | `make validate`. | Async notification path regresses. |
+| [x] | AVS-E007 | P1 | Add retry/backoff/DLQ. | Retry failed sends and route exhausted attempts to DLQ. | Provider status webhooks. | Failed notifications are recoverable/visible. | Worker tests. | Silent notification loss. |
+| [x] | AVS-E008 | P0 | Cover notification behavior. | Outbox, fake provider, enqueue, worker tests. | Provider certification. | Happy path and failure path pass. | `make validate`. | Async notification path regresses. |
 
 ### EPIC F - Calendar adapter foundation
 

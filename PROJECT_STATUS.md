@@ -87,13 +87,19 @@ Notifications outbox (EPIC E — verified 2026-06-14):
 - Booking cancellation enqueues `BOOKING_CANCELLATION` SMS intents for the
   customer, and for the business when it has a phone number
   (`app/services/notification_service.py`, `AVS-E005`).
-- Test coverage in `tests/test_notification_outbox.py`, `tests/test_sms_provider.py`,
-  and `tests/test_booking_notifications.py`.
+- Notification worker dispatches `send_notification` jobs and calls
+  `send_notification_in_worker` (`app/worker.py`, `AVS-E006`).
+- Retry/backoff/DLQ: failed sends raise `SmsDeliveryError` (worker schedules
+  retry); after `MAX_NOTIFICATION_ATTEMPTS` the outbox row is marked `FAILED`
+  without raising (no spurious re-queue) (`app/services/notification_service.py`,
+  `AVS-E007`).
+- Full notification behavior test coverage: outbox model, SMS provider, booking
+  enqueue, and worker retry/DLQ paths (`tests/test_notification_worker.py`,
+  `AVS-E008`).
 
 ## Not Implemented Yet
 
 - IVR runtime or local IVR simulation.
-- Notification worker to process and send queued outbox entries.
 - Calendar provider interface, calendar event model, fake calendar adapter.
 - Voice session model.
 - Call transfer.
@@ -105,7 +111,7 @@ Notifications outbox (EPIC E — verified 2026-06-14):
 
 ## Next Implementation Milestone
 
-**EPIC E — Notifications outbox** (`AVS-E006` onwards):
+**EPIC F — Calendar adapter foundation** (`AVS-F001` onwards):
 
 See [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md) for
 the detailed task backlog.

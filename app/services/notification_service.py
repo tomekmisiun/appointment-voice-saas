@@ -18,6 +18,11 @@ from app.models.service import Service
 from app.services.sms_provider import SmsProvider, get_sms_provider
 
 SEND_NOTIFICATION_JOB = "send_notification"
+MAX_NOTIFICATION_ATTEMPTS = 3
+
+
+class SmsDeliveryError(Exception):
+    pass
 
 
 def enqueue_send_notification_job(notification_id: int) -> Job:
@@ -132,8 +137,13 @@ def send_notification_in_worker(
     if result.success:
         intent.status = NotificationStatus.SENT
         intent.sent_at = datetime.now(timezone.utc)
-    else:
-        intent.status = NotificationStatus.FAILED
-        intent.last_error = result.error
+        db.commit()
+        return
 
+    intent.last_error = result.error
+    if intent.attempts >= MAX_NOTIFICATION_ATTEMPTS:
+        intent.status = NotificationStatus.FAILED
+        db.commit()
+        return
     db.commit()
+    raise SmsDeliveryError(result.error)
