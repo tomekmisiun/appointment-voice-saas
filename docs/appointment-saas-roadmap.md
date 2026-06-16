@@ -155,7 +155,7 @@ Recommended MVP execution order:
 
 | Status | ID | Priority | Goal | Scope | Out | Acceptance | Validation | Risk |
 |--------|----|----------|------|-------|-----|------------|------------|------|
-| [ ] | AVS-F001 | P0 | Add calendar provider interface. | Provider-neutral create/update/cancel contract. | Google OAuth. | Booking code depends on interface only. | Unit tests. | Calendar provider dictates domain design. |
+| [x] | AVS-F001 | P0 | Add calendar provider interface. | Provider-neutral create/update/cancel contract. | Google OAuth. | Booking code depends on interface only. | Unit tests. | Calendar provider dictates domain design. |
 | [ ] | AVS-F002 | P0 | Add calendar integration model. | Business/staff calendar settings and fake provider config. | Real OAuth tokens. | Business can have configured calendar integration state. | Migration/tests. | Sync runs without known destination. |
 | [ ] | AVS-F003 | P0 | Add calendar event table. | Map booking to provider event/status/errors. | Two-way sync. | Calendar event record tracks sync lifecycle. | Migration/tests. | Duplicate or orphaned calendar events. |
 | [ ] | AVS-F004 | P0 | Add fake calendar provider. | Local/dev/test provider storing fake events. | Real Google Calendar. | Demo and tests can verify sync without network. | Unit/integration tests. | Calendar path cannot be tested locally. |
