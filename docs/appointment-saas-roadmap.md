@@ -205,7 +205,7 @@ Recommended MVP execution order:
 | Status | ID | Priority | Goal | Scope | Out | Acceptance | Validation | Risk |
 |--------|----|----------|------|-------|-----|------------|------------|------|
 | [x] | AVS-J001 | P0 | Seed demo business data. | Demo business, staff, services, hours, fake providers. | Production fixtures. | Local seed creates deterministic demo scenario. | Seed tests/smoke. | Demo cannot be reproduced. |
-| [ ] | AVS-J002 | P0 | Smoke manual booking flow. | Create booking through API and verify fake SMS/calendar. | Real provider smoke. | Script proves manual flow works locally. | Smoke command/test. | API path works only in unit tests. |
+| [x] | AVS-J002 | P0 | Smoke manual booking flow. | Create booking through API and verify fake SMS/calendar. | Real provider smoke. | Script proves manual flow works locally. | Smoke command/test. | API path works only in unit tests. |
 | [ ] | AVS-J003 | P0 | Smoke IVR simulated booking. | Simulated call through booking, fake SMS, fake calendar. | Twilio smoke. | Script proves local call-to-booking path. | Smoke command/test. | Voice flow cannot be demoed. |
 | [ ] | AVS-J004 | P0 | Smoke cancellation flow. | Cancel booking and verify notification/calendar update. | Customer self-cancel. | Script proves cancellation side effects. | Smoke command/test. | Lifecycle changes diverge. |
 | [ ] | AVS-J005 | P0 | Document README demo scenario. | Local setup and expected demo outputs. | Marketing landing page. | New developer can run the demo. | Docs review. | Product appears unusable locally. |
