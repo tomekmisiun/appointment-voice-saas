@@ -137,6 +137,7 @@ def send_notification_in_worker(
     if result.success:
         intent.status = NotificationStatus.SENT
         intent.sent_at = datetime.now(timezone.utc)
+        intent.provider_message_id = result.provider_message_id
         db.commit()
         return
 

@@ -11,6 +11,8 @@ def create_business(
     name: str,
     timezone: str,
     phone: str | None = None,
+    transfer_enabled: bool = False,
+    transfer_destination_policy: str = "business_phone",
 ) -> Business:
     business = Business(
         tenant_id=tenant_id,
@@ -18,6 +20,8 @@ def create_business(
         timezone=timezone,
         phone=phone,
         is_active=True,
+        transfer_enabled=transfer_enabled,
+        transfer_destination_policy=transfer_destination_policy,
     )
     db.add(business)
     db.commit()
@@ -38,6 +42,11 @@ def require_business(db: Session, business_id: int, tenant_id: int) -> Business:
     if business is None:
         raise NotFoundError("Business not found")
     return business
+
+
+def get_business_global(db: Session, business_id: int) -> Business | None:
+    """Return a business by id without tenant filter (for public webhook endpoints)."""
+    return db.query(Business).filter(Business.id == business_id).first()
 
 
 def list_businesses(
@@ -63,6 +72,8 @@ def update_business(
     timezone: str | None = None,
     phone: str | None = None,
     is_active: bool | None = None,
+    transfer_enabled: bool | None = None,
+    transfer_destination_policy: str | None = None,
 ) -> Business:
     business = require_business(db, business_id, tenant_id)
     if name is not None:
@@ -73,6 +84,10 @@ def update_business(
         business.phone = phone
     if is_active is not None:
         business.is_active = is_active
+    if transfer_enabled is not None:
+        business.transfer_enabled = transfer_enabled
+    if transfer_destination_policy is not None:
+        business.transfer_destination_policy = transfer_destination_policy
     db.commit()
     db.refresh(business)
     return business

@@ -155,40 +155,40 @@ Recommended MVP execution order:
 
 | Status | ID | Priority | Goal | Scope | Out | Acceptance | Validation | Risk |
 |--------|----|----------|------|-------|-----|------------|------------|------|
-| [ ] | AVS-F001 | P0 | Add calendar provider interface. | Provider-neutral create/update/cancel contract. | Google OAuth. | Booking code depends on interface only. | Unit tests. | Calendar provider dictates domain design. |
-| [ ] | AVS-F002 | P0 | Add calendar integration model. | Business/staff calendar settings and fake provider config. | Real OAuth tokens. | Business can have configured calendar integration state. | Migration/tests. | Sync runs without known destination. |
-| [ ] | AVS-F003 | P0 | Add calendar event table. | Map booking to provider event/status/errors. | Two-way sync. | Calendar event record tracks sync lifecycle. | Migration/tests. | Duplicate or orphaned calendar events. |
-| [ ] | AVS-F004 | P0 | Add fake calendar provider. | Local/dev/test provider storing fake events. | Real Google Calendar. | Demo and tests can verify sync without network. | Unit/integration tests. | Calendar path cannot be tested locally. |
-| [ ] | AVS-F005 | P0 | Create calendar event after booking. | Enqueue/create fake calendar event from booking. | External calendar as source of truth. | Booking produces event intent/result. | Worker/service tests. | Business calendar misses bookings. |
-| [ ] | AVS-F006 | P1 | Cancel/update calendar event. | Reflect cancellation/reschedule in calendar adapter. | Two-way external updates. | Cancellation updates fake calendar event state. | Worker/service tests. | Calendar diverges after lifecycle changes. |
-| [ ] | AVS-F007 | P1 | Cover calendar retry/DLQ. | Retry/backoff/DLQ tests for sync failures. | Real provider status polling. | Failed sync is visible and retryable. | Worker tests. | Calendar failures remain silent. |
+| [x] | AVS-F001 | P0 | Add calendar provider interface. | Provider-neutral create/update/cancel contract. | Google OAuth. | Booking code depends on interface only. | Unit tests. | Calendar provider dictates domain design. |
+| [x] | AVS-F002 | P0 | Add calendar integration model. | Business/staff calendar settings and fake provider config. | Real OAuth tokens. | Business can have configured calendar integration state. | Migration/tests. | Sync runs without known destination. |
+| [x] | AVS-F003 | P0 | Add calendar event table. | Map booking to provider event/status/errors. | Two-way sync. | Calendar event record tracks sync lifecycle. | Migration/tests. | Duplicate or orphaned calendar events. |
+| [x] | AVS-F004 | P0 | Add fake calendar provider. | Local/dev/test provider storing fake events. | Real Google Calendar. | Demo and tests can verify sync without network. | Unit/integration tests. | Calendar path cannot be tested locally. |
+| [x] | AVS-F005 | P0 | Create calendar event after booking. | Enqueue/create fake calendar event from booking. | External calendar as source of truth. | Booking produces event intent/result. | Worker/service tests. | Business calendar misses bookings. |
+| [x] | AVS-F006 | P1 | Cancel/update calendar event. | Reflect cancellation/reschedule in calendar adapter. | Two-way external updates. | Cancellation updates fake calendar event state. | Worker/service tests. | Calendar diverges after lifecycle changes. |
+| [x] | AVS-F007 | P1 | Cover calendar retry/DLQ. | Retry/backoff/DLQ tests for sync failures. | Real provider status polling. | Failed sync is visible and retryable. | Worker tests. | Calendar failures remain silent. |
 
 ### EPIC G - Voice/IVR simulation before real provider
 
 | Status | ID | Priority | Goal | Scope | Out | Acceptance | Validation | Risk |
 |--------|----|----------|------|-------|-----|------------|------------|------|
-| [ ] | AVS-G001 | P0 | Add VoiceSession model. | Session state, caller phone, selections, expiry, linked booking. | Real Twilio call SID handling. | Session can persist simulated IVR progress. | Migration/tests. | IVR state is lost or duplicated. |
-| [ ] | AVS-G002 | P0 | Add IVR response abstraction. | Provider-neutral prompts, keypad options, redirect/end/transfer intents. | TwiML adapter. | Simulation and future providers share flow contract. | Unit tests. | Voice flow locks into one provider. |
-| [ ] | AVS-G003 | P0 | Add incoming call simulation harness. | Local endpoint/test helper to start a voice session. | Public webhook. | Developer can simulate inbound call locally. | API/test harness tests. | No local E2E path. |
-| [ ] | AVS-G004 | P0 | Add main menu. | Book appointment or transfer to staff option. | Real transfer. | Press 1 books; press 2 follows transfer branch placeholder. | IVR tests. | Callers cannot reach intended workflow. |
-| [ ] | AVS-G005 | P0 | Add service keypad selection. | Map keypad input to active services. | Speech recognition. | Caller can select configured service. | IVR tests. | Wrong service booked. |
-| [ ] | AVS-G006 | P0 | Add slot proposal keypad flow. | Present available slots and accept keypad choice. | Arbitrary date search. | Caller can select a generated slot. | IVR tests. | Caller cannot complete booking. |
-| [ ] | AVS-G007 | P0 | Confirm booking from IVR. | Create booking from selected service/slot/customer. | SMS/calendar provider delivery. | Simulated IVR creates booking through booking service. | E2E IVR test. | IVR bypasses booking correctness. |
-| [ ] | AVS-G008 | P0 | Handle no available slots. | Prompt/end/fallback path when no slots exist. | Waitlist. | No-slot case is clear and does not create booking. | IVR tests. | Bad user experience or invalid booking. |
-| [ ] | AVS-G009 | P1 | Add voice session expiration. | Expire incomplete sessions and release pending state. | Long-term analytics. | Old sessions cannot complete stale booking. | Worker/service tests. | Stale sessions create wrong bookings. |
-| [ ] | AVS-G010 | P0 | Add E2E IVR simulation test. | Full simulated call, service, slot, booking, fake SMS, fake calendar. | Real provider smoke. | One test demonstrates local product flow. | `make validate`. | MVP cannot be verified end to end. |
+| [x] | AVS-G001 | P0 | Add VoiceSession model. | Session state, caller phone, selections, expiry, linked booking. | Real Twilio call SID handling. | Session can persist simulated IVR progress. | Migration/tests. | IVR state is lost or duplicated. |
+| [x] | AVS-G002 | P0 | Add IVR response abstraction. | Provider-neutral prompts, keypad options, redirect/end/transfer intents. | TwiML adapter. | Simulation and future providers share flow contract. | Unit tests. | Voice flow locks into one provider. |
+| [x] | AVS-G003 | P0 | Add incoming call simulation harness. | Local endpoint/test helper to start a voice session. | Public webhook. | Developer can simulate inbound call locally. | API/test harness tests. | No local E2E path. |
+| [x] | AVS-G004 | P0 | Add main menu. | Book appointment or transfer to staff option. | Real transfer. | Press 1 books; press 2 follows transfer branch placeholder. | IVR tests. | Callers cannot reach intended workflow. |
+| [x] | AVS-G005 | P0 | Add service keypad selection. | Map keypad input to active services. | Speech recognition. | Caller can select configured service. | IVR tests. | Wrong service booked. |
+| [x] | AVS-G006 | P0 | Add slot proposal keypad flow. | Present available slots and accept keypad choice. | Arbitrary date search. | Caller can select a generated slot. | IVR tests. | Caller cannot complete booking. |
+| [x] | AVS-G007 | P0 | Confirm booking from IVR. | Create booking from selected service/slot/customer. | SMS/calendar provider delivery. | Simulated IVR creates booking through booking service. | E2E IVR test. | IVR bypasses booking correctness. |
+| [x] | AVS-G008 | P0 | Handle no available slots. | Prompt/end/fallback path when no slots exist. | Waitlist. | No-slot case is clear and does not create booking. | IVR tests. | Bad user experience or invalid booking. |
+| [x] | AVS-G009 | P1 | Add voice session expiration. | Expire incomplete sessions and release pending state. | Long-term analytics. | Old sessions cannot complete stale booking. | Worker/service tests. | Stale sessions create wrong bookings. |
+| [x] | AVS-G010 | P0 | Add E2E IVR simulation test. | Full simulated call, service, slot, booking, fake SMS, fake calendar. | Real provider smoke. | One test demonstrates local product flow. | `make validate`. | MVP cannot be verified end to end. |
 
 ### EPIC H - Real provider integrations for pilot
 
 | Status | ID | Priority | Goal | Scope | Out | Acceptance | Validation | Risk |
 |--------|----|----------|------|-------|-----|------------|------------|------|
-| [ ] | AVS-H001 | P1 | Add Twilio voice webhook adapter. | Convert Twilio requests/responses to provider-neutral IVR contract. | AI voice. | Twilio can drive existing IVR flow. | Adapter/API tests. | Provider details leak into domain logic. |
-| [ ] | AVS-H002 | P1 | Validate voice webhook signatures. | Verify Twilio signatures and reject invalid requests. | IP allowlisting only. | Invalid signatures fail consistently. | Security tests. | Spoofed calls create bookings. |
-| [ ] | AVS-H003 | P1 | Add real SMS provider adapter. | Production SMS provider implementation behind interface. | Marketing campaigns. | Confirmation/cancel messages can be delivered. | Adapter tests, sandbox smoke. | SMS vendor failures block launch. |
-| [ ] | AVS-H004 | P1 | Add SMS status webhook. | Persist delivery status callbacks. | Reply parsing. | Message status is visible and idempotent. | Webhook tests. | Failed delivery is invisible. |
-| [ ] | AVS-H005 | P1 | Add provider webhook idempotency. | Deduplicate voice/SMS provider callbacks. | Generic webhook rewrite. | Retries do not duplicate bookings/messages. | Idempotency tests. | Provider retries cause duplicates. |
-| [ ] | AVS-H006 | P1 | Add public webhook rate limiting. | Provider/IP-aware limits for product webhooks. | WAF setup. | Abuse is bounded without blocking expected provider traffic. | API tests. | Public endpoints are DoS-prone. |
-| [ ] | AVS-H007 | P1 | Add pilot provider runbook. | Phone numbers, secrets, webhooks, retries, test calls, incident steps. | Full on-call program. | Operator can configure pilot safely. | Docs review. | Misconfiguration breaks pilot. |
+| [x] | AVS-H001 | P1 | Add Twilio voice webhook adapter. | Convert Twilio requests/responses to provider-neutral IVR contract. | AI voice. | Twilio can drive existing IVR flow. | Adapter/API tests. | Provider details leak into domain logic. |
+| [x] | AVS-H002 | P1 | Validate voice webhook signatures. | Verify Twilio signatures and reject invalid requests. | IP allowlisting only. | Invalid signatures fail consistently. | Security tests. | Spoofed calls create bookings. |
+| [x] | AVS-H003 | P1 | Add real SMS provider adapter. | Production SMS provider implementation behind interface. | Marketing campaigns. | Confirmation/cancel messages can be delivered. | Adapter tests, sandbox smoke. | SMS vendor failures block launch. |
+| [x] | AVS-H004 | P1 | Add SMS status webhook. | Persist delivery status callbacks. | Reply parsing. | Message status is visible and idempotent. | Webhook tests. | Failed delivery is invisible. |
+| [x] | AVS-H005 | P1 | Add provider webhook idempotency. | Deduplicate voice/SMS provider callbacks. | Generic webhook rewrite. | Retries do not duplicate bookings/messages. | Idempotency tests. | Provider retries cause duplicates. |
+| [x] | AVS-H006 | P1 | Add public webhook rate limiting. | Provider/IP-aware limits for product webhooks. | WAF setup. | Abuse is bounded without blocking expected provider traffic. | API tests. | Public endpoints are DoS-prone. |
+| [x] | AVS-H007 | P1 | Add pilot provider runbook. | Phone numbers, secrets, webhooks, retries, test calls, incident steps. | Full on-call program. | Operator can configure pilot safely. | Docs review. | Misconfiguration breaks pilot. |
 
 ### EPIC I - Call transfer
 

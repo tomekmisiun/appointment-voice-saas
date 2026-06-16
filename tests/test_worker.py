@@ -288,7 +288,10 @@ def test_process_next_job_returns_false_without_job(monkeypatch):
 
 
 def test_scheduled_maintenance_runs_when_lock_acquired(monkeypatch):
-    cleanup_calls = {"password_reset": 0, "idempotency": 0, "webhook_events": 0, "audit_logs": 0}
+    cleanup_calls = {
+        "password_reset": 0, "idempotency": 0, "webhook_events": 0,
+        "audit_logs": 0, "voice_sessions": 0,
+    }
 
     class FakeSession:
         def close(self):
@@ -313,6 +316,10 @@ def test_scheduled_maintenance_runs_when_lock_acquired(monkeypatch):
         "app.worker.cleanup_old_audit_logs",
         lambda db: cleanup_calls.__setitem__("audit_logs", cleanup_calls["audit_logs"] + 1) or 5,
     )
+    monkeypatch.setattr(
+        "app.worker.expire_stale_sessions",
+        lambda db: cleanup_calls.__setitem__("voice_sessions", cleanup_calls["voice_sessions"] + 1) or 0,
+    )
 
     did_run = run_scheduled_maintenance()
 
@@ -322,6 +329,7 @@ def test_scheduled_maintenance_runs_when_lock_acquired(monkeypatch):
         "idempotency": 1,
         "webhook_events": 1,
         "audit_logs": 1,
+        "voice_sessions": 1,
     }
 
 

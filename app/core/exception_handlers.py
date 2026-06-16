@@ -75,6 +75,19 @@ async def http_exception_handler(
     )
 
 
+def _serializable_errors(errors: list) -> list:
+    result = []
+    for err in errors:
+        err = dict(err)
+        if "ctx" in err and isinstance(err["ctx"], dict):
+            ctx = dict(err["ctx"])
+            if "error" in ctx and isinstance(ctx["error"], Exception):
+                ctx["error"] = str(ctx["error"])
+            err["ctx"] = ctx
+        result.append(err)
+    return result
+
+
 async def validation_exception_handler(
     request: Request,
     exc: RequestValidationError,
@@ -83,7 +96,7 @@ async def validation_exception_handler(
         status_code=422,
         code="validation_error",
         message="Request validation failed",
-        details=exc.errors(),
+        details=_serializable_errors(exc.errors()),
     )
 
 
