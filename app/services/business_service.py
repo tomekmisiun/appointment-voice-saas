@@ -13,6 +13,11 @@ def create_business(
     phone: str | None = None,
     transfer_enabled: bool = False,
     transfer_destination_policy: str = "business_phone",
+    booking_mode: str = "internal_booking",
+    external_booking_url: str | None = None,
+    external_booking_label: str | None = None,
+    external_booking_provider: str | None = None,
+    subscription_plan: str = "full_booking",
 ) -> Business:
     business = Business(
         tenant_id=tenant_id,
@@ -22,6 +27,11 @@ def create_business(
         is_active=True,
         transfer_enabled=transfer_enabled,
         transfer_destination_policy=transfer_destination_policy,
+        booking_mode=booking_mode,
+        external_booking_url=external_booking_url,
+        external_booking_label=external_booking_label,
+        external_booking_provider=external_booking_provider,
+        subscription_plan=subscription_plan,
     )
     db.add(business)
     db.commit()
@@ -74,6 +84,11 @@ def update_business(
     is_active: bool | None = None,
     transfer_enabled: bool | None = None,
     transfer_destination_policy: str | None = None,
+    booking_mode: str | None = None,
+    external_booking_url: str | None = None,
+    external_booking_label: str | None = None,
+    external_booking_provider: str | None = None,
+    subscription_plan: str | None = None,
 ) -> Business:
     business = require_business(db, business_id, tenant_id)
     if name is not None:
@@ -88,6 +103,16 @@ def update_business(
         business.transfer_enabled = transfer_enabled
     if transfer_destination_policy is not None:
         business.transfer_destination_policy = transfer_destination_policy
+    if booking_mode is not None:
+        business.booking_mode = booking_mode
+    if external_booking_url is not None:
+        business.external_booking_url = external_booking_url
+    if external_booking_label is not None:
+        business.external_booking_label = external_booking_label
+    if external_booking_provider is not None:
+        business.external_booking_provider = external_booking_provider
+    if subscription_plan is not None:
+        business.subscription_plan = subscription_plan
     db.commit()
     db.refresh(business)
     return business
