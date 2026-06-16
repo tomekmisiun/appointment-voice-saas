@@ -11,7 +11,9 @@ from app.services.business_service import require_business
 from app.services.customer_service import require_customer
 from app.services.calendar_service import (
     enqueue_calendar_event,
+    enqueue_cancel_calendar_event_job,
     enqueue_sync_calendar_event_job,
+    get_calendar_event_for_booking,
 )
 from app.services.notification_service import (
     enqueue_booking_cancellation,
@@ -194,8 +196,11 @@ def cancel_booking(
         service=service,
     )
     cancellation_intent_ids = [intent.id for intent in cancellation_intents]
+    cal_event = get_calendar_event_for_booking(db, booking.id, tenant_id)
     db.commit()
     db.refresh(booking)
     for notification_id in cancellation_intent_ids:
         enqueue_send_notification_job(notification_id)
+    if cal_event is not None:
+        enqueue_cancel_calendar_event_job(cal_event.id)
     return booking

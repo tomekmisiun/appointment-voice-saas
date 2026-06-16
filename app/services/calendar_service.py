@@ -14,14 +14,23 @@ from app.models.staff import Staff
 from app.services.calendar_provider import CalendarProvider, get_calendar_provider
 
 SYNC_CALENDAR_EVENT_JOB = "sync_calendar_event"
+CANCEL_CALENDAR_EVENT_JOB = "cancel_calendar_event"
 
 
 class CalendarSyncError(Exception):
     pass
 
 
+class CalendarCancelError(Exception):
+    pass
+
+
 def enqueue_sync_calendar_event_job(event_id: int) -> Job:
     return enqueue_job(SYNC_CALENDAR_EVENT_JOB, {"event_id": event_id})
+
+
+def enqueue_cancel_calendar_event_job(event_id: int) -> Job:
+    return enqueue_job(CANCEL_CALENDAR_EVENT_JOB, {"event_id": event_id})
 
 
 def _get_provider_name(db: Session, business_id: int, tenant_id: int) -> str:
@@ -118,3 +127,56 @@ def sync_calendar_event_in_worker(
         return
     db.commit()
     raise CalendarSyncError(result.error)
+
+
+def get_calendar_event_for_booking(
+    db: Session, booking_id: int, tenant_id: int
+) -> CalendarEvent | None:
+    return (
+        db.query(CalendarEvent)
+        .filter(
+            CalendarEvent.booking_id == booking_id,
+            CalendarEvent.tenant_id == tenant_id,
+        )
+        .first()
+    )
+
+
+def cancel_calendar_event_in_worker(
+    db: Session,
+    *,
+    event_id: int,
+    calendar_provider: CalendarProvider | None = None,
+) -> None:
+    event = db.query(CalendarEvent).filter(CalendarEvent.id == event_id).first()
+
+    if event is None or event.status == CalendarSyncStatus.CANCELLED:
+        return
+
+    booking = db.query(Booking).filter(Booking.id == event.booking_id).one()
+
+    if booking.tenant_id != event.tenant_id:
+        return
+
+    # Events that were never synced to a provider need no provider call.
+    if event.status in (CalendarSyncStatus.PENDING, CalendarSyncStatus.FAILED):
+        event.status = CalendarSyncStatus.CANCELLED
+        db.commit()
+        return
+
+    calendar_provider = calendar_provider or get_calendar_provider()
+    result = calendar_provider.cancel_event(event.provider_event_id)
+
+    event.attempts += 1
+
+    if result.success:
+        event.status = CalendarSyncStatus.CANCELLED
+        db.commit()
+        return
+
+    event.last_error = (result.error or "")[:500]
+    if event.attempts >= settings.worker_max_retries:
+        db.commit()
+        return
+    db.commit()
+    raise CalendarCancelError(result.error)

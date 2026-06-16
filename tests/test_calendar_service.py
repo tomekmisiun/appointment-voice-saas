@@ -12,8 +12,11 @@ from app.services.booking_service import create_booking
 from app.services.business_service import create_business
 from app.services.calendar_provider import FakeCalendarProvider
 from app.services.calendar_service import (
+    CalendarCancelError,
     CalendarSyncError,
+    cancel_calendar_event_in_worker,
     enqueue_calendar_event,
+    get_calendar_event_for_booking,
     sync_calendar_event_in_worker,
 )
 from app.services.customer_service import get_or_create_customer
@@ -220,3 +223,121 @@ def test_sync_calendar_event_scoped_to_tenant(db):
 
     db.refresh(event)
     assert event.tenant_id == tenant_id
+
+
+# AVS-F006: cancel/update calendar event on booking cancellation
+
+
+def test_cancel_booking_enqueues_cancel_calendar_event(db):
+    from app.services.booking_service import cancel_booking
+
+    _tenant_id, _biz, _svc, _staff, booking = _setup(db)
+
+    cancel_booking(db, booking.id, booking.tenant_id)
+
+    event = db.query(CalendarEvent).filter(CalendarEvent.booking_id == booking.id).one()
+    assert event.status == CalendarSyncStatus.PENDING  # worker hasn't run yet
+
+
+def test_cancel_calendar_event_pending_marks_cancelled_without_provider(db):
+    _tenant_id, _biz, _svc, _staff, booking = _setup(db)
+
+    event = db.query(CalendarEvent).filter(CalendarEvent.booking_id == booking.id).one()
+    assert event.status == CalendarSyncStatus.PENDING
+
+    provider = FakeCalendarProvider()
+    cancel_calendar_event_in_worker(db, event_id=event.id, calendar_provider=provider)
+
+    db.refresh(event)
+    assert event.status == CalendarSyncStatus.CANCELLED
+    assert provider.cancelled == []
+
+
+def test_cancel_calendar_event_synced_calls_provider(db):
+    _tenant_id, _biz, _svc, _staff, booking = _setup(db)
+
+    event = db.query(CalendarEvent).filter(CalendarEvent.booking_id == booking.id).one()
+    provider = FakeCalendarProvider()
+    sync_calendar_event_in_worker(db, event_id=event.id, calendar_provider=provider)
+    db.refresh(event)
+    assert event.status == CalendarSyncStatus.SYNCED
+
+    cancel_calendar_event_in_worker(db, event_id=event.id, calendar_provider=provider)
+
+    db.refresh(event)
+    assert event.status == CalendarSyncStatus.CANCELLED
+    assert provider.cancelled == [event.provider_event_id]
+
+
+def test_cancel_calendar_event_already_cancelled_is_noop(db):
+    _tenant_id, _biz, _svc, _staff, booking = _setup(db)
+
+    event = db.query(CalendarEvent).filter(CalendarEvent.booking_id == booking.id).one()
+    event.status = CalendarSyncStatus.CANCELLED
+    db.commit()
+
+    provider = FakeCalendarProvider()
+    cancel_calendar_event_in_worker(db, event_id=event.id, calendar_provider=provider)
+
+    assert provider.cancelled == []
+
+
+def test_cancel_calendar_event_failed_marks_cancelled_without_provider(db):
+    _tenant_id, _biz, _svc, _staff, booking = _setup(db)
+
+    event = db.query(CalendarEvent).filter(CalendarEvent.booking_id == booking.id).one()
+    event.status = CalendarSyncStatus.FAILED
+    event.last_error = "previous_timeout"
+    db.commit()
+
+    provider = FakeCalendarProvider()
+    cancel_calendar_event_in_worker(db, event_id=event.id, calendar_provider=provider)
+
+    db.refresh(event)
+    assert event.status == CalendarSyncStatus.CANCELLED
+    assert provider.cancelled == []
+
+
+def test_cancel_calendar_event_synced_retries_on_provider_failure(db):
+    _tenant_id, _biz, _svc, _staff, booking = _setup(db)
+
+    event = db.query(CalendarEvent).filter(CalendarEvent.booking_id == booking.id).one()
+    provider = FakeCalendarProvider()
+    sync_calendar_event_in_worker(db, event_id=event.id, calendar_provider=provider)
+    db.refresh(event)
+
+    class FailingProvider:
+        def create_event(self, e):
+            from app.core.calendar import CalendarResult
+            return CalendarResult(success=False, error="timeout")
+
+        def update_event(self, pid, e):
+            from app.core.calendar import CalendarResult
+            return CalendarResult(success=False, error="timeout")
+
+        def cancel_event(self, pid):
+            from app.core.calendar import CalendarResult
+            return CalendarResult(success=False, error="timeout")
+
+    with pytest.raises(CalendarCancelError):
+        cancel_calendar_event_in_worker(db, event_id=event.id, calendar_provider=FailingProvider())
+
+    db.refresh(event)
+    assert event.status == CalendarSyncStatus.SYNCED  # not cancelled
+    assert event.last_error == "timeout"
+
+
+def test_get_calendar_event_for_booking_returns_none_when_absent(db):
+    tenant_id, _biz, _svc, _staff, booking = _setup(db)
+
+    result = get_calendar_event_for_booking(db, booking_id=999999, tenant_id=tenant_id)
+
+    assert result is None
+
+
+def test_get_calendar_event_for_booking_is_tenant_scoped(db):
+    tenant_id, _biz, _svc, _staff, booking = _setup(db)
+
+    result = get_calendar_event_for_booking(db, booking_id=booking.id, tenant_id=9999999)
+
+    assert result is None

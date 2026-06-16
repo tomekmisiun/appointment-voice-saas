@@ -28,7 +28,9 @@ from app.db.session import SessionLocal
 from app.services.audit_log_service import cleanup_old_audit_logs
 from app.services.idempotency_service import cleanup_expired_idempotency_records
 from app.services.calendar_service import (
+    CANCEL_CALENDAR_EVENT_JOB,
     SYNC_CALENDAR_EVENT_JOB,
+    cancel_calendar_event_in_worker,
     sync_calendar_event_in_worker,
 )
 from app.services.notification_service import (
@@ -106,6 +108,17 @@ def handle_job(job: Job) -> None:
         db = SessionLocal()
         try:
             sync_calendar_event_in_worker(db, event_id=event_id)
+        finally:
+            db.close()
+
+        return
+
+    if job.type == CANCEL_CALENDAR_EVENT_JOB:
+        event_id = job.payload["event_id"]
+
+        db = SessionLocal()
+        try:
+            cancel_calendar_event_in_worker(db, event_id=event_id)
         finally:
             db.close()
 
