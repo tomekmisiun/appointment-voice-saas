@@ -23,3 +23,4 @@ class IvrSessionResponse(BaseModel):
     prompt: str
     options: list[IvrOptionRead]
     action: IvrAction
+    transfer_destination: str | None = None

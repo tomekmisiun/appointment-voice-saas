@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
@@ -7,12 +8,16 @@ from app.core.config import settings
 from app.core.domain_errors import NotFoundError
 from app.core.ivr import IvrAction, IvrOption, IvrResponse
 from app.models.booking import BookingSource
+from app.models.business import TransferDestinationPolicy
 from app.models.voice_session import IvrStep, VoiceSession
+
+logger = logging.getLogger(__name__)
 from app.services.availability_service import get_available_slots
 from app.services.booking_service import create_booking
 from app.services.business_service import require_business
 from app.services.customer_service import get_or_create_customer
 from app.services.service_service import list_services
+from app.services.staff_service import get_eligible_transfer_staff
 
 
 def start_session(
@@ -127,14 +132,51 @@ def _handle_incoming(db: Session, session: VoiceSession, key: str) -> IvrRespons
         return IvrResponse(prompt=prompt, options=options, session_id=session.id)
 
     if key == "2":
-        session.step = IvrStep.ABANDONED
-        db.commit()
-        return IvrResponse(
-            prompt="Transferring you to a staff member. Please hold.",
-            action=IvrAction.TRANSFER,
-        )
+        return _handle_transfer_request(db, session)
 
     return _main_menu_response(session.id)
+
+
+def _handle_transfer_request(db: Session, session: VoiceSession) -> IvrResponse:
+    business = require_business(db, session.business_id, session.tenant_id)
+
+    if not business.transfer_enabled:
+        return IvrResponse(
+            prompt="Transfer to staff is not available for this business. Press 1 to book an appointment.",
+            action=IvrAction.END,
+        )
+
+    destination = _resolve_transfer_destination(db, business, session.tenant_id)
+
+    if destination is None:
+        return IvrResponse(
+            prompt="Sorry, no staff members are available to take your call right now. Press 1 to book an appointment.",
+            action=IvrAction.END,
+        )
+
+    session.step = IvrStep.ABANDONED
+    session.transfer_destination = destination
+    db.commit()
+
+    return IvrResponse(
+        prompt="Transferring you to a staff member. Please hold.",
+        action=IvrAction.TRANSFER,
+        session_id=session.id,
+        transfer_destination=destination,
+    )
+
+
+def _resolve_transfer_destination(db, business, tenant_id: int) -> str | None:
+    policy = business.transfer_destination_policy
+    if policy == TransferDestinationPolicy.BUSINESS_PHONE:
+        phone = business.phone
+        return phone if phone and phone.strip() else None
+    if policy == TransferDestinationPolicy.STAFF:
+        # First eligible staff by insertion order (id asc); intentional for determinism.
+        eligible = get_eligible_transfer_staff(db, business.id, tenant_id)
+        return eligible[0].phone if eligible else None
+    logger.warning("Unknown transfer_destination_policy %r for business %d", policy, business.id)
+    return None
 
 
 def _handle_service_selection(
