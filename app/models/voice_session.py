@@ -16,6 +16,7 @@ class IvrStep(StrEnum):
     NO_SLOTS = "no_slots"
     EXPIRED = "expired"
     ABANDONED = "abandoned"
+    TRANSFER_UNAVAILABLE = "transfer_unavailable"
 
 
 class VoiceSession(Base):

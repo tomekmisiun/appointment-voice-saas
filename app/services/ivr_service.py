@@ -82,6 +82,8 @@ def handle_keypress(
         return _handle_service_selection(db, session, key)
     if session.step == IvrStep.SLOT_SELECTION:
         return _handle_slot_selection(db, session, key)
+    if session.step == IvrStep.TRANSFER_UNAVAILABLE:
+        return _handle_transfer_unavailable(db, session, key)
 
     return IvrResponse(prompt="Unexpected session state.", action=IvrAction.END)
 
@@ -141,17 +143,25 @@ def _handle_transfer_request(db: Session, session: VoiceSession) -> IvrResponse:
     business = require_business(db, session.business_id, session.tenant_id)
 
     if not business.transfer_enabled:
+        session.step = IvrStep.TRANSFER_UNAVAILABLE
+        db.commit()
         return IvrResponse(
             prompt="Transfer to staff is not available for this business. Press 1 to book an appointment.",
-            action=IvrAction.END,
+            action=IvrAction.CONTINUE,
+            options=(IvrOption(key="1", label="Book an appointment"),),
+            session_id=session.id,
         )
 
     destination = _resolve_transfer_destination(db, business, session.tenant_id)
 
     if destination is None:
+        session.step = IvrStep.TRANSFER_UNAVAILABLE
+        db.commit()
         return IvrResponse(
             prompt="Sorry, no staff members are available to take your call right now. Press 1 to book an appointment.",
-            action=IvrAction.END,
+            action=IvrAction.CONTINUE,
+            options=(IvrOption(key="1", label="Book an appointment"),),
+            session_id=session.id,
         )
 
     session.step = IvrStep.ABANDONED
@@ -163,6 +173,19 @@ def _handle_transfer_request(db: Session, session: VoiceSession) -> IvrResponse:
         action=IvrAction.TRANSFER,
         session_id=session.id,
         transfer_destination=destination,
+    )
+
+
+def _handle_transfer_unavailable(db: Session, session: VoiceSession, key: str) -> IvrResponse:
+    if key == "1":
+        session.step = IvrStep.INCOMING
+        db.commit()
+        return _main_menu_response(session.id)
+    return IvrResponse(
+        prompt="Press 1 to book an appointment.",
+        action=IvrAction.CONTINUE,
+        options=(IvrOption(key="1", label="Book an appointment"),),
+        session_id=session.id,
     )
 
 
