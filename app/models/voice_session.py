@@ -54,6 +54,7 @@ class VoiceSession(Base):
         Integer, ForeignKey("bookings.id"), nullable=True
     )
     slot_candidates: Mapped[str | None] = mapped_column(Text, nullable=True)
+    call_sid: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )

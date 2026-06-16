@@ -40,6 +40,11 @@ def require_business(db: Session, business_id: int, tenant_id: int) -> Business:
     return business
 
 
+def get_business_global(db: Session, business_id: int) -> Business | None:
+    """Return a business by id without tenant filter (for public webhook endpoints)."""
+    return db.query(Business).filter(Business.id == business_id).first()
+
+
 def list_businesses(
     db: Session,
     tenant_id: int,

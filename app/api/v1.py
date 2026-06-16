@@ -11,6 +11,8 @@ from app.api.routes.files import router as files_router
 from app.api.routes.services import router as services_router
 from app.api.routes.staff import router as staff_router
 from app.api.routes.tenants import router as tenants_router
+from app.api.routes.twilio_sms import router as twilio_sms_router
+from app.api.routes.twilio_voice import router as twilio_voice_router
 from app.api.routes.webhooks import router as webhooks_router
 from app.api.routes.working_hours import router as working_hours_router
 from app.api.routes import users
@@ -34,3 +36,5 @@ api_v1_router.include_router(availability_exceptions_router)
 api_v1_router.include_router(availability_router)
 api_v1_router.include_router(bookings_router)
 api_v1_router.include_router(ivr_router)
+api_v1_router.include_router(twilio_voice_router)
+api_v1_router.include_router(twilio_sms_router)

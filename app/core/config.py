@@ -147,6 +147,14 @@ class Settings(BaseSettings):
     ivr_max_slots: int = Field(default=5, gt=0)
     worker_shutdown_grace_seconds: float = Field(default=60.0, ge=0)
     readiness_check_s3_enabled: bool = False
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = ""
+    twilio_from_number: str = ""
+    twilio_voice_base_url: str = ""
+    twilio_voice_rate_limit_limit: int = Field(default=120, gt=0)
+    twilio_voice_rate_limit_window_seconds: int = Field(default=60, gt=0)
+    twilio_sms_status_rate_limit_limit: int = Field(default=300, gt=0)
+    twilio_sms_status_rate_limit_window_seconds: int = Field(default=60, gt=0)
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
@@ -315,6 +323,13 @@ class Settings(BaseSettings):
             if self.metrics_bearer_token.strip() == "":
                 errors.append(
                     f"metrics_bearer_token is required in {environment_name}",
+                )
+
+        if self.twilio_account_sid.strip() or self.twilio_from_number.strip():
+            if not self.twilio_auth_token.strip():
+                errors.append(
+                    f"twilio_auth_token is required when twilio_account_sid or "
+                    f"twilio_from_number is set in {environment_name}",
                 )
 
         if environment_name == "production":
