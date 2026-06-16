@@ -167,16 +167,16 @@ Recommended MVP execution order:
 
 | Status | ID | Priority | Goal | Scope | Out | Acceptance | Validation | Risk |
 |--------|----|----------|------|-------|-----|------------|------------|------|
-| [ ] | AVS-G001 | P0 | Add VoiceSession model. | Session state, caller phone, selections, expiry, linked booking. | Real Twilio call SID handling. | Session can persist simulated IVR progress. | Migration/tests. | IVR state is lost or duplicated. |
-| [ ] | AVS-G002 | P0 | Add IVR response abstraction. | Provider-neutral prompts, keypad options, redirect/end/transfer intents. | TwiML adapter. | Simulation and future providers share flow contract. | Unit tests. | Voice flow locks into one provider. |
-| [ ] | AVS-G003 | P0 | Add incoming call simulation harness. | Local endpoint/test helper to start a voice session. | Public webhook. | Developer can simulate inbound call locally. | API/test harness tests. | No local E2E path. |
-| [ ] | AVS-G004 | P0 | Add main menu. | Book appointment or transfer to staff option. | Real transfer. | Press 1 books; press 2 follows transfer branch placeholder. | IVR tests. | Callers cannot reach intended workflow. |
-| [ ] | AVS-G005 | P0 | Add service keypad selection. | Map keypad input to active services. | Speech recognition. | Caller can select configured service. | IVR tests. | Wrong service booked. |
-| [ ] | AVS-G006 | P0 | Add slot proposal keypad flow. | Present available slots and accept keypad choice. | Arbitrary date search. | Caller can select a generated slot. | IVR tests. | Caller cannot complete booking. |
-| [ ] | AVS-G007 | P0 | Confirm booking from IVR. | Create booking from selected service/slot/customer. | SMS/calendar provider delivery. | Simulated IVR creates booking through booking service. | E2E IVR test. | IVR bypasses booking correctness. |
-| [ ] | AVS-G008 | P0 | Handle no available slots. | Prompt/end/fallback path when no slots exist. | Waitlist. | No-slot case is clear and does not create booking. | IVR tests. | Bad user experience or invalid booking. |
-| [ ] | AVS-G009 | P1 | Add voice session expiration. | Expire incomplete sessions and release pending state. | Long-term analytics. | Old sessions cannot complete stale booking. | Worker/service tests. | Stale sessions create wrong bookings. |
-| [ ] | AVS-G010 | P0 | Add E2E IVR simulation test. | Full simulated call, service, slot, booking, fake SMS, fake calendar. | Real provider smoke. | One test demonstrates local product flow. | `make validate`. | MVP cannot be verified end to end. |
+| [x] | AVS-G001 | P0 | Add VoiceSession model. | Session state, caller phone, selections, expiry, linked booking. | Real Twilio call SID handling. | Session can persist simulated IVR progress. | Migration/tests. | IVR state is lost or duplicated. |
+| [x] | AVS-G002 | P0 | Add IVR response abstraction. | Provider-neutral prompts, keypad options, redirect/end/transfer intents. | TwiML adapter. | Simulation and future providers share flow contract. | Unit tests. | Voice flow locks into one provider. |
+| [x] | AVS-G003 | P0 | Add incoming call simulation harness. | Local endpoint/test helper to start a voice session. | Public webhook. | Developer can simulate inbound call locally. | API/test harness tests. | No local E2E path. |
+| [x] | AVS-G004 | P0 | Add main menu. | Book appointment or transfer to staff option. | Real transfer. | Press 1 books; press 2 follows transfer branch placeholder. | IVR tests. | Callers cannot reach intended workflow. |
+| [x] | AVS-G005 | P0 | Add service keypad selection. | Map keypad input to active services. | Speech recognition. | Caller can select configured service. | IVR tests. | Wrong service booked. |
+| [x] | AVS-G006 | P0 | Add slot proposal keypad flow. | Present available slots and accept keypad choice. | Arbitrary date search. | Caller can select a generated slot. | IVR tests. | Caller cannot complete booking. |
+| [x] | AVS-G007 | P0 | Confirm booking from IVR. | Create booking from selected service/slot/customer. | SMS/calendar provider delivery. | Simulated IVR creates booking through booking service. | E2E IVR test. | IVR bypasses booking correctness. |
+| [x] | AVS-G008 | P0 | Handle no available slots. | Prompt/end/fallback path when no slots exist. | Waitlist. | No-slot case is clear and does not create booking. | IVR tests. | Bad user experience or invalid booking. |
+| [x] | AVS-G009 | P1 | Add voice session expiration. | Expire incomplete sessions and release pending state. | Long-term analytics. | Old sessions cannot complete stale booking. | Worker/service tests. | Stale sessions create wrong bookings. |
+| [x] | AVS-G010 | P0 | Add E2E IVR simulation test. | Full simulated call, service, slot, booking, fake SMS, fake calendar. | Real provider smoke. | One test demonstrates local product flow. | `make validate`. | MVP cannot be verified end to end. |
 
 ### EPIC H - Real provider integrations for pilot
 
