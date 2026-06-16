@@ -2,13 +2,13 @@
 
 import pytest
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.exc import IntegrityError
 
+from app.models.booking import Booking, BookingSource, BookingStatus
 from app.models.calendar_event import CalendarEvent, CalendarSyncStatus
 from app.models.tenant import Tenant
-from app.services.booking_service import create_booking
 from app.services.business_service import create_business
 from app.services.customer_service import get_or_create_customer
 from app.services.service_service import create_service
@@ -24,15 +24,21 @@ def _setup(db):
     staff = create_staff(db, tenant_id=tenant.id, business_id=biz.id, name="Ola")
     svc = create_service(db, tenant_id=tenant.id, business_id=biz.id, name="Cut", duration_minutes=30)
     customer = get_or_create_customer(db, tenant_id=tenant.id, business_id=biz.id, phone="+48600100300")
-    booking = create_booking(
-        db,
+    # Insert booking directly to avoid auto-creating a CalendarEvent via create_booking.
+    booking = Booking(
         tenant_id=tenant.id,
         business_id=biz.id,
         customer_id=customer.id,
         service_id=svc.id,
         staff_id=staff.id,
         starts_at=_STARTS_AT,
+        ends_at=_STARTS_AT + timedelta(minutes=30),
+        status=BookingStatus.CONFIRMED,
+        source=BookingSource.API,
     )
+    db.add(booking)
+    db.commit()
+    db.refresh(booking)
     return tenant.id, biz.id, booking.id
 
 

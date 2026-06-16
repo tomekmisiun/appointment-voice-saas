@@ -27,6 +27,10 @@ from app.core.shutdown import (
 from app.db.session import SessionLocal
 from app.services.audit_log_service import cleanup_old_audit_logs
 from app.services.idempotency_service import cleanup_expired_idempotency_records
+from app.services.calendar_service import (
+    SYNC_CALENDAR_EVENT_JOB,
+    sync_calendar_event_in_worker,
+)
 from app.services.notification_service import (
     SEND_NOTIFICATION_JOB,
     send_notification_in_worker,
@@ -91,6 +95,17 @@ def handle_job(job: Job) -> None:
                 db,
                 uploaded_file_id=uploaded_file_id,
             )
+        finally:
+            db.close()
+
+        return
+
+    if job.type == SYNC_CALENDAR_EVENT_JOB:
+        event_id = job.payload["event_id"]
+
+        db = SessionLocal()
+        try:
+            sync_calendar_event_in_worker(db, event_id=event_id)
         finally:
             db.close()
 

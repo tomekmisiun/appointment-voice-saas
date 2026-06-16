@@ -9,6 +9,10 @@ from app.models.booking import Booking, BookingSource, BookingStatus
 from app.services.audit_log_service import create_audit_log
 from app.services.business_service import require_business
 from app.services.customer_service import require_customer
+from app.services.calendar_service import (
+    enqueue_calendar_event,
+    enqueue_sync_calendar_event_job,
+)
 from app.services.notification_service import (
     enqueue_booking_cancellation,
     enqueue_booking_confirmation,
@@ -104,6 +108,7 @@ def create_booking(
         service=svc,
     )
     confirmation_intent_ids = [intent.id for intent in confirmation_intents]
+    calendar_event = enqueue_calendar_event(db, booking=booking, business=business, service=svc)
     try:
         db.commit()
     except IntegrityError as exc:
@@ -114,6 +119,7 @@ def create_booking(
     db.refresh(booking)
     for notification_id in confirmation_intent_ids:
         enqueue_send_notification_job(notification_id)
+    enqueue_sync_calendar_event_job(calendar_event.id)
     return booking
 
 
