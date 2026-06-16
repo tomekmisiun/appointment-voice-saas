@@ -13,8 +13,9 @@ class NotificationChannel(StrEnum):
 
 
 class NotificationPurpose(StrEnum):
-    BOOKING_CONFIRMATION = "booking_confirmation"
-    BOOKING_CANCELLATION = "booking_cancellation"
+    BOOKING_CONFIRMATION  = "booking_confirmation"
+    BOOKING_CANCELLATION  = "booking_cancellation"
+    EXTERNAL_BOOKING_LINK = "external_booking_link"   # link SMS — no booking_id
 
 
 class NotificationStatus(StrEnum):
