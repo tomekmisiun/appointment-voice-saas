@@ -72,6 +72,9 @@ seed-tenant:
 seed:
 	docker compose run --rm api python -m app.seed_dev_data
 
+seed-demo:
+	docker compose run --rm api python -m app.seed_demo_data
+
 smoke:
 	API_BASE_URL=$(API_BASE_URL) DEV_ADMIN_EMAIL=$(DEV_ADMIN_EMAIL) DEV_PASSWORD=$(DEV_PASSWORD) ./scripts/smoke_test.sh
 
