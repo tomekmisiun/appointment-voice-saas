@@ -1,10 +1,16 @@
 from datetime import datetime
+from enum import StrEnum
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
 from app.db.base import Base
+
+
+class TransferDestinationPolicy(StrEnum):
+    BUSINESS_PHONE = "business_phone"
+    STAFF = "staff"
 
 
 class Business(Base):
@@ -19,6 +25,10 @@ class Business(Base):
     timezone: Mapped[str] = mapped_column(String(64), nullable=False)
     phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    transfer_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    transfer_destination_policy: Mapped[str] = mapped_column(
+        String(32), nullable=False, default=TransferDestinationPolicy.BUSINESS_PHONE
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

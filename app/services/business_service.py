@@ -11,6 +11,8 @@ def create_business(
     name: str,
     timezone: str,
     phone: str | None = None,
+    transfer_enabled: bool = False,
+    transfer_destination_policy: str = "business_phone",
 ) -> Business:
     business = Business(
         tenant_id=tenant_id,
@@ -18,6 +20,8 @@ def create_business(
         timezone=timezone,
         phone=phone,
         is_active=True,
+        transfer_enabled=transfer_enabled,
+        transfer_destination_policy=transfer_destination_policy,
     )
     db.add(business)
     db.commit()
@@ -68,6 +72,8 @@ def update_business(
     timezone: str | None = None,
     phone: str | None = None,
     is_active: bool | None = None,
+    transfer_enabled: bool | None = None,
+    transfer_destination_policy: str | None = None,
 ) -> Business:
     business = require_business(db, business_id, tenant_id)
     if name is not None:
@@ -78,6 +84,10 @@ def update_business(
         business.phone = phone
     if is_active is not None:
         business.is_active = is_active
+    if transfer_enabled is not None:
+        business.transfer_enabled = transfer_enabled
+    if transfer_destination_policy is not None:
+        business.transfer_destination_policy = transfer_destination_policy
     db.commit()
     db.refresh(business)
     return business

@@ -27,6 +27,8 @@ def create_business_endpoint(
         name=body.name,
         timezone=body.timezone,
         phone=body.phone,
+        transfer_enabled=body.transfer_enabled,
+        transfer_destination_policy=body.transfer_destination_policy,
     )
 
 
@@ -72,4 +74,6 @@ def update_business_endpoint(
         timezone=body.timezone,
         phone=body.phone,
         is_active=body.is_active,
+        transfer_enabled=body.transfer_enabled,
+        transfer_destination_policy=body.transfer_destination_policy,
     )
