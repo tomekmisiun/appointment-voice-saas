@@ -36,15 +36,20 @@ Inherited foundation capabilities available for reuse:
   guards.
 - AI workflow rules in `.ai-rules/`, with optional agents and commands.
 
+## What Is Implemented
+
+As of Epic I / Epic J:
+
+- **Appointment domain**: business, staff, service, working hours, availability engine, bookings with double-booking protection.
+- **Notification outbox**: fake SMS provider (logs, marks delivered); real Twilio provider wired.
+- **Calendar adapter**: fake calendar provider; real Google Calendar provider wired.
+- **IVR simulation**: `/api/v1/ivr/simulate/*` — start call, press keys, book an appointment or transfer.
+- **Call transfer**: press 2 in IVR → resolves to business phone or eligible staff.
+- **Demo seed**: `make seed-demo` seeds a deterministic demo scenario (Glamour Studio Demo).
+- **Smoke tests**: J001–J004 prove manual booking, IVR booking, cancellation, and demo seed locally.
+
 ## What Does Not Exist Yet
 
-Appointment Voice SaaS gaps (verify in [`docs/learning/00-current-state-audit.md`](docs/learning/00-current-state-audit.md)):
-
-- IVR runtime flow or local IVR simulation.
-- SMS provider integration or product notification outbox.
-- Calendar sync or product calendar adapter.
-- Call transfer.
-- Product-specific end-to-end smoke tests (demo scripts).
 - Dedicated Customer HTTP CRUD API (customers exist via booking flow only).
 - Billing, subscriptions, or frontend.
 
@@ -96,6 +101,7 @@ Useful commands:
 | `make docker-up` / `make docker-down` | Start or stop the local Compose stack |
 | `make migration-upgrade` | Apply inherited foundation migrations |
 | `make seed-tenant` / `make seed` | Seed default tenant and development users |
+| `make seed-demo` | Seed the Glamour Studio Demo scenario (idempotent) |
 | `make smoke` | Smoke test the inherited foundation API |
 | `make validate-ai-workflows` | Validate AI workflow file presence |
 | `make policy-guards` | Run CI policy guard scripts |
@@ -130,15 +136,45 @@ with Appointment Voice SaaS product modules in later implementation tasks.
 | [`docs/`](docs/) | Product docs plus inherited foundation references |
 | [`.ai-rules/`](.ai-rules/) | Binding AI/project rules |
 
+## Demo Scenario (local)
+
+```bash
+# 1. Start stack and migrate
+make docker-up migration-upgrade
+
+# 2. Seed users + demo business (Glamour Studio Demo, 3 staff, 3 services, Mon–Sat hours)
+make seed-tenant seed seed-demo
+
+# 3. Log in
+curl -s -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@example.local","password":"devpassword123"}' | python3 -m json.tool
+
+# 4. Simulate an IVR call (replace TOKEN and BUSINESS_ID)
+curl -s -X POST http://localhost:8000/api/v1/ivr/simulate/call \
+  -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"business_id": BUSINESS_ID, "caller_phone": "+48600000001"}' | python3 -m json.tool
+
+# 5. Press 1 to book, then 1 to select service, then 1 to pick slot, then 1 to confirm
+curl -s -X POST http://localhost:8000/api/v1/ivr/simulate/press \
+  -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"session_id": SESSION_ID, "key": "1"}' | python3 -m json.tool
+
+# 6. Or press 2 to transfer → returns action=TRANSFER + transfer_destination=+48100200300
+```
+
+Expected outputs:
+- Booking created with `source=ivr`, `status=confirmed`.
+- SMS notification in `notification_outbox` (fake provider logs to stdout).
+- IVR transfer returns `{"action":"transfer","transfer_destination":"+48100200300"}`.
+
+See `tests/test_avs_j001_seed_demo.py` through `test_avs_j004_smoke_cancellation.py`
+for automated smoke assertions.
+
 ## Next Implementation Step
 
-Start with the product foundation tasks in
-[`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md):
-
-1. `AVS-A002` - Product architecture ADR for PostgreSQL source of truth,
-   adapters, queue/outbox, idempotency, and tenancy.
-2. `AVS-A003` - MVP demo flow definition.
-3. `AVS-B001` - Business model as the first runtime slice.
-
-Do not add booking logic, IVR, SMS, calendar, or frontend code before the core
-domain model and migration/test pattern are established.
+See [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md) for
+remaining tasks. Open items: AVS-A000 (roadmap cleanup), AVS-J006 (pilot
+deployment checklist), and post-MVP epics (billing, frontend, real providers).
