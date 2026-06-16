@@ -209,7 +209,7 @@ Recommended MVP execution order:
 | [x] | AVS-J003 | P0 | Smoke IVR simulated booking. | Simulated call through booking, fake SMS, fake calendar. | Twilio smoke. | Script proves local call-to-booking path. | Smoke command/test. | Voice flow cannot be demoed. |
 | [x] | AVS-J004 | P0 | Smoke cancellation flow. | Cancel booking and verify notification/calendar update. | Customer self-cancel. | Script proves cancellation side effects. | Smoke command/test. | Lifecycle changes diverge. |
 | [x] | AVS-J005 | P0 | Document README demo scenario. | Local setup and expected demo outputs. | Marketing landing page. | New developer can run the demo. | Docs review. | Product appears unusable locally. |
-| [ ] | AVS-J006 | P1 | Add MVP pilot deployment checklist. | Env, secrets, provider config, worker, monitoring, backup, rollback. | Full SRE program. | Pilot operator has checklist before real calls. | Docs review, policy guards. | Pilot launches with missing safeguards. |
+| [x] | AVS-J006 | P1 | Add MVP pilot deployment checklist. | Env, secrets, provider config, worker, monitoring, backup, rollback. | Full SRE program. | Pilot operator has checklist before real calls. | Docs review, policy guards. | Pilot launches with missing safeguards. |
 
 ## Production expansion backlog
 
