@@ -29,6 +29,11 @@ def create_business_endpoint(
         phone=body.phone,
         transfer_enabled=body.transfer_enabled,
         transfer_destination_policy=body.transfer_destination_policy,
+        booking_mode=body.booking_mode,
+        external_booking_url=body.external_booking_url,
+        external_booking_label=body.external_booking_label,
+        external_booking_provider=body.external_booking_provider,
+        subscription_plan=body.subscription_plan,
     )
 
 
@@ -76,4 +81,9 @@ def update_business_endpoint(
         is_active=body.is_active,
         transfer_enabled=body.transfer_enabled,
         transfer_destination_policy=body.transfer_destination_policy,
+        booking_mode=body.booking_mode,
+        external_booking_url=body.external_booking_url,
+        external_booking_label=body.external_booking_label,
+        external_booking_provider=body.external_booking_provider,
+        subscription_plan=body.subscription_plan,
     )
