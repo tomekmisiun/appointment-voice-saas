@@ -1,3 +1,4 @@
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.domain_errors import NotFoundError
@@ -78,3 +79,26 @@ def update_staff(
     db.commit()
     db.refresh(member)
     return member
+
+
+def get_eligible_transfer_staff(
+    db: Session,
+    business_id: int,
+    tenant_id: int,
+    *,
+    limit: int = 50,
+) -> list[Staff]:
+    """Return active staff members with a non-blank phone who can receive a transferred call."""
+    return (
+        db.query(Staff)
+        .filter(
+            Staff.business_id == business_id,
+            Staff.tenant_id == tenant_id,
+            Staff.is_active.is_(True),
+            Staff.phone.isnot(None),
+            func.trim(Staff.phone) != "",
+        )
+        .order_by(Staff.id.asc())
+        .limit(limit)
+        .all()
+    )
