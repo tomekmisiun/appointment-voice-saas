@@ -8,7 +8,7 @@ from app.core.domain_errors import NotFoundError
 from app.core.ivr import IvrAction
 from app.models.tenant import Tenant
 from app.models.voice_session import IvrStep
-from app.services.business_service import create_business
+from app.services.business_service import create_business, update_business
 from app.services.customer_service import get_or_create_customer
 from app.services.ivr_service import (
     expire_stale_sessions,
@@ -91,6 +91,7 @@ def test_press_1_transitions_to_service_selection(db):
 
 def test_press_2_transfers(db):
     tenant_id, biz, _svc = _setup(db)
+    update_business(db, biz.id, tenant_id, transfer_enabled=True, phone="+48100200300")
     session, _ = start_session(db, business_id=biz.id, tenant_id=tenant_id, caller_phone="+48600111444")
 
     response = handle_keypress(db, session_id=session.id, tenant_id=tenant_id, key="2")
@@ -98,6 +99,7 @@ def test_press_2_transfers(db):
     db.refresh(session)
     assert session.step == IvrStep.ABANDONED
     assert response.action == IvrAction.TRANSFER
+    assert response.transfer_destination == "+48100200300" 
 
 
 def test_invalid_key_at_main_menu_re_prompts(db):

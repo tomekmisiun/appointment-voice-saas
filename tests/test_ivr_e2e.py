@@ -12,7 +12,7 @@ from app.core.ivr import IvrAction
 from app.models.booking import Booking, BookingSource
 from app.models.notification_outbox import NotificationOutbox
 from app.models.tenant import Tenant
-from app.services.business_service import create_business
+from app.services.business_service import create_business, update_business
 from app.services.service_service import create_service
 from app.services.working_hours_service import create_working_hours
 from tests.database import auth_headers, login_user, promote_to_admin, register_user
@@ -125,10 +125,17 @@ def test_e2e_ivr_unknown_business_returns_404(db, admin_client):
 
 def test_e2e_ivr_press_2_returns_transfer(db, admin_client, ivr_domain):
     client, headers = admin_client
+    biz_id, tid = ivr_domain["business_id"], ivr_domain["tenant_id"]
+
+    update_business(
+        db, biz_id, tid,
+        transfer_enabled=True,
+        phone="+48100200300",
+    )
 
     resp = client.post(
         "/api/v1/ivr/simulate/call",
-        json={"business_id": ivr_domain["business_id"], "caller_phone": "+48600999003"},
+        json={"business_id": biz_id, "caller_phone": "+48600999003"},
         headers=headers,
     )
     session_id = resp.json()["session_id"]
@@ -139,7 +146,9 @@ def test_e2e_ivr_press_2_returns_transfer(db, admin_client, ivr_domain):
         headers=headers,
     )
     assert resp.status_code == 200
-    assert resp.json()["action"] == IvrAction.TRANSFER
+    data = resp.json()
+    assert data["action"] == IvrAction.TRANSFER
+    assert data["transfer_destination"] == "+48100200300"
 
 
 def test_e2e_ivr_requires_auth(client, ivr_domain):

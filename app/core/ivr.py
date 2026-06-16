@@ -20,3 +20,4 @@ class IvrResponse:
     options: tuple[IvrOption, ...] = field(default_factory=tuple)
     action: IvrAction = IvrAction.CONTINUE
     session_id: int | None = None
+    transfer_destination: str | None = None

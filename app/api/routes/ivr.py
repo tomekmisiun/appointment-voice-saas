@@ -28,6 +28,7 @@ def simulate_call(
         prompt=response.prompt,
         options=[IvrOptionRead(key=o.key, label=o.label) for o in response.options],
         action=response.action,
+        transfer_destination=response.transfer_destination,
     )
 
 
@@ -48,4 +49,5 @@ def simulate_press(
         prompt=response.prompt,
         options=[IvrOptionRead(key=o.key, label=o.label) for o in response.options],
         action=response.action,
+        transfer_destination=response.transfer_destination,
     )
