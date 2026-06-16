@@ -1,126 +1,155 @@
 # Project Status — Appointment Voice SaaS
 
-This file records verified Appointment Voice SaaS status. It should not list
-planned product capabilities as implemented.
+Verified as of 2026-06-16. Updated during `audit/roadmap-reality-check`.
 
 ## Current Status
 
-Product backend **partially implemented** — see verified list below and
-[`docs/learning/00-current-state-audit.md`](docs/learning/00-current-state-audit.md).
+All MVP foundation epics (A–J) implemented. 613 tests pass. CI green.
 
-- Inherited FastAPI foundation: **running** (auth, tenants, worker, CI).
-- Appointment domain (business → booking) + availability engine: **implemented**
-  (code, migrations, tests).
-- Notification outbox model, SMS provider interface, fake SMS adapter, and
-  booking confirmation/cancellation enqueueing: **implemented** (`AVS-E001`–`AVS-E005`).
-- IVR, calendar, transfer, frontend: **not implemented** (roadmap EPIC E–J).
-- **Next milestone:** EPIC E — notification worker (`AVS-E006`).
+The product can be fully demonstrated locally using fake SMS and fake calendar
+providers. Real Twilio voice and SMS providers are wired and configured via env
+vars. A pilot can be set up against the `docs/mvp-pilot-deployment-checklist.md`.
 
-## Verified Inherited Foundation Capabilities
+## Verified Capabilities
 
-The repository currently inherits these verified foundation capabilities:
+### Foundation (inherited, running)
 
-- FastAPI app structure with versioned routes and standard middleware patterns.
-- PostgreSQL, SQLAlchemy, Alembic setup, and migration tooling.
-- Redis-backed rate limiting, cache, idempotency, and worker queue patterns.
-- Auth, users, RBAC, tenant foundation, and tenant scoping patterns.
-- Webhook verification and idempotency pattern.
-- Background worker patterns with retries, delayed jobs, failed-job handling,
-  and maintenance jobs.
-- Observability, structured logging, request IDs, health checks, and metrics.
-- Docker and Docker Compose local development stack.
-- CI/testing/policy guards and coverage enforcement.
-- AI workflow rules in `.ai-rules/`.
+- FastAPI app, versioned routes, middleware, health checks, metrics, OpenAPI.
+- PostgreSQL + SQLAlchemy + Alembic migrations.
+- Redis-backed rate limiting, caching, idempotency, job queue.
+- JWT auth, RBAC, user management, multi-tenant foundation.
+- Webhook verification + idempotency pattern.
+- Background worker with retries, delayed jobs, failed-job handling.
+- Docker Compose local stack, CI (pre-commit, pytest, Trivy, coverage ≥85%).
 
-Detailed historical foundation status is preserved in
-[`docs/foundation/template-project-status.md`](docs/foundation/template-project-status.md).
+### Core SaaS Domain (EPIC B — done)
 
-## Appointment Voice SaaS Verified Capabilities
+- **Business** model/service/API (`/api/v1/businesses`). Transfer settings (enabled, policy, phone).
+- **Staff** model/service/API (`/api/v1/businesses/{id}/staff`). Active status, phone.
+- **Service** model/service/API (`/api/v1/businesses/{id}/services`). Duration, price.
+- **WorkingHours** model/service/API. Day/time windows, staff or business scope.
+- **AvailabilityException** model/service/API. One-off overrides.
+- **Customer** model/service. Phone normalisation, race-safe deduplication within business.
+- **Booking** model/service/API (`/api/v1/businesses/{id}/bookings`). CONFIRMED/CANCELLED lifecycle.
+- Alembic migrations, tenant indexes, FK constraints.
+- `EXCLUDE USING gist` (btree_gist) constraint for DB-level double-booking prevention.
+- Booking audit logs (create/cancel/source/actor) via `AuditLog`.
+- Tenant isolation tests for all product tables (`tests/test_product_tenant_isolation.py`).
 
-Planning and architecture:
+### Availability Engine (EPIC C — done)
 
-- Product scope documentation: [`docs/product-scope.md`](docs/product-scope.md).
-- Domain vocabulary: [`docs/domain-model.md`](docs/domain-model.md).
-- Product roadmap and executable backlog: [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md).
-- Architecture ADR (PostgreSQL source of truth, adapters, outbox, tenancy): [`docs/adr/0002-appointment-voice-saas-architecture.md`](docs/adr/0002-appointment-voice-saas-architecture.md).
-- Local demo flow script: [`docs/demo-flow.md`](docs/demo-flow.md).
-- Technical debt/gap register: [`TECH_DEBT.md`](TECH_DEBT.md).
+- Slot generation from service duration + working hours (`app/services/availability_service.py`).
+- Confirmed booking exclusion (half-open interval overlap).
+- Availability exception overlay (closures → empty; special hours → override).
+- Timezone/DST handling via `zoneinfo.ZoneInfo` — summer/winter offset tests pass.
+- Availability API (`GET /api/v1/businesses/{id}/availability`).
+- Full test coverage including cross-tenant and cross-business isolation.
 
-Core domain (EPIC B — merged 2026-06-14):
+### Notification Outbox + Fake SMS (EPIC E — done)
 
-- **Business** model, service, schema, CRUD API (`/api/v1/businesses`).
-- **Staff** model, service, schema, CRUD API (`/api/v1/businesses/{id}/staff`).
-- **Service** model, service, schema, CRUD API (`/api/v1/businesses/{id}/services`).
-- **WorkingHours** model, service, schema, API (`/api/v1/businesses/{id}/working-hours`).
-- **AvailabilityException** model, service, schema, API (`/api/v1/businesses/{id}/availability-exceptions`).
-- **Customer** model, service, schema with phone normalisation and race-safe deduplication.
-- **Booking** model, service, schema with `CONFIRMED`/`CANCELLED` lifecycle.
-- Alembic migrations for all domain tables with tenant indexes and FK constraints.
-- PostgreSQL `EXCLUDE USING gist` constraint (`btree_gist`) for DB-level double-booking prevention.
-- Booking creation, listing, read, and cancellation APIs (`/api/v1/businesses/{id}/bookings`).
-- Booking audit logs for create/cancel lifecycle with actor and source (`tests/test_booking_audit.py`; AVS-D006).
-- Cross-tenant isolation enforced at service layer (`require_business`, `require_staff`) for all nested writes.
-- Cross-tenant isolation tests for all product tables (`tests/test_product_tenant_isolation.py`).
+- `NotificationOutbox` model. Intent stored before delivery.
+- Provider-neutral SMS interface (`SmsProvider` Protocol).
+- `NullSmsProvider` (logs not configured), `FakeSmsProvider` (records for tests).
+- `TwilioSmsProvider` (real production adapter, activated by env vars).
+- Booking confirmation and cancellation enqueue intents for customer + business.
+- Notification worker processes `send_notification` jobs.
+- Retry/backoff: after `MAX_NOTIFICATION_ATTEMPTS`, row marked `FAILED`.
 
-Availability engine (EPIC C — verified 2026-06-14):
+### Calendar Adapter (EPIC F — done)
 
-- Slot generation from service duration and staff working hours (`app/services/availability_service.py`).
-- Confirmed booking exclusion with half-open interval overlap check.
-- Availability exception overlay: closures return empty; special hours override working hours.
-- Correct timezone/DST handling via `zoneinfo.ZoneInfo` (Python 3.13 stdlib).
-- Intra-tenant cross-business isolation: `service_id` and `staff_id` validated against `business_id`.
-- Availability API endpoint (`GET /api/v1/businesses/{id}/availability`).
-- Full availability test coverage (`tests/test_availability.py`; cross-business/cross-tenant isolation in `tests/test_product_tenant_isolation.py`).
+- `CalendarProvider` Protocol interface.
+- `CalendarIntegration` model (business/staff calendar config).
+- `CalendarEvent` table (booking → provider event lifecycle).
+- `FakeCalendarProvider` (records operations for tests).
+- Calendar event created after booking (via worker).
+- Cancellation/update reflected through adapter.
+- Retry/DLQ tests: `tests/test_calendar_worker.py`.
 
-Notifications outbox (EPIC E — verified 2026-06-14):
+### Voice/IVR Simulation (EPIC G — done)
 
-- `NotificationOutbox` model persisting SMS intent, recipient, template/purpose,
-  status, and attempts before delivery (`app/models/notification_outbox.py`,
-  migration `ad7b35681f01`, `AVS-E001`).
-- Provider-neutral SMS send contract (`SmsMessage`, `SmsSendResult`) and
-  `SmsProvider` protocol (`app/core/sms.py`, `app/services/sms_provider.py`, `AVS-E002`).
-- `NullSmsProvider` (default, reports not configured) and `FakeSmsProvider`
-  (records sent messages for local/dev/test use) (`AVS-E003`).
-- Booking creation enqueues `BOOKING_CONFIRMATION` SMS intents for the
-  customer, and for the business when it has a phone number
-  (`app/services/notification_service.py`, `AVS-E004`).
-- Booking cancellation enqueues `BOOKING_CANCELLATION` SMS intents for the
-  customer, and for the business when it has a phone number
-  (`app/services/notification_service.py`, `AVS-E005`).
-- Notification worker dispatches `send_notification` jobs and calls
-  `send_notification_in_worker` (`app/worker.py`, `AVS-E006`).
-- Retry/backoff/DLQ: failed sends raise `SmsDeliveryError` (worker schedules
-  retry); after `MAX_NOTIFICATION_ATTEMPTS` the outbox row is marked `FAILED`
-  without raising (no spurious re-queue) (`app/services/notification_service.py`,
-  `AVS-E007`).
-- Full notification behavior test coverage: outbox model, SMS provider, booking
-  enqueue, and worker retry/DLQ paths (`tests/test_notification_worker.py`,
-  `AVS-E008`).
+- `VoiceSession` model (step, caller_phone, selections, expiry, transfer_destination).
+- `IvrResponse` abstraction (provider-neutral prompts, options, action, transfer_destination).
+- Simulation endpoints (`POST /api/v1/ivr/simulate/call`, `/press`).
+- Main menu: press 1 to book, press 2 to transfer.
+- Service keypad selection (up to 9 services).
+- Slot proposal keypad (available slots).
+- Booking confirmation from IVR.
+- No-slots terminal path (`NO_SLOTS` step).
+- Invalid key re-prompt at every step.
+- Session expiry: `expires_at` enforced at handle_keypress; `expire_stale_sessions()` wired to worker.
+- E2E IVR test: `tests/test_ivr_e2e.py`.
 
-## Not Implemented Yet
+### Real Provider Integrations (EPIC H — done)
 
-- IVR runtime or local IVR simulation.
-- Calendar provider interface, calendar event model, fake calendar adapter.
-- Voice session model.
-- Call transfer.
-- Working hours and availability exception HTTP route tests.
-- Real provider integrations (Twilio, SMS, Google Calendar).
-- Product smoke tests.
-- Billing/subscriptions.
-- Frontend.
+- Twilio voice webhook adapter (`app/services/twilio_voice_adapter.py`): IvrResponse → TwiML.
+- Twilio voice webhook route (`/api/v1/webhooks/twilio/voice/{business_id}`).
+- Twilio signature validation (`app/core/twilio_security.py`).
+- Twilio SMS provider (`TwilioSmsProvider` in `sms_provider.py`).
+- SMS status webhook (`/api/v1/webhooks/twilio/sms/status`).
+- Provider webhook idempotency via `idempotency_service`.
+- Public webhook IP-aware rate limiting.
+- Twilio provider runbook: `docs/twilio-provider-runbook.md`.
 
-## Next Implementation Milestone
+### Call Transfer (EPIC I — done)
 
-**EPIC F — Calendar adapter foundation** (`AVS-F001` onwards):
+- Business transfer settings (enabled/disabled, policy: business_phone or staff).
+- `BusinessTransferHours` model + API (configurable transfer windows).
+- Staff eligibility: active staff with non-null, non-whitespace phone.
+- IVR press-2 branch: resolves destination per policy, emits TRANSFER action.
+- TRANSFER_UNAVAILABLE fallback (returns to main menu).
+- Tests: `tests/test_avs_i001_transfer_hours.py` through `test_avs_i005_transfer_coverage.py`.
 
-See [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md) for
-the detailed task backlog.
+### Demo and MVP Readiness (EPIC J — done)
 
-## Rules For Updating This File
+- `make seed-demo`: deterministic demo seed (Glamour Studio Demo, 3 staff, 3 services, Mon–Sat).
+- Manual booking smoke: `tests/test_avs_j002_smoke_manual_booking.py`.
+- IVR simulated booking smoke: `tests/test_avs_j003_smoke_ivr_booking.py`.
+- Cancellation smoke: `tests/test_avs_j004_smoke_cancellation.py`.
+- README demo scenario documented.
+- MVP pilot deployment checklist: `docs/mvp-pilot-deployment-checklist.md`.
 
-- Add only verified behavior here.
-- Planned work belongs in [`ROADMAP.md`](ROADMAP.md) or
-  [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md).
-- Open gaps belong in [`TECH_DEBT.md`](TECH_DEBT.md).
-- Product runtime capability requires code and tests before it is listed as
-  verified.
+## Known Limitations and Gaps
+
+| ID | Gap | Severity | Status |
+|----|-----|----------|--------|
+| BUG-001 | ~~Twilio keypress route used `business.phone` instead of `ivr_response.transfer_destination` for STAFF policy transfers~~ | HIGH | **Fixed in audit** |
+| GAP-001 | IVR timeout/no-input has no explicit recovery prompt (falls through to re-prompt) | MEDIUM | Open — see P1-005 |
+| GAP-002 | No IVR repeat menu key (P1-007) | LOW | Open |
+| GAP-003 | No SMS reply parsing (confirm/cancel by text reply) | MEDIUM | Open — P1-002 |
+| GAP-004 | No reschedule flow (IVR or admin) | MEDIUM | Open — P1-003/P1-004 |
+| GAP-005 | No reminder SMS | MEDIUM | Open — P1-001 |
+| GAP-006 | No IVR backend-unavailable fallback | MEDIUM | Open — P1-008 |
+| GAP-007 | `HTTP_422_UNPROCESSABLE_ENTITY` deprecation warning from starlette 1.3.1 | LOW | Monitor — non-breaking |
+| GAP-008 | CalendarIntegration staff_id not FK-validated at DB level | LOW | Open — AVS-TD-028 |
+| GAP-009 | Phone numbers not masked in structured logs | MEDIUM | Open — Privacy risk |
+| GAP-010 | No DLQ alerting or metrics for failed async jobs | MEDIUM | Open — P1-011/P1-012 |
+
+## Readiness Assessment
+
+| Level | Status | Reason |
+|-------|--------|--------|
+| NOT_READY | ✅ Exceeds | All core flows demonstrable |
+| PORTFOLIO_READY | ✅ Yes | Clean domain, tests, CI, real providers, honest limitations |
+| MVP_DEMO_READY | ✅ Yes | Full local simulated call-to-booking-to-SMS-to-calendar works |
+| PILOT_READY | ⚠️ Conditional | Providers wired; BUG-001 fixed; but P1 gaps (no retry alerting, no reschedule, no timeout fallback) remain |
+| PRODUCTION_READY | ❌ No | Missing: reminder SMS, reschedule, IVR error recovery, DLQ alerting, CRM, billing, monitoring dashboards |
+
+## Not Implemented (Expansion Backlog)
+
+P1: Reminder SMS, SMS reply handling, reschedule, IVR timeout/invalid-input fallback,
+backend-unavailable handler, DLQ alerting, monitoring metrics.
+
+P2: CRM clients table, returning caller recognition, multi-service bookings, waitlist,
+preferred staff selection, owner metrics API, GDPR delete.
+
+P3: Salon vs staff hours intersection, staff time blocks, deposits/payments,
+multilingual IVR, calendar conflict import, admin override workflow.
+
+P4: SaaS onboarding, phone provisioning, Stripe Billing, plan limits, multi-tenant
+product audit.
+
+## Rules for Updating This File
+
+- Only list verified behavior (code + tests or justified no-test reason).
+- Planned work belongs in `docs/appointment-saas-roadmap.md`.
+- Gaps belong in `TECH_DEBT.md`.
