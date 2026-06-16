@@ -407,6 +407,7 @@ dependencies = [
     { name = "boto3" },
     { name = "email-validator" },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "passlib", extra = ["bcrypt"] },
     { name = "prometheus-client" },
     { name = "psycopg2-binary" },
@@ -421,7 +422,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "httpx" },
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -436,6 +436,7 @@ requires-dist = [
     { name = "boto3", specifier = ">=1.43.28,<1.44" },
     { name = "email-validator", specifier = ">=2.3,<2.4" },
     { name = "fastapi", specifier = ">=0.136,<0.137" },
+    { name = "httpx", specifier = ">=0.28,<0.29" },
     { name = "passlib", extras = ["bcrypt"], specifier = ">=1.7.4,<1.8" },
     { name = "prometheus-client", specifier = ">=0.21,<0.24" },
     { name = "psycopg2-binary", specifier = ">=2.9,<2.10" },
@@ -450,7 +451,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "httpx", specifier = ">=0.28,<0.29" },
     { name = "pre-commit", specifier = ">=4.6,<4.7" },
     { name = "pytest", specifier = ">=9.0,<9.1" },
     { name = "pytest-cov", specifier = ">=6.0,<7" },
