@@ -15,6 +15,7 @@ from app.models.tenant import Tenant
 from app.models.uploaded_file import UploadedFile
 from app.models.user import User
 from app.models.webhook_event import WebhookEvent
+from app.models.voice_session import VoiceSession
 from app.models.working_hours import WorkingHours
 
 __all__ = [
@@ -34,6 +35,7 @@ __all__ = [
     "Tenant",
     "UploadedFile",
     "User",
+    "VoiceSession",
     "WebhookEvent",
     "WorkingHours",
 ]

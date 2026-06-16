@@ -46,6 +46,7 @@ from app.services.upload_verification_service import (
     VERIFY_PRESIGNED_UPLOAD_JOB,
     verify_presigned_upload_in_worker,
 )
+from app.services.ivr_service import expire_stale_sessions
 from app.services.webhook_service import cleanup_old_webhook_events
 
 
@@ -201,6 +202,7 @@ def run_scheduled_maintenance(now: float | None = None) -> bool:
         idempotency_deleted = cleanup_expired_idempotency_records(db)
         webhook_events_deleted = cleanup_old_webhook_events(db)
         audit_logs_deleted = cleanup_old_audit_logs(db)
+        voice_sessions_expired = expire_stale_sessions(db)
     finally:
         db.close()
 
@@ -209,11 +211,13 @@ def run_scheduled_maintenance(now: float | None = None) -> bool:
         "expired_password_reset_tokens_deleted=%s "
         "expired_idempotency_records_deleted=%s "
         "old_webhook_events_deleted=%s "
-        "old_audit_logs_deleted=%s",
+        "old_audit_logs_deleted=%s "
+        "voice_sessions_expired=%s",
         password_reset_deleted,
         idempotency_deleted,
         webhook_events_deleted,
         audit_logs_deleted,
+        voice_sessions_expired,
     )
     observe_worker_maintenance(status="completed")
 

@@ -5,6 +5,7 @@ from app.api.routes.auth import router as auth_router
 from app.api.routes.availability import router as availability_router
 from app.api.routes.availability_exceptions import router as availability_exceptions_router
 from app.api.routes.bookings import router as bookings_router
+from app.api.routes.ivr import router as ivr_router
 from app.api.routes.businesses import router as businesses_router
 from app.api.routes.files import router as files_router
 from app.api.routes.services import router as services_router
@@ -32,3 +33,4 @@ api_v1_router.include_router(working_hours_router)
 api_v1_router.include_router(availability_exceptions_router)
 api_v1_router.include_router(availability_router)
 api_v1_router.include_router(bookings_router)
+api_v1_router.include_router(ivr_router)

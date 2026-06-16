@@ -142,6 +142,9 @@ class Settings(BaseSettings):
     idempotency_ttl_seconds: int = Field(default=86400, gt=0)
     idempotency_processing_lock_ttl_seconds: int = Field(default=60, gt=0)
     api_shutdown_grace_seconds: float = Field(default=30.0, ge=0)
+    ivr_session_ttl_minutes: int = Field(default=10, gt=0)
+    ivr_slot_search_days: int = Field(default=7, gt=0)
+    ivr_max_slots: int = Field(default=5, gt=0)
     worker_shutdown_grace_seconds: float = Field(default=60.0, ge=0)
     readiness_check_s3_enabled: bool = False
 
