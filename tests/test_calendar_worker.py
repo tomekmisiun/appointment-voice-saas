@@ -118,12 +118,12 @@ def test_cancel_synced_raises_on_first_failure(db):
     assert event.status == CalendarSyncStatus.SYNCED
 
 
-def test_cancel_synced_leaves_synced_after_max_retries(db):
+def test_cancel_synced_marks_cancel_failed_after_max_retries(db):
     _tenant_id, _booking, event = _setup(db)
     good_provider = FakeCalendarProvider()
     sync_calendar_event_in_worker(db, event_id=event.id, calendar_provider=good_provider)
     db.refresh(event)
-    event.attempts = settings.worker_max_retries - 1
+    event.cancel_attempts = settings.worker_max_retries - 1
     db.commit()
 
     cancel_calendar_event_in_worker(
@@ -131,9 +131,25 @@ def test_cancel_synced_leaves_synced_after_max_retries(db):
     )
 
     db.refresh(event)
-    assert event.status == CalendarSyncStatus.SYNCED
+    assert event.status == CalendarSyncStatus.CANCEL_FAILED
     assert event.last_error == "provider_down"
-    assert event.attempts == settings.worker_max_retries
+    assert event.cancel_attempts == settings.worker_max_retries
+
+
+def test_cancel_failed_is_terminal(db):
+    _tenant_id, _booking, event = _setup(db)
+    good_provider = FakeCalendarProvider()
+    sync_calendar_event_in_worker(db, event_id=event.id, calendar_provider=good_provider)
+    db.refresh(event)
+    event.status = CalendarSyncStatus.CANCEL_FAILED
+    db.commit()
+
+    provider = FakeCalendarProvider()
+    cancel_calendar_event_in_worker(db, event_id=event.id, calendar_provider=provider)
+
+    assert provider.cancelled == []  # no provider call
+    db.refresh(event)
+    assert event.status == CalendarSyncStatus.CANCEL_FAILED
 
 
 # --- worker dispatch ---

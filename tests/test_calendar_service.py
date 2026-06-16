@@ -228,15 +228,46 @@ def test_sync_calendar_event_scoped_to_tenant(db):
 # AVS-F006: cancel/update calendar event on booking cancellation
 
 
-def test_cancel_booking_enqueues_cancel_calendar_event(db):
+def test_cancel_booking_enqueues_cancel_calendar_event(db, monkeypatch):
+    import app.services.booking_service as bk_svc
     from app.services.booking_service import cancel_booking
 
     _tenant_id, _biz, _svc, _staff, booking = _setup(db)
+    event = db.query(CalendarEvent).filter(CalendarEvent.booking_id == booking.id).one()
+
+    enqueued_ids = []
+    monkeypatch.setattr(bk_svc, "enqueue_cancel_calendar_event_job", lambda eid: enqueued_ids.append(eid))
 
     cancel_booking(db, booking.id, booking.tenant_id)
 
-    event = db.query(CalendarEvent).filter(CalendarEvent.booking_id == booking.id).one()
-    assert event.status == CalendarSyncStatus.PENDING  # worker hasn't run yet
+    assert enqueued_ids == [event.id]
+
+
+def test_cancel_booking_handles_missing_calendar_event(db, monkeypatch):
+    from datetime import timedelta
+    from app.models.booking import Booking, BookingSource, BookingStatus
+    import app.services.booking_service as bk_svc
+    from app.services.booking_service import cancel_booking
+
+    tenant_id, biz, svc, staff, _existing_booking = _setup(db)
+    customer = get_or_create_customer(db, tenant_id=tenant_id, business_id=biz.id, phone="+48600399001")
+    starts = datetime(2027, 9, 5, 9, 0, tzinfo=timezone.utc)
+    bare = Booking(
+        tenant_id=tenant_id, business_id=biz.id, customer_id=customer.id,
+        service_id=svc.id, staff_id=staff.id,
+        starts_at=starts, ends_at=starts + timedelta(minutes=30),
+        status=BookingStatus.CONFIRMED, source=BookingSource.API,
+    )
+    db.add(bare)
+    db.commit()
+    db.refresh(bare)
+
+    enqueued_ids = []
+    monkeypatch.setattr(bk_svc, "enqueue_cancel_calendar_event_job", lambda eid: enqueued_ids.append(eid))
+
+    cancel_booking(db, bare.id, bare.tenant_id)
+
+    assert enqueued_ids == []  # no CalendarEvent row → nothing enqueued
 
 
 def test_cancel_calendar_event_pending_marks_cancelled_without_provider(db):
@@ -323,8 +354,9 @@ def test_cancel_calendar_event_synced_retries_on_provider_failure(db):
         cancel_calendar_event_in_worker(db, event_id=event.id, calendar_provider=FailingProvider())
 
     db.refresh(event)
-    assert event.status == CalendarSyncStatus.SYNCED  # not cancelled
+    assert event.status == CalendarSyncStatus.SYNCED
     assert event.last_error == "timeout"
+    assert event.cancel_attempts == 1
 
 
 def test_get_calendar_event_for_booking_returns_none_when_absent(db):

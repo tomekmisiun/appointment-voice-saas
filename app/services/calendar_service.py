@@ -150,7 +150,10 @@ def cancel_calendar_event_in_worker(
 ) -> None:
     event = db.query(CalendarEvent).filter(CalendarEvent.id == event_id).first()
 
-    if event is None or event.status == CalendarSyncStatus.CANCELLED:
+    if event is None or event.status in (
+        CalendarSyncStatus.CANCELLED,
+        CalendarSyncStatus.CANCEL_FAILED,
+    ):
         return
 
     booking = db.query(Booking).filter(Booking.id == event.booking_id).one()
@@ -167,7 +170,7 @@ def cancel_calendar_event_in_worker(
     calendar_provider = calendar_provider or get_calendar_provider()
     result = calendar_provider.cancel_event(event.provider_event_id)
 
-    event.attempts += 1
+    event.cancel_attempts += 1
 
     if result.success:
         event.status = CalendarSyncStatus.CANCELLED
@@ -175,7 +178,8 @@ def cancel_calendar_event_in_worker(
         return
 
     event.last_error = (result.error or "")[:500]
-    if event.attempts >= settings.worker_max_retries:
+    if event.cancel_attempts >= settings.worker_max_retries:
+        event.status = CalendarSyncStatus.CANCEL_FAILED
         db.commit()
         return
     db.commit()
