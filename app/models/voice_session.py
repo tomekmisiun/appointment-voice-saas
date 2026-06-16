@@ -9,14 +9,15 @@ from app.db.base import Base
 
 
 class IvrStep(StrEnum):
-    INCOMING = "incoming"
-    SERVICE_SELECTION = "service_selection"
-    SLOT_SELECTION = "slot_selection"
-    BOOKING_CONFIRMED = "booking_confirmed"
-    NO_SLOTS = "no_slots"
-    EXPIRED = "expired"
-    ABANDONED = "abandoned"
-    TRANSFER_UNAVAILABLE = "transfer_unavailable"
+    INCOMING              = "incoming"
+    SERVICE_SELECTION     = "service_selection"
+    SLOT_SELECTION        = "slot_selection"
+    BOOKING_CONFIRMED     = "booking_confirmed"
+    NO_SLOTS              = "no_slots"
+    EXPIRED               = "expired"
+    ABANDONED             = "abandoned"
+    TRANSFER_UNAVAILABLE  = "transfer_unavailable"
+    EXTERNAL_LINK_SENT    = "external_link_sent"   # terminal; external_booking_link mode only
 
 
 class VoiceSession(Base):
