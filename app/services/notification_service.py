@@ -114,6 +114,29 @@ def enqueue_booking_cancellation(
     return intents
 
 
+def enqueue_external_booking_link_sms(
+    db: Session,
+    *,
+    business: Business,
+    caller_phone: str,
+    url: str,
+    label: str | None = None,
+) -> NotificationOutbox:
+    label_text = label or "Book online"
+    intent = NotificationOutbox(
+        tenant_id=business.tenant_id,
+        business_id=business.id,
+        booking_id=None,
+        channel=NotificationChannel.SMS,
+        purpose=NotificationPurpose.EXTERNAL_BOOKING_LINK,
+        recipient_phone=caller_phone,
+        body=f"{label_text}: {url}",
+    )
+    db.add(intent)
+    db.flush()
+    return intent
+
+
 def send_notification_in_worker(
     db: Session,
     *,
