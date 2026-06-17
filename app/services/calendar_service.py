@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.calendar import CalendarEvent as CalendarEventPayload
 from app.core.config import settings
 from app.core.job_queue import Job, enqueue_job
+from app.core.metrics import observe_calendar_provider_request
 from app.models.booking import Booking
 from app.models.business import Business
 from app.models.calendar_event import CalendarEvent, CalendarSyncStatus
@@ -110,6 +111,9 @@ def sync_calendar_event_in_worker(
 
     payload = _build_event_payload(booking, service, staff)
     result = calendar_provider.create_event(payload)
+    observe_calendar_provider_request(
+        provider=event.provider, operation="sync", status="success" if result.success else "failure"
+    )
 
     event.attempts += 1
 
@@ -169,6 +173,9 @@ def cancel_calendar_event_in_worker(
 
     calendar_provider = calendar_provider or get_calendar_provider()
     result = calendar_provider.cancel_event(event.provider_event_id)
+    observe_calendar_provider_request(
+        provider=event.provider, operation="cancel", status="success" if result.success else "failure"
+    )
 
     event.cancel_attempts += 1
 

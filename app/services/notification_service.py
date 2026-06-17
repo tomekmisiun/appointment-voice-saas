@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.job_queue import Job, enqueue_job
+from app.core.metrics import observe_sms_provider_request
 from app.core.sms import SmsMessage
 from app.models.booking import Booking, BookingStatus
 from app.models.business import Business
@@ -213,6 +214,10 @@ def send_notification_in_worker(
 
     sms_provider = sms_provider or get_sms_provider()
     result = sms_provider.send(SmsMessage(to=intent.recipient_phone, body=intent.body))
+    provider_name = getattr(sms_provider, "name", type(sms_provider).__name__)
+    observe_sms_provider_request(
+        provider=provider_name, status="success" if result.success else "failure"
+    )
 
     intent.attempts += 1
 

@@ -37,6 +37,8 @@ _worker_maintenance_runs_total: Counter | None = None
 _dependency_checks_total: Counter | None = None
 _dependency_health_status: Gauge | None = None
 _worker_failed_queue_depth: Gauge | None = None
+_sms_provider_requests_total: Counter | None = None
+_calendar_provider_requests_total: Counter | None = None
 _app_info: Gauge | None = None
 
 if TYPE_CHECKING:
@@ -49,6 +51,7 @@ def configure_metrics(app_settings: "Settings | None" = None) -> None:
     global _worker_jobs_total, _worker_maintenance_runs_total
     global _dependency_checks_total, _dependency_health_status, _app_info
     global _worker_failed_queue_depth
+    global _sms_provider_requests_total, _calendar_provider_requests_total
 
     if _metrics_configured:
         return
@@ -113,6 +116,18 @@ def configure_metrics(app_settings: "Settings | None" = None) -> None:
         "worker_failed_queue_depth",
         "Number of jobs currently sitting in the worker dead-letter queue.",
         **gauge_kwargs,
+    )
+    _sms_provider_requests_total = Counter(
+        "sms_provider_requests_total",
+        "Total SMS send attempts per provider.",
+        ["provider", "status"],
+        **counter_kwargs,
+    )
+    _calendar_provider_requests_total = Counter(
+        "calendar_provider_requests_total",
+        "Total calendar provider requests.",
+        ["provider", "operation", "status"],
+        **counter_kwargs,
     )
 
     app_info_labels = ["service", "environment"]
@@ -182,6 +197,22 @@ def observe_worker_failed_queue_depth(depth: int) -> None:
         configure_metrics()
 
     _worker_failed_queue_depth.set(depth)
+
+
+def observe_sms_provider_request(*, provider: str, status: str) -> None:
+    if _sms_provider_requests_total is None:
+        configure_metrics()
+
+    _sms_provider_requests_total.labels(provider=provider, status=status).inc()
+
+
+def observe_calendar_provider_request(*, provider: str, operation: str, status: str) -> None:
+    if _calendar_provider_requests_total is None:
+        configure_metrics()
+
+    _calendar_provider_requests_total.labels(
+        provider=provider, operation=operation, status=status
+    ).inc()
 
 
 def observe_dependency_check(*, dependency: str, status: str) -> None:

@@ -10,12 +10,16 @@ logger = logging.getLogger("app.sms_provider")
 
 
 class SmsProvider(Protocol):
+    name: str
+
     def send(self, message: SmsMessage) -> SmsSendResult:
         ...
 
 
 class NullSmsProvider:
     """Default provider used until a real or fake adapter is configured."""
+
+    name = "null"
 
     def send(self, message: SmsMessage) -> SmsSendResult:
         _ = message
@@ -24,6 +28,8 @@ class NullSmsProvider:
 
 class FakeSmsProvider:
     """Local/dev/test provider that records sent messages instead of delivering them."""
+
+    name = "fake"
 
     def __init__(self) -> None:
         self.sent: list[SmsMessage] = []
@@ -38,6 +44,7 @@ class FakeSmsProvider:
 class TwilioSmsProvider:
     """Production SMS adapter backed by Twilio Messages API."""
 
+    name = "twilio"
     _API_BASE = "https://api.twilio.com/2010-04-01/Accounts"
 
     def __init__(self, account_sid: str, auth_token: str, from_number: str) -> None:
