@@ -57,6 +57,7 @@ class VoiceSession(Base):
     )
     slot_candidates: Mapped[str | None] = mapped_column(Text, nullable=True)
     no_input_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0", default=0)
+    invalid_key_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0", default=0)
     call_sid: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
     transfer_destination: Mapped[str | None] = mapped_column(String(32), nullable=True)
     expires_at: Mapped[datetime] = mapped_column(
