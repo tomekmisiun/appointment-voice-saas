@@ -257,7 +257,7 @@ the task explicitly de-risks the MVP.
 | [x] | P1-005 | P1 | Handle IVR timeout/no input. | Timeout prompts and terminal state. | Voicemail. | No-input flow is predictable and audited. | IVR tests. | Calls hang or loop forever. | done: `no_input_count` tracked on `VoiceSession`, explicit re-prompt on silence, session terminates (`EXPIRED`) after 3 consecutive misses — `tests/test_avs_p1005_ivr_no_input.py` |
 | [x] | P1-006 | P1 | Handle IVR invalid input. | Retry count and fallback. | Natural language. | Invalid keys do not corrupt session. | IVR tests. | Bad input creates wrong booking. | done: `invalid_key_count` tracked cumulatively across steps, session terminates (`EXPIRED`) after 5 invalid keys — `tests/test_avs_p1006_ivr_invalid_input.py` |
 | [x] | P1-007 | P1 | Add repeat menu option. | Key to replay current prompt/options. | Multi-language prompts. | Caller can repeat menu at each step. | IVR tests. | Caller abandons flow. | done: `*` replays the current prompt at every interactive step without advancing state or incrementing `invalid_key_count` — `tests/test_avs_p1007_ivr_repeat_menu.py` |
-| [ ] | P1-008 | P1 | Add backend-unavailable fallback. | Graceful message/transfer when DB/Redis unavailable. | Full disaster recovery. | IVR does not expose errors or create partial booking. | Failure tests. | Outages produce bad caller experience. |
+| [x] | P1-008 | P1 | Add backend-unavailable fallback. | Graceful message/transfer when DB/Redis unavailable. | Full disaster recovery. | IVR does not expose errors or create partial booking. | Failure tests. | Outages produce bad caller experience. | done: voice webhook routes catch `OperationalError`/`RedisError` (and the `HTTPException(503)` `enforce_rate_limit_counter()` already raises for a Redis outage) and return graceful TwiML instead of a raw error; real 403/429 still propagate normally — `tests/test_avs_p1008_ivr_backend_unavailable.py` |
 | [ ] | P1-009 | P1 | Extract queues for SMS/calendar. | Separate job types/queues or outbox processors. | New queue vendor. | Side effects are independently observable. | Worker tests. | One failing integration blocks another. | partial: `SEND_NOTIFICATION_JOB`, `SYNC_CALENDAR_EVENT_JOB`, `CANCEL_CALENDAR_EVENT_JOB` are distinct job types — all routed through one Redis queue (`worker_queue_name`); per-type queue keys and independent monitoring not yet added |
 | [x] | P1-010 | P1 | Add exponential backoff. | Backoff policy for SMS/calendar retries. | Manual retry UI. | Retry intervals are bounded and tested. | Worker tests. | Provider incidents amplify traffic. | covered by AVS-E007: `calculate_retry_delay_seconds()` in `app/core/job_queue.py` uses 2^(attempts-1) with configurable base and max caps |
 | [ ] | P1-011 | P1 | Add DLQ and alerting. | Failed async operation DLQ plus alert signal. | Pager provider setup. | Exhausted jobs are visible. | Worker/metrics tests. | Silent async data loss. | partial: DLQ queue exists — `move_job_to_failed_queue()`, `list_failed_jobs()`, `requeue_failed_jobs()` in `app/core/job_queue.py`; alert signal integration (Slack/PagerDuty/metrics threshold) not yet wired |
@@ -325,16 +325,17 @@ the task explicitly de-risks the MVP.
 **Scope:** All 50 P1–P4 backlog items inspected against application code, models,
 services, routes, worker, migrations, tests, and docs.
 
-**Summary (updated 2026-06-17 after P1-001/P1-002/P1-003/P1-004/P1-005/P1-006/P1-007):**
-- 7 items fully implemented: P1-001, P1-002, P1-003, P1-004, P1-005, P1-006,
-  P1-007 (reminder SMS, SMS reply confirm/cancel, IVR + admin reschedule,
-  IVR timeout/invalid-input/repeat-menu — see rows above for evidence)
+**Summary (updated 2026-06-17 after P1-001/P1-002/P1-003/P1-004/P1-005/P1-006/P1-007/P1-008):**
+- 8 items fully implemented: P1-001, P1-002, P1-003, P1-004, P1-005, P1-006,
+  P1-007, P1-008 (reminder SMS, SMS reply confirm/cancel, IVR + admin
+  reschedule, IVR timeout/invalid-input/repeat-menu/backend-unavailable
+  fallback — see rows above for evidence)
 - 7 items partially implemented (noted inline above)
 - 3 items already covered by completed MVP work: P1-010 (exponential backoff —
   `calculate_retry_delay_seconds()` in `app/core/job_queue.py`), the DLQ
   *infrastructure* portion of P1-011 (`move_job_to_failed_queue()` etc.), and
   the create/cancel portion of P1-013 (`AuditLog` + `audit_log_service.py`)
-- 33 items not implemented
+- 32 items not implemented
 
 **High-risk non-duplicates confirmed:** No P1–P4 item was accidentally
 implemented as a side-effect of MVP work. `PlanPolicyService` is an intentional
@@ -346,6 +347,7 @@ stub for P4-008 only. The DLQ alerting half of P1-011 is genuinely missing.
 3. ~~P1-005/P1-006/P1-007 — IVR timeout/invalid/repeat~~ done
 4. ~~P1-002 — SMS reply confirm/cancel~~ done
 5. ~~P1-003/P1-004 — Reschedule (IVR + admin)~~ done (see `docs/specs/ivr-reschedule.md`)
+6. ~~P1-008 — Backend-unavailable fallback~~ done
 
 ## Validation commands
 
