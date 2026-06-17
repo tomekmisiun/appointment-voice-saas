@@ -1,0 +1,26 @@
+groups:
+  - name: worker.rules
+    rules:
+      - alert: WorkerFailedQueueBacklog
+        expr: worker_failed_queue_depth > 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Worker dead-letter queue has unresolved jobs
+          description: >-
+            worker_failed_queue_depth has been above zero for 15 minutes.
+            Jobs have exhausted retries and need manual triage; inspect with
+            `python -m app.worker_failed_jobs list` and requeue with
+            `python -m app.worker_failed_jobs requeue` once the underlying
+            issue is fixed.
+
+      - alert: WorkerJobFailureRate
+        expr: |
+          sum(rate(worker_jobs_total{status="failed"}[15m])) > 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Worker jobs are failing
+          description: At least one worker job has failed in the last 15 minutes.

@@ -26,6 +26,8 @@ Worker metrics:
 
 - `worker_jobs_total{job_type,status}`
 - `worker_maintenance_runs_total{status}`
+- `worker_failed_queue_depth` — number of jobs currently sitting in the
+  dead-letter queue (exhausted retries), refreshed on every maintenance tick
 
 Dependency metrics:
 
@@ -64,6 +66,11 @@ Local alert rules live in `observability/prometheus/rules`. They cover:
 - target availability
 - 5xx error rate
 - p95 latency
+- worker dead-letter queue backlog (`WorkerFailedQueueBacklog`, fires when
+  `worker_failed_queue_depth > 0` for 15 minutes — exhausted jobs are silent
+  async data loss until someone notices)
+- worker job failure rate (`WorkerJobFailureRate`, fires on any
+  `worker_jobs_total{status="failed"}` in the last 15 minutes)
 
 Production projects should route Alertmanager notifications to real on-call
 destinations such as email, Slack, PagerDuty, or an incident platform. Keep
@@ -76,6 +83,7 @@ Recommended production checks:
 - elevated 5xx rate
 - elevated p95 latency
 - worker job failure rate via `worker_jobs_total{status="failed"}`
+- worker dead-letter queue depth via `worker_failed_queue_depth`
 - dependency health gauges at zero
 
 ## Trace And Error Correlation
