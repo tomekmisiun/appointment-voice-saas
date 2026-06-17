@@ -168,8 +168,8 @@ Two independent dimensions added to `Business`:
 | ID | Gap | Severity | Status |
 |----|-----|----------|--------|
 | BUG-001 | ~~Twilio keypress route used `business.phone` instead of `ivr_response.transfer_destination` for STAFF policy transfers~~ | HIGH | **Fixed in audit** |
-| GAP-001 | IVR timeout/no-input has no explicit recovery prompt (falls through to re-prompt) | MEDIUM | Open — see P1-005 |
-| GAP-002 | No IVR repeat menu key (P1-007) | LOW | Open |
+| GAP-001 | ~~IVR timeout/no-input has no explicit recovery prompt~~ | MEDIUM | **Fixed — P1-005** |
+| GAP-002 | ~~No IVR repeat menu key~~ | LOW | **Fixed — P1-007** |
 | GAP-003 | No SMS reply parsing (confirm/cancel by text reply) | MEDIUM | Open — P1-002 |
 | GAP-004 | No reschedule flow (IVR or admin) | MEDIUM | Open — P1-003/P1-004 |
 | GAP-005 | No reminder SMS | MEDIUM | Open — P1-001 |
@@ -186,23 +186,25 @@ Two independent dimensions added to `Business`:
 | NOT_READY | ✅ Exceeds | All core flows demonstrable |
 | PORTFOLIO_READY | ✅ Yes | Clean domain, tests, CI, real providers, honest limitations |
 | MVP_DEMO_READY | ✅ Yes | Full local simulated call-to-booking-to-SMS-to-calendar works |
-| PILOT_READY | ⚠️ Conditional | Providers wired; BUG-001 fixed; but P1 gaps (no retry alerting, no reschedule, no timeout fallback) remain |
-| PRODUCTION_READY | ❌ No | Missing: reminder SMS, reschedule, IVR error recovery, DLQ alerting, CRM, billing, monitoring dashboards |
+| PILOT_READY | ⚠️ Conditional | Providers wired; BUG-001 fixed; IVR timeout/invalid-input/repeat handled (P1-005/P1-006/P1-007); but P1 gaps (no retry alerting, no reschedule) remain |
+| PRODUCTION_READY | ❌ No | Missing: reminder SMS, reschedule, DLQ alerting, CRM, billing, monitoring dashboards |
 
 ## Not Implemented (Expansion Backlog)
 
-Audited 2026-06-17. 50 P1–P4 items checked; 0 fully implemented, 9 partially,
-3 already covered by MVP infrastructure.
+Audited 2026-06-17, updated 2026-06-17 after P1-005/P1-006/P1-007. 50 P1–P4
+items checked; 3 fully implemented, 7 partially, 3 already covered by MVP
+infrastructure.
 
 **P1 — Must-have for pilot:**
 - NOT_IMPLEMENTED: reminder SMS, SMS reply handling, reschedule (IVR + API),
-  IVR repeat menu, backend-unavailable fallback.
-- PARTIAL: IVR timeout/no-input (expiry exists; explicit prompt missing),
-  IVR invalid-input fallback (re-prompt exists; retry counter missing),
-  separate SMS/calendar queues (job types exist; single queue),
+  backend-unavailable fallback.
+- PARTIAL: separate SMS/calendar queues (job types exist; single queue),
   DLQ alerting (DLQ infra exists in `app/core/job_queue.py`; alert signal missing),
   failed-integration metrics (Prometheus wired; provider-specific alerts missing),
   audit log expansion (create/cancel logged; reschedule/override audit pending).
+- DONE: IVR no-input timeout handling with consecutive-miss termination
+  (P1-005), IVR invalid-input retry counter with session termination after 5
+  keys (P1-006), IVR repeat-menu key `*` at every interactive step (P1-007).
 - DONE (covered by MVP): exponential backoff (`calculate_retry_delay_seconds()`).
 
 **P2 — High business impact:**
