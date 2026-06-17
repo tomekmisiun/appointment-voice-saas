@@ -94,6 +94,10 @@ def handle_keypress(
     if session.no_input_count:
         session.no_input_count = 0
 
+    if key in _REPEAT_KEYS:
+        db.commit()  # Persist no_input_count reset; repeat itself changes no other state.
+        return _reprompt_for_no_input(db, session)
+
     if session.step == IvrStep.INCOMING:
         return _handle_incoming(db, session, key)
     if session.step == IvrStep.SERVICE_SELECTION:
@@ -131,6 +135,10 @@ def expire_stale_sessions(db: Session) -> int:
 
 _NO_INPUT_MAX = 3
 _INVALID_KEY_MAX = 5
+# "*" replays the current prompt (standard DTMF convention). Digits are never
+# repeat keys: menus can present up to 9 services/slots, so every digit 1-9 is
+# a live selection and must reach the step handler.
+_REPEAT_KEYS = frozenset({"*"})
 
 
 def _handle_invalid_key(db: Session, session: VoiceSession, reprompt: IvrResponse) -> IvrResponse:
