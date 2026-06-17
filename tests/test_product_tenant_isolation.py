@@ -46,7 +46,7 @@ def test_list_businesses_scoped_to_tenant(db):
     default_tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
     other_tenant = _create_second_tenant(db)
 
-    create_business(
+    tenant_a_biz = create_business(
         db,
         tenant_id=default_tenant.id,
         name="Tenant A Salon",
@@ -65,7 +65,11 @@ def test_list_businesses_scoped_to_tenant(db):
     default_names = {b.name for b in default_businesses}
     other_names = {b.name for b in other_businesses}
 
-    assert "Tenant A Salon" in default_names
+    # list_businesses() defaults to limit=100; the shared "default" tenant
+    # accumulates businesses across the whole test suite, so a freshly
+    # created row (highest id, ordered last) isn't guaranteed to land on the
+    # first page. Verify scoping directly via get_business() instead.
+    assert get_business(db, tenant_a_biz.id, default_tenant.id) is not None
     assert "Tenant B Salon" not in default_names
     assert "Tenant B Salon" in other_names
     assert "Tenant A Salon" not in other_names
