@@ -7,6 +7,7 @@ from app.models.user import User
 from app.schemas.service import ServiceCreate, ServiceRead, ServiceUpdate
 from app.services.service_service import (
     create_service,
+    delete_service,
     list_services,
     require_service,
     update_service,
@@ -61,6 +62,16 @@ def get_service_endpoint(
     current_user: User = Depends(get_current_user),
 ):
     return require_service(db, service_id, current_user.tenant_id)
+
+
+@router.delete("/{service_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_service_endpoint(
+    business_id: int,
+    service_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin")),
+):
+    delete_service(db, service_id, current_user.tenant_id, business_id=business_id)
 
 
 @router.patch("/{service_id}", response_model=ServiceRead)

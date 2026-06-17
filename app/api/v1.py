@@ -17,6 +17,7 @@ from app.api.routes.webhooks import router as webhooks_router
 from app.api.routes.business_transfer_hours import router as business_transfer_hours_router
 from app.api.routes.working_hours import router as working_hours_router
 from app.api.routes import users
+from app.api.routes.onboarding import router as onboarding_router
 from app.api.routes.owner_leads import router as owner_leads_router
 
 
@@ -42,3 +43,4 @@ api_v1_router.include_router(ivr_router)
 api_v1_router.include_router(twilio_voice_router)
 api_v1_router.include_router(twilio_sms_router)
 api_v1_router.include_router(owner_leads_router)
+api_v1_router.include_router(onboarding_router)

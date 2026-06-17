@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.core.domain_errors import NotFoundError
+from app.core.domain_errors import ConflictError, NotFoundError
 from app.models.service import Service
 from app.services.business_service import require_business
 
@@ -61,6 +61,28 @@ def list_services(
     if not include_inactive:
         query = query.filter(Service.is_active.is_(True))
     return query.order_by(Service.id.asc()).offset(skip).limit(limit).all()
+
+
+def delete_service(
+    db: Session, service_id: int, tenant_id: int, *, business_id: int
+) -> None:
+    from app.models.booking import Booking, BookingStatus
+
+    svc = require_service(db, service_id, tenant_id)
+    if svc.business_id != business_id:
+        raise NotFoundError("Service not found")
+    has_bookings = (
+        db.query(Booking)
+        .filter(
+            Booking.service_id == service_id,
+            Booking.status != BookingStatus.CANCELLED,
+        )
+        .first()
+    )
+    if has_bookings:
+        raise ConflictError("Cannot delete a service that has confirmed bookings")
+    db.delete(svc)
+    db.commit()
 
 
 def update_service(

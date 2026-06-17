@@ -15,6 +15,18 @@ class WorkingHoursCreate(BaseModel):
         return self
 
 
+class WorkingHoursUpdate(BaseModel):
+    start_time: time | None = None
+    end_time: time | None = None
+
+    @model_validator(mode="after")
+    def end_after_start_if_both(self) -> "WorkingHoursUpdate":
+        if self.start_time is not None and self.end_time is not None:
+            if self.end_time <= self.start_time:
+                raise ValueError("end_time must be after start_time")
+        return self
+
+
 class WorkingHoursRead(BaseModel):
     id: int
     tenant_id: int
