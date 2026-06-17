@@ -270,7 +270,7 @@ the task explicitly de-risks the MVP.
 |--------|----|----------|------|-------|-----|------------|------------|------|
 | [x] | P2-001 | P2 | Add basic CRM clients table. | Client profile beyond booking customer record. | Marketing automation. | Business can store client basics. | Model/API tests. | Customer history stays fragmented. | done: new `Client` model (name/email/phone/notes), optionally linked 1:1 to a `Customer` via `customer_id` (unique per business); CRUD at `/businesses/{business_id}/clients` (admin-only writes); migration `p2001a2b3c4d5e` — `tests/test_avs_p2001_crm_clients.py` |
 | [x] | P2-002 | P2 | Link bookings to clients. | Associate bookings with CRM client. | Merge UI. | Booking history rolls up to client. | Service tests. | Duplicate identity grows. | done: no new column — `Client.customer_id` is already unique per business (P2-001), so `Booking.customer_id` already provides a complete `Booking -> Customer <- Client` path; `get_bookings_for_client()` in `client_service.py` — `tests/test_avs_p2002_client_booking_history.py` |
-| [ ] | P2-003 | P2 | Recognize returning caller. | Match caller by normalized phone in IVR. | Voice biometrics. | IVR can greet/use known client safely. | IVR tests. | Returning users get slow flow. |
+| [x] | P2-003 | P2 | Recognize returning caller. | Match caller by normalized phone in IVR. | Voice biometrics. | IVR can greet/use known client safely. | IVR tests. | Returning users get slow flow. | done: `start_session()` personalizes the main-menu greeting ("Welcome back, {name}!") when caller_phone matches an existing Customer for the exact business+tenant, preferring the linked Client name if one exists; never crosses business/tenant boundaries (same matching already enforced by `get_customer_by_phone()`/`get_client_by_customer_id()`) — `tests/test_avs_p2003_ivr_returning_caller.py` |
 | [ ] | P2-004 | P2 | Add client booking history. | Admin/API history view. | Frontend. | Business can inspect client visits. | API tests. | Staff lack context. |
 | [ ] | P2-005 | P2 | Add GDPR delete endpoint. | Delete/anonymize customer data per business policy. | Legal policy automation. | Deletion preserves required booking/audit constraints. | Privacy tests. | Privacy requests cannot be handled. |
 | [ ] | P2-006 | P2 | Add preferred staff selection. | IVR lets caller pick staff. | Staff recommendation engine. | Availability filters by selected staff. | IVR/availability tests. | Customers cannot choose provider. |
@@ -325,21 +325,21 @@ the task explicitly de-risks the MVP.
 **Scope:** All 50 P1–P4 backlog items inspected against application code, models,
 services, routes, worker, migrations, tests, and docs.
 
-**Summary (updated 2026-06-17 after P1-001 through P1-013, and P2-001/P2-002):**
-- 13 items fully implemented: P1-001, P1-002, P1-003, P1-004, P1-005, P1-006,
-  P1-007, P1-008, P1-009, P1-011, P1-012, P2-001, P2-002 (reminder SMS, SMS
-  reply confirm/cancel, IVR + admin reschedule, IVR
+**Summary (updated 2026-06-17 after P1-001 through P1-013, and P2-001/P2-002/P2-003):**
+- 14 items fully implemented: P1-001, P1-002, P1-003, P1-004, P1-005, P1-006,
+  P1-007, P1-008, P1-009, P1-011, P1-012, P2-001, P2-002, P2-003 (reminder
+  SMS, SMS reply confirm/cancel, IVR + admin reschedule, IVR
   timeout/invalid-input/repeat-menu/backend-unavailable fallback,
   per-job-type Redis queues, DLQ depth/failure-rate alerting,
-  provider-level failure metrics, CRM clients table + booking linkage — see
-  rows above for evidence)
+  provider-level failure metrics, CRM clients table + booking linkage,
+  returning-caller greeting — see rows above for evidence)
 - 4 items partially implemented (noted inline above), including P1-013 which
   now also covers reschedule and SMS-confirm audit events — only the admin
   override portion (blocked on P3-012, which doesn't exist yet) is missing
 - 2 items already covered by completed MVP work: P1-010 (exponential backoff —
   `calculate_retry_delay_seconds()` in `app/core/job_queue.py`) and the
   create/cancel portion of P1-013 (`AuditLog` + `audit_log_service.py`)
-- 31 items not implemented
+- 30 items not implemented
 
 **High-risk non-duplicates confirmed:** No P1–P4 item was accidentally
 implemented as a side-effect of MVP work. `PlanPolicyService` is an intentional

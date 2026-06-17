@@ -19,6 +19,7 @@ from app.services.booking_service import (
     reschedule_booking,
 )
 from app.services.business_service import require_business
+from app.services.client_service import get_client_by_customer_id
 from app.services.customer_service import get_customer_by_phone, get_or_create_customer
 from app.services.notification_service import (
     enqueue_external_booking_link_sms,
@@ -51,7 +52,33 @@ def start_session(
     db.add(session)
     db.commit()
     db.refresh(session)
-    return session, _main_menu_response(session.id, business.booking_mode)
+    greeting_name = _lookup_returning_caller_name(
+        db, business_id=business_id, tenant_id=tenant_id, caller_phone=caller_phone
+    )
+    return session, _main_menu_response(
+        session.id, business.booking_mode, greeting_name=greeting_name
+    )
+
+
+def _lookup_returning_caller_name(
+    db: Session, *, business_id: int, tenant_id: int, caller_phone: str
+) -> str | None:
+    """Best-effort caller recognition for the welcome greeting. Matches the
+    exact business_id+tenant_id+phone already enforced by
+    get_customer_by_phone()/get_client_by_customer_id(), so this can never
+    surface another caller's or another business's data. Prefers the
+    richer Client profile name over the bare Customer name."""
+    customer = get_customer_by_phone(
+        db, business_id=business_id, tenant_id=tenant_id, phone=caller_phone
+    )
+    if customer is None:
+        return None
+    client = get_client_by_customer_id(
+        db, business_id=business_id, tenant_id=tenant_id, customer_id=customer.id
+    )
+    if client is not None and client.name:
+        return client.name
+    return customer.name
 
 
 def handle_keypress(
@@ -698,7 +725,12 @@ def _handle_slot_selection(
 
 # --- helpers ---
 
-def _main_menu_response(session_id: int, booking_mode: str = BookingMode.INTERNAL_BOOKING) -> IvrResponse:
+def _main_menu_response(
+    session_id: int,
+    booking_mode: str = BookingMode.INTERNAL_BOOKING,
+    *,
+    greeting_name: str | None = None,
+) -> IvrResponse:
     if booking_mode == BookingMode.EXTERNAL_BOOKING_LINK:
         press1_label = "Receive a booking link by SMS"
         prompt = (
@@ -713,6 +745,8 @@ def _main_menu_response(session_id: int, booking_mode: str = BookingMode.INTERNA
             "press 2 to speak with a staff member, "
             "or press 3 to manage an existing appointment."
         )
+    if greeting_name:
+        prompt = f"Welcome back, {greeting_name}! " + prompt
     return IvrResponse(
         prompt=prompt,
         options=(

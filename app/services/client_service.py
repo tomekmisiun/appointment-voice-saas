@@ -59,6 +59,20 @@ def require_client(db: Session, client_id: int, tenant_id: int) -> Client:
     return client
 
 
+def get_client_by_customer_id(
+    db: Session, *, business_id: int, tenant_id: int, customer_id: int
+) -> Client | None:
+    return (
+        db.query(Client)
+        .filter(
+            Client.business_id == business_id,
+            Client.tenant_id == tenant_id,
+            Client.customer_id == customer_id,
+        )
+        .first()
+    )
+
+
 def list_clients(
     db: Session,
     business_id: int,
