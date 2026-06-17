@@ -1,6 +1,6 @@
 # Project Status — Appointment Voice SaaS
 
-Verified as of 2026-06-16. Updated during `audit/roadmap-reality-check`.
+Verified as of 2026-06-17. Updated during `audit/backlog-reality-check`.
 
 ## Current Status
 
@@ -152,17 +152,44 @@ Two independent dimensions added to `Business`:
 
 ## Not Implemented (Expansion Backlog)
 
-P1: Reminder SMS, SMS reply handling, reschedule, IVR timeout/invalid-input fallback,
-backend-unavailable handler, DLQ alerting, monitoring metrics.
+Audited 2026-06-17. 50 P1–P4 items checked; 0 fully implemented, 9 partially,
+3 already covered by MVP infrastructure.
 
-P2: CRM clients table, returning caller recognition, multi-service bookings, waitlist,
-preferred staff selection, owner metrics API, GDPR delete.
+**P1 — Must-have for pilot:**
+- NOT_IMPLEMENTED: reminder SMS, SMS reply handling, reschedule (IVR + API),
+  IVR repeat menu, backend-unavailable fallback.
+- PARTIAL: IVR timeout/no-input (expiry exists; explicit prompt missing),
+  IVR invalid-input fallback (re-prompt exists; retry counter missing),
+  separate SMS/calendar queues (job types exist; single queue),
+  DLQ alerting (DLQ infra exists in `app/core/job_queue.py`; alert signal missing),
+  failed-integration metrics (Prometheus wired; provider-specific alerts missing),
+  audit log expansion (create/cancel logged; reschedule/override audit pending).
+- DONE (covered by MVP): exponential backoff (`calculate_retry_delay_seconds()`).
 
-P3: Salon vs staff hours intersection, staff time blocks, deposits/payments,
-multilingual IVR, calendar conflict import, admin override workflow.
+**P2 — High business impact:**
+- NOT_IMPLEMENTED: CRM clients table, client booking history, returning caller
+  recognition, GDPR delete, preferred staff selection, last-staff suggestion,
+  multi-service appointments, combined-duration availability, waitlist model,
+  waitlist-on-cancellation offer, waitlist timeout/escalation, owner metrics API,
+  CSV export.
 
-P4: SaaS onboarding, phone provisioning, Stripe Billing, plan limits, multi-tenant
-product audit.
+**P3 — Operational extensions:**
+- NOT_IMPLEMENTED: salon/staff hours intersection, recurring staff blocks,
+  deposits ADR, Stripe payment links, pending-payment booking state,
+  multilingual IVR, calendar privacy rules, calendar conflict import ADR,
+  admin override workflow, integration reconciliation job, two-way calendar ADR.
+- PARTIAL: salon opening hours (`WorkingHours` nullable staff_id exists;
+  availability intersection missing), salon closures/staff time blocks
+  (`AvailabilityException` nullable staff_id exists; API validation and tests missing).
+
+**P4 — SaaS model and scale:**
+- NOT_IMPLEMENTED: self-service onboarding, onboarding wizard, phone provisioning,
+  Stripe Billing model, plan limits enforcement, billing webhooks, plan-limit
+  blocking, backward-compatibility checklist.
+- PARTIAL: tenancy query audit (`test_product_tenant_isolation.py` exists; systematic
+  checklist missing), product tenant guards (`require_business()` pattern exists;
+  standardized dependency not abstracted), cross-tenant leakage tests (per-feature
+  tests exist; per-route CI requirement missing).
 
 ## Rules for Updating This File
 
