@@ -4,7 +4,7 @@ Verified as of 2026-06-17. Updated during `audit/backlog-reality-check`.
 
 ## Current Status
 
-All MVP foundation epics (A–K) implemented, plus AVS-L001 (owner lead intake) and AVS-L002 (pilot onboarding runbook). 673 tests pass. CI green.
+All MVP foundation epics (A–K) implemented, plus AVS-L001–L003 (owner acquisition + onboarding). 673 tests pass. CI green.
 
 The product can be fully demonstrated locally using fake SMS and fake calendar
 providers. Real Twilio voice and SMS providers are wired and configured via env
@@ -107,6 +107,14 @@ vars. A pilot can be set up against the `docs/mvp-pilot-deployment-checklist.md`
 - Cancellation smoke: `tests/test_avs_j004_smoke_cancellation.py`.
 - README demo scenario documented.
 - MVP pilot deployment checklist: `docs/mvp-pilot-deployment-checklist.md`.
+
+### Owner Dashboard Skeleton (AVS-L003 — done)
+
+- Scope document: `docs/product/owner-dashboard.md`.
+- Defines 7 dashboard pages (home, bookings, settings, staff, services, working hours, exceptions) with required API routes per page.
+- Identifies 5 API gaps (single booking read, staff PATCH, service PATCH/DELETE, working hours PATCH/DELETE, exception DELETE) — all CRUD completions, no new models.
+- Auth/tenancy requirements documented: existing `require_business()` pattern applies to all gap endpoints.
+- No runtime code changes — docs and gap analysis only.
 
 ### Manual Pilot Onboarding Runbook (AVS-L002 — done)
 
