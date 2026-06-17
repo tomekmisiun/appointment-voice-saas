@@ -9,6 +9,7 @@ from app.core.job_queue import (
     dequeue_job,
     move_job_to_failed_queue,
     promote_delayed_jobs,
+    queue_name_for_job_type,
     reclaim_stale_processing_jobs,
     schedule_retry,
     try_acquire_maintenance_lock,
@@ -55,6 +56,22 @@ logger = logging.getLogger("app.worker")
 
 _last_maintenance_attempt_at = 0.0
 _last_queue_maintenance_at = 0.0
+
+# Each job type has its own queue (see queue_name_for_job_type()) so a stuck
+# integration can't head-of-line block unrelated job types. The worker polls
+# them in this fixed order, one short-timeout check per type per tick, so a
+# job sitting in any one queue is found within roughly worker_poll_timeout_seconds
+# regardless of how many types are registered.
+_KNOWN_JOB_TYPES = (
+    SEND_PASSWORD_RESET_EMAIL_JOB,
+    SEND_NOTIFICATION_JOB,
+    VERIFY_PRESIGNED_UPLOAD_JOB,
+    SYNC_CALENDAR_EVENT_JOB,
+    CANCEL_CALENDAR_EVENT_JOB,
+)
+_PER_QUEUE_POLL_TIMEOUT_SECONDS = max(
+    1, settings.worker_poll_timeout_seconds // len(_KNOWN_JOB_TYPES)
+)
 
 
 class UnknownJobTypeError(Exception):
@@ -130,7 +147,14 @@ def handle_job(job: Job) -> None:
 
 
 def process_next_job() -> bool:
-    job = dequeue_job()
+    job = None
+    for job_type in _KNOWN_JOB_TYPES:
+        job = dequeue_job(
+            queue_name=queue_name_for_job_type(job_type),
+            timeout_seconds=_PER_QUEUE_POLL_TIMEOUT_SECONDS,
+        )
+        if job is not None:
+            break
 
     if job is None:
         return False
@@ -275,7 +299,10 @@ def run_worker() -> None:
             settings.worker_metrics_port,
         )
 
-    logger.info("worker_started queue=%s", settings.worker_queue_name)
+    logger.info(
+        "worker_started queues=%s",
+        ",".join(queue_name_for_job_type(jt) for jt in _KNOWN_JOB_TYPES),
+    )
 
     while not worker_shutdown_requested():
         maybe_run_scheduled_maintenance()

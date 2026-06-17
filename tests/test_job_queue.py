@@ -9,6 +9,7 @@ from app.core.job_queue import (
     enqueue_job,
     move_job_to_failed_queue,
     promote_delayed_jobs,
+    queue_name_for_job_type,
     reclaim_stale_processing_jobs,
     schedule_retry,
     try_acquire_maintenance_lock,
@@ -98,6 +99,31 @@ class FakeRedis:
         return True
 
 
+def test_queue_name_for_job_type_namespaces_by_type():
+    assert queue_name_for_job_type("send_notification", base_queue_name="app_jobs") == (
+        "app_jobs:send_notification"
+    )
+
+
+def test_enqueue_job_defaults_to_per_type_queue():
+    redis = FakeRedis()
+
+    enqueued_job = enqueue_job("send_notification", {"x": 1}, redis=redis)
+
+    queue_name = queue_name_for_job_type("send_notification")
+    assert redis.queues[queue_name] == [enqueued_job.to_json()]
+
+
+def test_enqueue_job_different_types_use_different_queues():
+    redis = FakeRedis()
+
+    enqueue_job("send_notification", {"x": 1}, redis=redis)
+    enqueue_job("sync_calendar_event", {"y": 2}, redis=redis)
+
+    assert len(redis.queues[queue_name_for_job_type("send_notification")]) == 1
+    assert len(redis.queues[queue_name_for_job_type("sync_calendar_event")]) == 1
+
+
 def test_calculate_retry_delay_seconds_uses_exponential_backoff():
     assert calculate_retry_delay_seconds(1) == settings.worker_retry_backoff_base_seconds
     assert calculate_retry_delay_seconds(2) == settings.worker_retry_backoff_base_seconds * 2
@@ -183,13 +209,14 @@ def test_promote_delayed_jobs_moves_due_jobs_back_to_main_queue():
 
     promoted_count = promote_delayed_jobs(
         redis=redis,
-        queue_name="test_jobs",
+        base_queue_name="test_jobs",
         delayed_queue_name="test_delayed",
         now=100.0,
     )
 
+    queue_name = queue_name_for_job_type("demo", base_queue_name="test_jobs")
     assert promoted_count == 1
-    assert redis.queues["test_jobs"] == [job.to_json()]
+    assert redis.queues[queue_name] == [job.to_json()]
     assert redis.sorted_sets["test_delayed"] == {}
 
 
@@ -207,14 +234,15 @@ def test_promote_delayed_jobs_respects_batch_limit():
 
     promoted_count = promote_delayed_jobs(
         redis=redis,
-        queue_name="test_jobs",
+        base_queue_name="test_jobs",
         delayed_queue_name="test_delayed",
         now=100.0,
         limit=1,
     )
 
+    queue_name = queue_name_for_job_type("demo", base_queue_name="test_jobs")
     assert promoted_count == 1
-    assert len(redis.queues["test_jobs"]) == 1
+    assert len(redis.queues[queue_name]) == 1
     assert len(redis.sorted_sets["test_delayed"]) == 1
 
 
@@ -266,14 +294,15 @@ def test_reclaim_stale_processing_jobs_returns_job_to_main_queue():
 
     reclaimed_count = reclaim_stale_processing_jobs(
         redis=redis,
-        queue_name="test_jobs",
+        base_queue_name="test_jobs",
         processing_queue_name="test_processing",
         now=datetime.now(timezone.utc),
     )
 
+    queue_name = queue_name_for_job_type("demo", base_queue_name="test_jobs")
     assert reclaimed_count == 1
     assert redis.queues["test_processing"] == []
-    assert redis.queues["test_jobs"] == [stale_job.without_processing_started_at().to_json()]
+    assert redis.queues[queue_name] == [stale_job.without_processing_started_at().to_json()]
 
 
 def test_reclaim_stale_processing_jobs_reclaims_jobs_without_timestamp():
@@ -283,13 +312,14 @@ def test_reclaim_stale_processing_jobs_reclaims_jobs_without_timestamp():
 
     reclaimed_count = reclaim_stale_processing_jobs(
         redis=redis,
-        queue_name="test_jobs",
+        base_queue_name="test_jobs",
         processing_queue_name="test_processing",
     )
 
+    queue_name = queue_name_for_job_type("demo", base_queue_name="test_jobs")
     assert reclaimed_count == 1
     assert redis.queues["test_processing"] == []
-    assert redis.queues["test_jobs"] == [legacy_job.to_json()]
+    assert redis.queues[queue_name] == [legacy_job.to_json()]
 
 
 def test_reclaim_stale_processing_jobs_skips_fresh_jobs():
@@ -304,10 +334,11 @@ def test_reclaim_stale_processing_jobs_skips_fresh_jobs():
 
     reclaimed_count = reclaim_stale_processing_jobs(
         redis=redis,
-        queue_name="test_jobs",
+        base_queue_name="test_jobs",
         processing_queue_name="test_processing",
     )
 
+    queue_name = queue_name_for_job_type("demo", base_queue_name="test_jobs")
     assert reclaimed_count == 0
     assert redis.queues["test_processing"] == [fresh_job.to_json()]
-    assert redis.queues.get("test_jobs", []) == []
+    assert redis.queues.get(queue_name, []) == []

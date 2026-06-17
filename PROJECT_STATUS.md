@@ -191,14 +191,13 @@ Two independent dimensions added to `Business`:
 
 ## Not Implemented (Expansion Backlog)
 
-Audited 2026-06-17, updated 2026-06-17 after P1-001/P1-002/P1-003/P1-004/P1-005/P1-006/P1-007/P1-008.
-50 P1–P4 items checked; 8 fully implemented, 7 partially, 3 already covered by
+Audited 2026-06-17, updated 2026-06-17 after P1-001/P1-002/P1-003/P1-004/P1-005/P1-006/P1-007/P1-008/P1-009.
+50 P1–P4 items checked; 9 fully implemented, 6 partially, 3 already covered by
 MVP infrastructure.
 
 **P1 — Must-have for pilot:**
 - NOT_IMPLEMENTED: none (all remaining P1 items are partial — see below).
-- PARTIAL: separate SMS/calendar queues (job types exist; single queue),
-  DLQ alerting (DLQ infra exists in `app/core/job_queue.py`; alert signal missing),
+- PARTIAL: DLQ alerting (DLQ infra exists in `app/core/job_queue.py`; alert signal missing),
   failed-integration metrics (Prometheus wired; provider-specific alerts missing),
   audit log expansion (create/cancel logged; reschedule/override audit pending).
 - DONE: reminder SMS queued once per booking within `reminder_lead_minutes`
@@ -217,7 +216,10 @@ MVP infrastructure.
   (P1-006), IVR repeat-menu key `*` at every interactive step (P1-007), IVR
   voice webhook returns graceful "technical difficulties" TwiML instead of a
   raw 500/JSON error when the DB or Redis is unavailable mid-call, with no
-  partial session/booking left behind (P1-008).
+  partial session/booking left behind (P1-008), per-job-type Redis queues via
+  `queue_name_for_job_type()` so a backlog/outage in one integration (e.g.
+  calendar sync) can't head-of-line block another (e.g. SMS) sharing a single
+  FIFO list (P1-009).
 - DONE (covered by MVP): exponential backoff (`calculate_retry_delay_seconds()`).
 
 **P2 — High business impact:**

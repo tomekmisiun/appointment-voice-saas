@@ -4,6 +4,7 @@ from app.core.job_queue import (
     enqueue_job,
     list_failed_jobs,
     move_job_to_failed_queue,
+    queue_name_for_job_type,
     requeue_failed_jobs,
 )
 from app.core.request_context import request_id_var
@@ -116,13 +117,13 @@ def test_requeue_failed_jobs_moves_jobs_back_to_main_queue():
 
     requeued_count = requeue_failed_jobs(
         redis=redis,
-        queue_name="test_jobs",
+        base_queue_name="test_jobs",
         failed_queue_name="test_failed_jobs",
     )
 
     dequeued_job = dequeue_job(
         redis=redis,
-        queue_name="test_jobs",
+        queue_name=queue_name_for_job_type("send_password_reset_email", base_queue_name="test_jobs"),
         processing_queue_name="test_processing",
         timeout_seconds=1,
     )
@@ -162,7 +163,7 @@ def test_process_next_job_moves_unknown_job_type_to_failed_queue(monkeypatch):
 
     monkeypatch.setattr("app.worker.reclaim_stale_processing_jobs", lambda: 0)
     monkeypatch.setattr("app.worker.promote_delayed_jobs", lambda: 0)
-    monkeypatch.setattr("app.worker.dequeue_job", lambda: job)
+    monkeypatch.setattr("app.worker.dequeue_job", lambda **kwargs: job)
     monkeypatch.setattr(
         "app.worker.schedule_retry",
         lambda failed_job, error: retried_jobs.append(failed_job),
@@ -195,7 +196,7 @@ def test_process_next_job_schedules_retry_with_backoff(monkeypatch):
     failed_jobs = []
 
     monkeypatch.setattr("app.worker.promote_delayed_jobs", lambda: 0)
-    monkeypatch.setattr("app.worker.dequeue_job", lambda: job)
+    monkeypatch.setattr("app.worker.dequeue_job", lambda **kwargs: job)
     monkeypatch.setattr(
         "app.worker.handle_job",
         lambda queued_job: (_ for _ in ()).throw(RuntimeError("boom")),
@@ -234,7 +235,7 @@ def test_process_next_job_moves_job_to_failed_queue_after_max_retries(monkeypatc
     failed_jobs = []
 
     monkeypatch.setattr("app.worker.promote_delayed_jobs", lambda: 0)
-    monkeypatch.setattr("app.worker.dequeue_job", lambda: job)
+    monkeypatch.setattr("app.worker.dequeue_job", lambda **kwargs: job)
     monkeypatch.setattr(
         "app.worker.handle_job",
         lambda queued_job: (_ for _ in ()).throw(RuntimeError("boom")),
@@ -265,7 +266,7 @@ def test_process_next_job_acknowledges_successful_jobs(monkeypatch):
     acked_jobs = []
 
     monkeypatch.setattr("app.worker.promote_delayed_jobs", lambda: 0)
-    monkeypatch.setattr("app.worker.dequeue_job", lambda: job)
+    monkeypatch.setattr("app.worker.dequeue_job", lambda **kwargs: job)
     monkeypatch.setattr("app.worker.handle_job", lambda queued_job: None)
     monkeypatch.setattr(
         "app.worker.ack_job",
@@ -280,11 +281,54 @@ def test_process_next_job_acknowledges_successful_jobs(monkeypatch):
 
 def test_process_next_job_returns_false_without_job(monkeypatch):
     monkeypatch.setattr("app.worker.promote_delayed_jobs", lambda: 0)
-    monkeypatch.setattr("app.worker.dequeue_job", lambda: None)
+    monkeypatch.setattr("app.worker.dequeue_job", lambda **kwargs: None)
 
     processed = process_next_job()
 
     assert processed is False
+
+
+def test_notification_job_is_not_blocked_by_calendar_backlog(monkeypatch):
+    """P1-009 regression: each job type has its own queue, so a backlog in
+    one type (e.g. calendar sync stuck on a slow/down provider) can't delay
+    an unrelated type (e.g. SMS notifications) sharing a single FIFO queue.
+
+    Uses the real redis_client (not FakeRedis) because app.worker.dequeue_job
+    is called without a redis= override, so this is the only way to exercise
+    process_next_job()'s actual per-queue round-robin. Real per-type queues
+    are not flushed between tests (only rate_limit:* keys are, see
+    conftest.py), so all known job-type queues are drained before and after
+    to avoid leftover jobs from other tests/test runs changing which queue
+    process_next_job() finds a job in first.
+    """
+    from app.core.config import settings
+    from app.core.job_queue import enqueue_job
+    from app.core.redis import redis_client
+    from app.services.calendar_service import SYNC_CALENDAR_EVENT_JOB
+    from app.services.notification_service import SEND_NOTIFICATION_JOB
+    from app.worker import _KNOWN_JOB_TYPES
+
+    all_queues = [queue_name_for_job_type(jt) for jt in _KNOWN_JOB_TYPES]
+    cleanup_keys = [*all_queues, settings.worker_processing_queue_name]
+    redis_client.delete(*cleanup_keys)
+
+    try:
+        for i in range(5):
+            enqueue_job(SYNC_CALENDAR_EVENT_JOB, {"event_id": i})
+        enqueue_job(SEND_NOTIFICATION_JOB, {"notification_id": 999})
+
+        handled_types = []
+        monkeypatch.setattr(
+            "app.worker.handle_job", lambda queued_job: handled_types.append(queued_job.type)
+        )
+        monkeypatch.setattr("app.worker.ack_job", lambda queued_job: None)
+
+        processed = process_next_job()
+
+        assert processed is True
+        assert handled_types == [SEND_NOTIFICATION_JOB]
+    finally:
+        redis_client.delete(*cleanup_keys)
 
 
 def test_scheduled_maintenance_runs_when_lock_acquired(monkeypatch):
