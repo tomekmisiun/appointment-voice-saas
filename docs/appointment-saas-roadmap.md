@@ -6,8 +6,8 @@ foundation capabilities from planned product runtime work.
 
 ## Current repository reality
 
-Updated 2026-06-16 (audit/roadmap-reality-check). All MVP foundation epics A–J
-are implemented. 613 tests pass, CI green.
+Updated 2026-06-17 (audit/backlog-reality-check). All MVP foundation epics A–K
+are implemented. 638 tests pass, CI green.
 
 Verified implemented: FastAPI + PostgreSQL foundation, core SaaS domain (Business,
 Staff, Service, WorkingHours, AvailabilityException, Customer, Booking), availability
@@ -15,10 +15,11 @@ engine with timezone/DST tests, DB-level double-booking constraint (btree_gist E
 notification outbox + fake/real SMS, calendar adapter + fake provider + worker, IVR
 simulation harness, full booking flow via IVR, Twilio voice/SMS real provider adapters,
 Twilio signature validation, call transfer (business_phone and staff policies),
-transfer unavailable fallback, demo seed script, and smoke tests.
+transfer unavailable fallback, demo seed script, smoke tests, booking_mode/subscription_plan
+dimensions, exponential retry backoff, DLQ infrastructure, booking lifecycle audit logs.
 
 Not implemented: reminder SMS, SMS reply handling, reschedule, IVR timeout/invalid-input
-explicit recovery, DLQ alerting, CRM, waitlist, billing, frontend.
+explicit recovery, DLQ alerting integration, CRM, waitlist, billing, frontend.
 
 ## Product goal
 
@@ -238,15 +239,15 @@ the task explicitly de-risks the MVP.
 | [ ] | P1-002 | P1 | Handle SMS reply confirm/cancel. | Parse simple replies and update booking. | Free-form NLP. | Confirm/cancel replies are idempotent. | Webhook tests. | Customers cannot manage bookings. |
 | [ ] | P1-003 | P1 | Reschedule by customer IVR. | Customer finds booking by phone and selects new slot. | Staff preference. | Reschedule updates booking/SMS/calendar. | IVR E2E tests. | Support burden stays high. |
 | [ ] | P1-004 | P1 | Reschedule by business/admin. | API workflow for changing slot/staff. | Frontend. | Business can reschedule and notify parties. | API/service tests. | Staff cannot recover schedule changes. |
-| [ ] | P1-005 | P1 | Handle IVR timeout/no input. | Timeout prompts and terminal state. | Voicemail. | No-input flow is predictable and audited. | IVR tests. | Calls hang or loop forever. |
-| [ ] | P1-006 | P1 | Handle IVR invalid input. | Retry count and fallback. | Natural language. | Invalid keys do not corrupt session. | IVR tests. | Bad input creates wrong booking. |
+| [ ] | P1-005 | P1 | Handle IVR timeout/no input. | Timeout prompts and terminal state. | Voicemail. | No-input flow is predictable and audited. | IVR tests. | Calls hang or loop forever. | partial: `VoiceSession.expires_at` enforced in `handle_keypress()`; `expire_stale_sessions()` wired to worker — explicit timeout prompt and no-input counter not yet added |
+| [ ] | P1-006 | P1 | Handle IVR invalid input. | Retry count and fallback. | Natural language. | Invalid keys do not corrupt session. | IVR tests. | Bad input creates wrong booking. | partial: invalid keys return re-prompt at every step — retry counter and max-threshold fallback path not yet added |
 | [ ] | P1-007 | P1 | Add repeat menu option. | Key to replay current prompt/options. | Multi-language prompts. | Caller can repeat menu at each step. | IVR tests. | Caller abandons flow. |
 | [ ] | P1-008 | P1 | Add backend-unavailable fallback. | Graceful message/transfer when DB/Redis unavailable. | Full disaster recovery. | IVR does not expose errors or create partial booking. | Failure tests. | Outages produce bad caller experience. |
-| [ ] | P1-009 | P1 | Extract queues for SMS/calendar. | Separate job types/queues or outbox processors. | New queue vendor. | Side effects are independently observable. | Worker tests. | One failing integration blocks another. |
-| [ ] | P1-010 | P1 | Add exponential backoff. | Backoff policy for SMS/calendar retries. | Manual retry UI. | Retry intervals are bounded and tested. | Worker tests. | Provider incidents amplify traffic. |
-| [ ] | P1-011 | P1 | Add DLQ and alerting. | Failed async operation DLQ plus alert signal. | Pager provider setup. | Exhausted jobs are visible. | Worker/metrics tests. | Silent async data loss. |
-| [ ] | P1-012 | P1 | Monitor failed integrations. | Metrics/logs for provider failures and backlog. | Full dashboard. | Alerts can be wired from documented metrics. | Metrics tests/docs. | Pilot failures go unnoticed. |
-| [ ] | P1-013 | P1 | Expand booking lifecycle audit logs. | Audit create/cancel/reschedule/source/actor. | Compliance export. | Lifecycle history is queryable. | Service/API tests. | Disputes lack evidence. |
+| [ ] | P1-009 | P1 | Extract queues for SMS/calendar. | Separate job types/queues or outbox processors. | New queue vendor. | Side effects are independently observable. | Worker tests. | One failing integration blocks another. | partial: `SEND_NOTIFICATION_JOB`, `SYNC_CALENDAR_EVENT_JOB`, `CANCEL_CALENDAR_EVENT_JOB` are distinct job types — all routed through one Redis queue (`worker_queue_name`); per-type queue keys and independent monitoring not yet added |
+| [x] | P1-010 | P1 | Add exponential backoff. | Backoff policy for SMS/calendar retries. | Manual retry UI. | Retry intervals are bounded and tested. | Worker tests. | Provider incidents amplify traffic. | covered by AVS-E007: `calculate_retry_delay_seconds()` in `app/core/job_queue.py` uses 2^(attempts-1) with configurable base and max caps |
+| [ ] | P1-011 | P1 | Add DLQ and alerting. | Failed async operation DLQ plus alert signal. | Pager provider setup. | Exhausted jobs are visible. | Worker/metrics tests. | Silent async data loss. | partial: DLQ queue exists — `move_job_to_failed_queue()`, `list_failed_jobs()`, `requeue_failed_jobs()` in `app/core/job_queue.py`; alert signal integration (Slack/PagerDuty/metrics threshold) not yet wired |
+| [ ] | P1-012 | P1 | Monitor failed integrations. | Metrics/logs for provider failures and backlog. | Full dashboard. | Alerts can be wired from documented metrics. | Metrics tests/docs. | Pilot failures go unnoticed. | partial: Prometheus metrics `worker_jobs_total[job_type,status]` in `app/core/metrics.py`; provider-specific SMS/calendar failure rates and alert thresholds not yet added |
+| [ ] | P1-013 | P1 | Expand booking lifecycle audit logs. | Add audit events for reschedule, SMS reply accept/cancel, and admin override — create/cancel already logged. | Compliance export. | All lifecycle events are queryable with actor. | Service/API tests. | Disputes lack evidence. | partial: `AuditLog` model with `AuditAction` enum and `create_audit_log()` in `app/services/audit_log_service.py` covers create and cancel — extend when reschedule (P1-003/P1-004) and override (P3-012) are implemented |
 
 ### PRIORITY 2 - High business impact
 
@@ -271,10 +272,10 @@ the task explicitly de-risks the MVP.
 
 | Status | ID | Priority | Goal | Scope | Out | Acceptance | Validation | Risk |
 |--------|----|----------|------|-------|-----|------------|------------|------|
-| [ ] | P3-001 | P3 | Add salon opening hours. | Business-level hours independent of staff. | Multi-location hours. | Salon hours can be configured. | Model/API tests. | Staff availability ignores business closures. |
+| [ ] | P3-001 | P3 | Add salon opening hours. | Business-level hours independent of staff. | Multi-location hours. | Salon hours can be configured. | Model/API tests. | Staff availability ignores business closures. | partial: `WorkingHours` model supports nullable `staff_id` (business-wide rows possible); availability service does not yet query or intersect them |
 | [ ] | P3-002 | P3 | Intersect salon/staff hours. | Availability requires both salon and staff open. | Resource rooms. | Slots only appear when both are open. | Availability tests. | Bookings appear outside salon hours. |
-| [ ] | P3-003 | P3 | Add salon closures/holidays. | Business-wide closed days/exceptions. | Staff-specific PTO. | Closures remove all affected slots. | Availability tests. | Holiday bookings happen. |
-| [ ] | P3-004 | P3 | Add staff time blocks. | One-off staff unavailable blocks. | Recurring rules. | Staff blocks remove affected slots. | Availability tests. | Staff personal time gets booked. |
+| [ ] | P3-003 | P3 | Add salon closures/holidays. | Business-wide closed days/exceptions. | Staff-specific PTO. | Closures remove all affected slots. | Availability tests. | Holiday bookings happen. | partial: `AvailabilityException` model supports nullable `staff_id` (business-wide exceptions possible); availability service already excludes exceptions — needs API clarity and test coverage for business-wide scope |
+| [ ] | P3-004 | P3 | Add staff time blocks. | One-off staff unavailable blocks. | Recurring rules. | Staff blocks remove affected slots. | Availability tests. | Staff personal time gets booked. | partial: `AvailabilityException` model already supports one-off staff blocks; availability service already excludes them — needs dedicated API validation and overlap-prevention tests |
 | [ ] | P3-005 | P3 | Add recurring staff blocks. | Lunches/recurring unavailable windows. | Complex recurrence UI. | Recurring blocks apply predictably. | Availability tests. | Daily breaks remain bookable. |
 | [ ] | P3-006 | P3 | Design deposits/prepayments. | ADR for payment state, booking holds, refunds. | Stripe implementation. | Architecture approved before payment code. | Docs review. | Payments corrupt booking lifecycle. |
 | [ ] | P3-007 | P3 | Add Stripe payment links. | Payment-link creation for selected services. | Stripe Billing subscriptions. | Booking can require/link deposit payment. | Adapter tests. | Payment failures cause bad bookings. |
@@ -290,9 +291,9 @@ the task explicitly de-risks the MVP.
 
 | Status | ID | Priority | Goal | Scope | Out | Acceptance | Validation | Risk |
 |--------|----|----------|------|-------|-----|------------|------------|------|
-| [ ] | P4-001 | P4 | Audit product multi-tenancy queries. | Review every product query for tenant filters. | Foundation audit. | Query audit checklist is complete. | Security review/tests. | Cross-tenant data leakage. |
-| [ ] | P4-002 | P4 | Add product tenant guards. | Middleware/dependencies/helpers for product APIs. | RLS migration. | Product APIs consistently require tenant context. | API/security tests. | Missing guard exposes data. |
-| [ ] | P4-003 | P4 | Add cross-tenant leakage tests. | All product APIs tested for denial. | Manual review only. | Every product route has isolation coverage. | `make validate`. | Isolation regressions merge. |
+| [ ] | P4-001 | P4 | Audit product multi-tenancy queries. | Review every product query for tenant filters. | Foundation audit. | Query audit checklist is complete. | Security review/tests. | Cross-tenant data leakage. | partial: `tests/test_product_tenant_isolation.py` covers initial product scope; systematic query-by-query checklist and CI guard not yet created |
+| [ ] | P4-002 | P4 | Add product tenant guards. | Middleware/dependencies/helpers for product APIs. | RLS migration. | Product APIs consistently require tenant context. | API/security tests. | Missing guard exposes data. | partial: `require_business()` and per-service `tenant_id` filter pattern in place; standardized dependency-injected tenant guard not yet abstracted |
+| [ ] | P4-003 | P4 | Add cross-tenant leakage tests. | All product APIs tested for denial. | Manual review only. | Every product route has isolation coverage. | `make validate`. | Isolation regressions merge. | partial: `tests/test_product_tenant_isolation.py` and per-feature isolation tests exist; per-route coverage requirement and enforcement in CI not yet added |
 | [ ] | P4-004 | P4 | Add self-service salon onboarding. | Signup/setup business profile. | Billing. | New salon can start setup safely. | API tests. | Manual onboarding limits scale. |
 | [ ] | P4-005 | P4 | Add onboarding wizard API. | Staff/service/hours guided setup endpoints. | Frontend. | Setup flow can be completed by API. | API tests. | Configuration remains error-prone. |
 | [ ] | P4-006 | P4 | Add phone provisioning workflow. | Reserve/assign provider numbers. | BYO phone porting. | Number lifecycle is tracked. | Adapter tests. | Phone setup remains manual/unreliable. |
@@ -301,6 +302,33 @@ the task explicitly de-risks the MVP.
 | [ ] | P4-009 | P4 | Add billing webhooks. | Idempotent Stripe subscription events. | Checkout frontend. | Subscription state updates from webhooks. | Webhook tests. | Billing state drifts. |
 | [ ] | P4-010 | P4 | Block after plan limit exceeded. | Enforce booking/staff/service/feature limits. | Sales override UI. | Exceeded plans fail with clear errors. | API tests. | Revenue leakage or bad UX. |
 | [ ] | P4-011 | P4 | Add backward compatibility checklist. | Migration/versioning policy for existing salons. | Full API versioning rewrite. | Changes include compatibility review. | Docs/policy review. | Existing salons break on release. |
+
+## Production expansion audit notes
+
+**Audit date:** 2026-06-17 (`audit/backlog-reality-check` branch)
+
+**Scope:** All 50 P1–P4 backlog items inspected against application code, models,
+services, routes, worker, migrations, tests, and docs.
+
+**Summary:**
+- 0 items fully implemented
+- 9 items partially implemented (noted inline above)
+- 3 items already covered by completed MVP work: P1-010 (exponential backoff —
+  `calculate_retry_delay_seconds()` in `app/core/job_queue.py`), the DLQ
+  *infrastructure* portion of P1-011 (`move_job_to_failed_queue()` etc.), and
+  the create/cancel portion of P1-013 (`AuditLog` + `audit_log_service.py`)
+- 38 items not implemented
+
+**High-risk non-duplicates confirmed:** No P1–P4 item was accidentally
+implemented as a side-effect of MVP work. `PlanPolicyService` is an intentional
+stub for P4-008 only. The DLQ alerting half of P1-011 is genuinely missing.
+
+**Recommended implementation order for pilot:**
+1. P1-001 — Reminder SMS (infra ready; add scheduled enqueue + purpose enum)
+2. P4-001 — Tenancy query audit (run before new expansion to catch leaks early)
+3. P1-005/P1-006/P1-007 — IVR timeout/invalid/repeat (low effort, high caller impact)
+4. P1-002 — SMS reply confirm/cancel (webhook route exists; add parser)
+5. P1-003/P1-004 — Reschedule (requires ADR for state machine first)
 
 ## Validation commands
 
