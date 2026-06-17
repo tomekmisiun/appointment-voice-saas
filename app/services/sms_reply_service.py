@@ -1,11 +1,9 @@
-from datetime import datetime, timezone
 from enum import StrEnum
 
 from sqlalchemy.orm import Session
 
 from app.core.domain_errors import ConflictError
-from app.models.booking import Booking, BookingStatus
-from app.services.booking_service import cancel_booking
+from app.services.booking_service import cancel_booking, get_next_confirmed_booking
 from app.services.customer_service import get_customer_by_phone
 
 _CONFIRM_KEYWORDS = {"C", "CONFIRM", "Y", "YES"}
@@ -25,21 +23,6 @@ def parse_reply_intent(body: str) -> SmsReplyIntent:
     if normalized in _CANCEL_KEYWORDS:
         return SmsReplyIntent.CANCEL
     return SmsReplyIntent.UNRECOGNIZED
-
-
-def _next_confirmed_booking(db: Session, *, business_id: int, tenant_id: int, customer_id: int) -> Booking | None:
-    return (
-        db.query(Booking)
-        .filter(
-            Booking.business_id == business_id,
-            Booking.tenant_id == tenant_id,
-            Booking.customer_id == customer_id,
-            Booking.status == BookingStatus.CONFIRMED,
-            Booking.starts_at > datetime.now(timezone.utc),
-        )
-        .order_by(Booking.starts_at.asc())
-        .first()
-    )
 
 
 def handle_sms_reply(
@@ -65,7 +48,7 @@ def handle_sms_reply(
     if customer is None:
         return intent
 
-    booking = _next_confirmed_booking(
+    booking = get_next_confirmed_booking(
         db, business_id=business_id, tenant_id=tenant_id, customer_id=customer.id
     )
     if booking is None:

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -123,6 +123,23 @@ def create_booking(
         enqueue_send_notification_job(notification_id)
     enqueue_sync_calendar_event_job(calendar_event.id)
     return booking
+
+
+def get_next_confirmed_booking(
+    db: Session, *, business_id: int, tenant_id: int, customer_id: int
+) -> Booking | None:
+    return (
+        db.query(Booking)
+        .filter(
+            Booking.business_id == business_id,
+            Booking.tenant_id == tenant_id,
+            Booking.customer_id == customer_id,
+            Booking.status == BookingStatus.CONFIRMED,
+            Booking.starts_at > datetime.now(timezone.utc),
+        )
+        .order_by(Booking.starts_at.asc())
+        .first()
+    )
 
 
 def get_booking(db: Session, booking_id: int, tenant_id: int) -> Booking | None:

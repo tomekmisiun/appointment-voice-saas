@@ -9,15 +9,18 @@ from app.db.base import Base
 
 
 class IvrStep(StrEnum):
-    INCOMING              = "incoming"
-    SERVICE_SELECTION     = "service_selection"
-    SLOT_SELECTION        = "slot_selection"
-    BOOKING_CONFIRMED     = "booking_confirmed"
-    NO_SLOTS              = "no_slots"
-    EXPIRED               = "expired"
-    ABANDONED             = "abandoned"
-    TRANSFER_UNAVAILABLE  = "transfer_unavailable"
-    EXTERNAL_LINK_SENT    = "external_link_sent"   # terminal; external_booking_link mode only
+    INCOMING                  = "incoming"
+    SERVICE_SELECTION         = "service_selection"
+    SLOT_SELECTION            = "slot_selection"
+    BOOKING_CONFIRMED         = "booking_confirmed"
+    NO_SLOTS                  = "no_slots"
+    EXPIRED                   = "expired"
+    ABANDONED                 = "abandoned"
+    TRANSFER_UNAVAILABLE      = "transfer_unavailable"
+    EXTERNAL_LINK_SENT        = "external_link_sent"   # terminal; external_booking_link mode only
+    MANAGE_BOOKING            = "manage_booking"        # P1-003: cancel/reschedule an existing booking
+    RESCHEDULE_SLOT_SELECTION = "reschedule_slot_selection"
+    BOOKING_CANCELLED         = "booking_cancelled"     # terminal; cancelled via IVR self-service
 
 
 class VoiceSession(Base):
@@ -53,6 +56,9 @@ class VoiceSession(Base):
         DateTime(timezone=True), nullable=True
     )
     booking_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("bookings.id"), nullable=True
+    )
+    managed_booking_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("bookings.id"), nullable=True
     )
     slot_candidates: Mapped[str | None] = mapped_column(Text, nullable=True)

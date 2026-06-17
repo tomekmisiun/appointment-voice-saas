@@ -11,14 +11,19 @@ from app.models.booking import BookingSource
 from app.models.business import BookingMode, TransferDestinationPolicy
 from app.models.voice_session import IvrStep, VoiceSession
 from app.services.availability_service import get_available_slots
-from app.services.booking_service import create_booking
+from app.services.booking_service import (
+    cancel_booking,
+    create_booking,
+    get_next_confirmed_booking,
+    require_booking,
+)
 from app.services.business_service import require_business
-from app.services.customer_service import get_or_create_customer
+from app.services.customer_service import get_customer_by_phone, get_or_create_customer
 from app.services.notification_service import (
     enqueue_external_booking_link_sms,
     enqueue_send_notification_job,
 )
-from app.services.service_service import list_services
+from app.services.service_service import list_services, require_service
 from app.services.staff_service import get_eligible_transfer_staff
 
 logger = logging.getLogger(__name__)
@@ -69,6 +74,7 @@ def handle_keypress(
         IvrStep.EXPIRED,
         IvrStep.ABANDONED,
         IvrStep.EXTERNAL_LINK_SENT,
+        IvrStep.BOOKING_CANCELLED,
     )
 
     if datetime.now(tz=timezone.utc) >= session.expires_at:
@@ -106,6 +112,10 @@ def handle_keypress(
         return _handle_slot_selection(db, session, key)
     if session.step == IvrStep.TRANSFER_UNAVAILABLE:
         return _handle_transfer_unavailable(db, session, key)
+    if session.step == IvrStep.MANAGE_BOOKING:
+        return _handle_manage_booking(db, session, key)
+    if session.step == IvrStep.RESCHEDULE_SLOT_SELECTION:
+        return _handle_reschedule_slot_selection(db, session, key)
 
     return IvrResponse(prompt="Unexpected session state.", action=IvrAction.END)
 
@@ -122,6 +132,7 @@ def expire_stale_sessions(db: Session) -> int:
                 IvrStep.EXPIRED,
                 IvrStep.ABANDONED,
                 IvrStep.EXTERNAL_LINK_SENT,
+                IvrStep.BOOKING_CANCELLED,
             ]),
         )
         .all()
@@ -228,6 +239,33 @@ def _reprompt_for_no_input(db: Session, session: VoiceSession) -> IvrResponse:
             session_id=session.id,
         )
 
+    if session.step == IvrStep.MANAGE_BOOKING:
+        booking = require_booking(db, session.managed_booking_id, session.tenant_id)
+        return _manage_booking_response(db, session, booking)
+
+    if session.step == IvrStep.RESCHEDULE_SLOT_SELECTION:
+        candidates: list[dict] = json.loads(session.slot_candidates or "[]")
+        if not candidates:
+            return IvrResponse(
+                prompt="No slots are available. Please call back later.",
+                action=IvrAction.END,
+                session_id=session.id,
+            )
+        options = tuple(
+            IvrOption(
+                key=str(i + 1),
+                label=_format_slot(
+                    datetime.fromisoformat(c["start"]),
+                    datetime.fromisoformat(c["end"]),
+                ),
+            )
+            for i, c in enumerate(candidates)
+        )
+        prompt = "Please select a new time: " + ", ".join(
+            f"press {o.key} for {o.label}" for o in options
+        ) + "."
+        return IvrResponse(prompt=prompt, options=options, session_id=session.id)
+
     return IvrResponse(
         prompt="Please make a selection.",
         action=IvrAction.CONTINUE,
@@ -246,6 +284,9 @@ def _handle_incoming(db: Session, session: VoiceSession, key: str) -> IvrRespons
 
     if key == "2":
         return _handle_transfer_request(db, session)
+
+    if key == "3":
+        return _handle_manage_booking_request(db, session)
 
     business = require_business(db, session.business_id, session.tenant_id)
     return _handle_invalid_key(db, session, _main_menu_response(session.id, business.booking_mode))
@@ -345,6 +386,179 @@ def _handle_transfer_unavailable(db: Session, session: VoiceSession, key: str) -
         session_id=session.id,
     )
     return _handle_invalid_key(db, session, reprompt)
+
+
+def _handle_manage_booking_request(db: Session, session: VoiceSession) -> IvrResponse:
+    customer = get_customer_by_phone(
+        db,
+        business_id=session.business_id,
+        tenant_id=session.tenant_id,
+        phone=session.caller_phone,
+    )
+    booking = (
+        get_next_confirmed_booking(
+            db,
+            business_id=session.business_id,
+            tenant_id=session.tenant_id,
+            customer_id=customer.id,
+        )
+        if customer is not None
+        else None
+    )
+
+    if booking is None:
+        business = require_business(db, session.business_id, session.tenant_id)
+        reprompt = _main_menu_response(session.id, business.booking_mode)
+        return IvrResponse(
+            prompt=(
+                "We couldn't find an upcoming appointment for this number. "
+                + reprompt.prompt
+            ),
+            options=reprompt.options,
+            action=reprompt.action,
+            session_id=reprompt.session_id,
+        )
+
+    session.managed_booking_id = booking.id
+    session.step = IvrStep.MANAGE_BOOKING
+    db.commit()
+    return _manage_booking_response(db, session, booking)
+
+
+def _manage_booking_response(db: Session, session: VoiceSession, booking) -> IvrResponse:
+    service = require_service(db, booking.service_id, session.tenant_id)
+    when = _format_slot(booking.starts_at, booking.ends_at)
+    prompt = (
+        f"We found your {service.name} appointment for {when}. "
+        "Press 1 to cancel it, press 2 to reschedule it, or press 3 to go back to the main menu."
+    )
+    return IvrResponse(
+        prompt=prompt,
+        options=(
+            IvrOption(key="1", label="Cancel appointment"),
+            IvrOption(key="2", label="Reschedule appointment"),
+            IvrOption(key="3", label="Main menu"),
+        ),
+        session_id=session.id,
+    )
+
+
+def _handle_manage_booking(db: Session, session: VoiceSession, key: str) -> IvrResponse:
+    booking = require_booking(db, session.managed_booking_id, session.tenant_id)
+
+    if key == "1":
+        cancel_booking(db, booking.id, session.tenant_id, reason="customer_ivr_cancel")
+        session.step = IvrStep.BOOKING_CANCELLED
+        db.commit()
+        return IvrResponse(
+            prompt="Your appointment has been cancelled. Thank you, goodbye!",
+            action=IvrAction.END,
+            session_id=session.id,
+        )
+
+    if key == "2":
+        slots = _find_slots(db, session=session, service_id=booking.service_id)
+        if not slots:
+            session.step = IvrStep.NO_SLOTS
+            db.commit()
+            return IvrResponse(
+                prompt="Sorry, there are no available slots to reschedule into right now. Please call back later.",
+                action=IvrAction.END,
+            )
+        session.slot_candidates = json.dumps([
+            {"start": s.isoformat(), "end": e.isoformat()}
+            for s, e in slots
+        ])
+        session.step = IvrStep.RESCHEDULE_SLOT_SELECTION
+        db.commit()
+        options = tuple(
+            IvrOption(key=str(i + 1), label=_format_slot(s, e))
+            for i, (s, e) in enumerate(slots)
+        )
+        prompt = "Please select a new time: " + ", ".join(
+            f"press {o.key} for {o.label}" for o in options
+        ) + "."
+        return IvrResponse(prompt=prompt, options=options, session_id=session.id)
+
+    if key == "3":
+        business = require_business(db, session.business_id, session.tenant_id)
+        session.step = IvrStep.INCOMING
+        db.commit()
+        return _main_menu_response(session.id, business.booking_mode)
+
+    return _handle_invalid_key(db, session, _manage_booking_response(db, session, booking))
+
+
+def _handle_reschedule_slot_selection(db: Session, session: VoiceSession, key: str) -> IvrResponse:
+    raw = session.slot_candidates
+    if not raw:
+        session.step = IvrStep.NO_SLOTS
+        db.commit()
+        return IvrResponse(
+            prompt="No slots are available. Please call back later.",
+            action=IvrAction.END,
+        )
+
+    candidates: list[dict] = json.loads(raw)
+
+    try:
+        idx = int(key) - 1
+        if idx < 0 or idx >= len(candidates):
+            raise ValueError
+    except ValueError:
+        options = tuple(
+            IvrOption(
+                key=str(i + 1),
+                label=_format_slot(
+                    datetime.fromisoformat(c["start"]),
+                    datetime.fromisoformat(c["end"]),
+                ),
+            )
+            for i, c in enumerate(candidates)
+        )
+        prompt = "Invalid choice. Please select a new time: " + ", ".join(
+            f"press {o.key} for {o.label}" for o in options
+        ) + "."
+        return _handle_invalid_key(
+            db, session, IvrResponse(prompt=prompt, options=options, session_id=session.id)
+        )
+
+    old_booking = require_booking(db, session.managed_booking_id, session.tenant_id)
+    chosen = candidates[idx]
+    starts_at = datetime.fromisoformat(chosen["start"])
+    customer = get_or_create_customer(
+        db,
+        tenant_id=session.tenant_id,
+        business_id=session.business_id,
+        phone=session.caller_phone,
+    )
+
+    cancel_booking(db, old_booking.id, session.tenant_id, reason="customer_rescheduled_via_ivr")
+    new_booking = create_booking(
+        db,
+        tenant_id=session.tenant_id,
+        business_id=session.business_id,
+        customer_id=customer.id,
+        service_id=old_booking.service_id,
+        staff_id=old_booking.staff_id,
+        starts_at=starts_at,
+        source=BookingSource.IVR,
+    )
+
+    session.booking_id = new_booking.id
+    session.selected_slot_start = starts_at
+    session.selected_slot_end = datetime.fromisoformat(chosen["end"])
+    session.step = IvrStep.BOOKING_CONFIRMED
+    db.commit()
+
+    return IvrResponse(
+        prompt=(
+            f"Your appointment has been rescheduled to {_format_slot(starts_at, session.selected_slot_end)}. "
+            "You will receive an SMS confirmation. Thank you, goodbye!"
+        ),
+        action=IvrAction.END,
+        session_id=session.id,
+    )
 
 
 def _resolve_transfer_destination(db, business, tenant_id: int) -> str | None:
@@ -498,16 +712,22 @@ def _main_menu_response(session_id: int, booking_mode: str = BookingMode.INTERNA
         press1_label = "Receive a booking link by SMS"
         prompt = (
             "Welcome! Press 1 to receive a booking link by SMS, "
-            "or press 2 to speak with a staff member."
+            "press 2 to speak with a staff member, "
+            "or press 3 to manage an existing appointment."
         )
     else:
         press1_label = "Book an appointment"
-        prompt = "Welcome! Press 1 to book an appointment, or press 2 to speak with a staff member."
+        prompt = (
+            "Welcome! Press 1 to book an appointment, "
+            "press 2 to speak with a staff member, "
+            "or press 3 to manage an existing appointment."
+        )
     return IvrResponse(
         prompt=prompt,
         options=(
             IvrOption(key="1", label=press1_label),
             IvrOption(key="2", label="Speak with staff"),
+            IvrOption(key="3", label="Manage an existing appointment"),
         ),
         session_id=session_id,
     )
