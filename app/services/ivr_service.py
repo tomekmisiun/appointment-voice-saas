@@ -168,10 +168,9 @@ def _handle_press1_external(db: Session, session: VoiceSession, business) -> Ivr
         url=url,
         label=label,
     )
-    db.flush()
-    enqueue_send_notification_job(intent.id)
     session.step = IvrStep.EXTERNAL_LINK_SENT
     db.commit()
+    enqueue_send_notification_job(intent.id)
     return IvrResponse(
         prompt=(
             "We have sent you an SMS with a link to book your appointment online. "

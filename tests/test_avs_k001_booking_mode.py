@@ -75,6 +75,37 @@ def test_business_create_external_link_with_url_passes():
     assert schema.external_booking_url == "https://booksy.com/en-us/123"
 
 
+def test_business_create_rejects_non_http_url():
+    with pytest.raises(ValueError, match="http"):
+        BusinessCreate(
+            name="Salon",
+            timezone="UTC",
+            booking_mode=BookingMode.EXTERNAL_BOOKING_LINK,
+            external_booking_url="javascript:alert(1)",
+        )
+
+
+def test_business_create_rejects_newline_in_url():
+    with pytest.raises(ValueError, match="newline"):
+        BusinessCreate(
+            name="Salon",
+            timezone="UTC",
+            booking_mode=BookingMode.EXTERNAL_BOOKING_LINK,
+            external_booking_url="https://booksy.com/123\ninjected",
+        )
+
+
+def test_business_create_rejects_newline_in_label():
+    with pytest.raises(ValueError, match="newline"):
+        BusinessCreate(
+            name="Salon",
+            timezone="UTC",
+            booking_mode=BookingMode.EXTERNAL_BOOKING_LINK,
+            external_booking_url="https://booksy.com/123",
+            external_booking_label="Book now\nHacked content",
+        )
+
+
 # ---------------------------------------------------------------------------
 # Model defaults
 # ---------------------------------------------------------------------------
@@ -142,6 +173,21 @@ def test_api_create_business_external_mode_without_url_rejected(admin):
     assert resp.status_code == 422
 
 
+def test_api_create_business_rejects_non_http_url(admin):
+    client, headers = admin["client"], admin["headers"]
+    resp = client.post(
+        "/api/v1/businesses",
+        json={
+            "name": "Bad URL Salon",
+            "timezone": "UTC",
+            "booking_mode": "external_booking_link",
+            "external_booking_url": "javascript:alert(1)",
+        },
+        headers=headers,
+    )
+    assert resp.status_code == 422
+
+
 # ---------------------------------------------------------------------------
 # API: PATCH can change booking_mode and subscription_plan
 # ---------------------------------------------------------------------------
@@ -182,6 +228,63 @@ def test_api_patch_subscription_plan(admin):
     )
     assert resp.status_code == 200
     assert resp.json()["subscription_plan"] == "booksy_pro"
+
+
+def test_api_patch_external_mode_without_url_rejected(admin):
+    """PATCH switching to external_booking_link without external_booking_url must be rejected."""
+    client, headers = admin["client"], admin["headers"]
+    biz_id = client.post(
+        "/api/v1/businesses",
+        json={"name": "PATCH Guard Salon", "timezone": "UTC"},
+        headers=headers,
+    ).json()["id"]
+
+    resp = client.patch(
+        f"/api/v1/businesses/{biz_id}",
+        json={"booking_mode": "external_booking_link"},
+        headers=headers,
+    )
+    assert resp.status_code == 422
+
+
+def test_api_patch_external_mode_with_url_accepted(admin):
+    """PATCH switching to external_booking_link WITH external_booking_url must succeed."""
+    client, headers = admin["client"], admin["headers"]
+    biz_id = client.post(
+        "/api/v1/businesses",
+        json={"name": "PATCH Valid Salon", "timezone": "UTC"},
+        headers=headers,
+    ).json()["id"]
+
+    resp = client.patch(
+        f"/api/v1/businesses/{biz_id}",
+        json={
+            "booking_mode": "external_booking_link",
+            "external_booking_url": "https://booksy.com/valid",
+        },
+        headers=headers,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["booking_mode"] == "external_booking_link"
+
+
+def test_api_patch_rejects_non_http_url(admin):
+    client, headers = admin["client"], admin["headers"]
+    biz_id = client.post(
+        "/api/v1/businesses",
+        json={"name": "Bad PATCH URL Salon", "timezone": "UTC"},
+        headers=headers,
+    ).json()["id"]
+
+    resp = client.patch(
+        f"/api/v1/businesses/{biz_id}",
+        json={
+            "booking_mode": "external_booking_link",
+            "external_booking_url": "ftp://bad.scheme/123",
+        },
+        headers=headers,
+    )
+    assert resp.status_code == 422
 
 
 # ---------------------------------------------------------------------------
