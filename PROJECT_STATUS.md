@@ -4,7 +4,7 @@ Verified as of 2026-06-17. Updated during `audit/backlog-reality-check`.
 
 ## Current Status
 
-All MVP foundation epics (A–K) implemented, plus AVS-L001–L003 (owner acquisition + onboarding). 673 tests pass. CI green.
+All MVP foundation epics (A–K) and full Epic L (L001–L004, owner acquisition + onboarding) implemented. 695 tests pass. CI green.
 
 The product can be fully demonstrated locally using fake SMS and fake calendar
 providers. Real Twilio voice and SMS providers are wired and configured via env
@@ -107,6 +107,15 @@ vars. A pilot can be set up against the `docs/mvp-pilot-deployment-checklist.md`
 - Cancellation smoke: `tests/test_avs_j004_smoke_cancellation.py`.
 - README demo scenario documented.
 - MVP pilot deployment checklist: `docs/mvp-pilot-deployment-checklist.md`.
+
+### Self-Service Onboarding API (AVS-L004 — done)
+
+- `POST /api/v1/onboarding` — atomic one-call setup: business + staff + services + working hours in one request. Requires admin role.
+- `DELETE /api/v1/businesses/{id}/services/{service_id}` — hard delete for services.
+- `PATCH /api/v1/businesses/{id}/working-hours/{wh_id}` — update start/end time; validates end > start.
+- `OnboardingSetupRequest` schema with full validation (external mode URL required, hour range check).
+- `setup_business_onboarding()` service orchestrates creation across four existing service layers.
+- 22 tests in `tests/test_avs_l004_self_service_onboarding.py`. No migration needed — no new models.
 
 ### Owner Dashboard Skeleton (AVS-L003 — done)
 

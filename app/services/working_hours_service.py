@@ -63,6 +63,26 @@ def list_working_hours(
     return query.order_by(WorkingHours.day_of_week.asc(), WorkingHours.start_time.asc()).all()
 
 
+def update_working_hours(
+    db: Session,
+    wh_id: int,
+    tenant_id: int,
+    *,
+    start_time: "time | None" = None,
+    end_time: "time | None" = None,
+) -> WorkingHours:
+    wh = require_working_hours(db, wh_id, tenant_id)
+    if start_time is not None:
+        wh.start_time = start_time
+    if end_time is not None:
+        wh.end_time = end_time
+    if wh.end_time <= wh.start_time:
+        raise ValueError("end_time must be after start_time")
+    db.commit()
+    db.refresh(wh)
+    return wh
+
+
 def delete_working_hours(db: Session, wh_id: int, tenant_id: int) -> None:
     wh = require_working_hours(db, wh_id, tenant_id)
     db.delete(wh)

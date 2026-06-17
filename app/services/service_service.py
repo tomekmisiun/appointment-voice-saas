@@ -63,6 +63,12 @@ def list_services(
     return query.order_by(Service.id.asc()).offset(skip).limit(limit).all()
 
 
+def delete_service(db: Session, service_id: int, tenant_id: int) -> None:
+    svc = require_service(db, service_id, tenant_id)
+    db.delete(svc)
+    db.commit()
+
+
 def update_service(
     db: Session,
     service_id: int,
