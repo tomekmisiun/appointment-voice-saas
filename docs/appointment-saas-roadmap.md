@@ -97,8 +97,9 @@ All MVP epics completed (2026-06-16). Original execution order (completed):
 10. `AVS-I001`–`AVS-I005` – Call transfer ✓
 11. `AVS-J001`–`AVS-J006` – Demo and MVP readiness ✓
 12. `AVS-K001` – Booking mode and subscription plan ✓
+13. `AVS-L001` – Owner lead intake (manual pilot onboarding) ✓
 
-Remaining work: P1–P4 production expansion backlog.
+Remaining work: P1–P4 production expansion backlog + Epic L continuation.
 
 ### EPIC A - Product foundation from template
 
@@ -224,6 +225,17 @@ Remaining work: P1–P4 production expansion backlog.
 | Status | ID | Priority | Goal | Scope | Out | Acceptance | Validation | Risk |
 |--------|----|----------|------|-------|-----|------------|------------|------|
 | [x] | AVS-K001 | P0 | Add booking_mode and subscription_plan to Business. | Two independent dimensions: booking_mode (operational — internal vs external link) and subscription_plan (commercial — stored only). IVR press-1 dispatches on booking_mode. External mode sends SMS with booking URL. PlanPolicyService stub as future billing seam. | Billing enforcement, plan limits. | Model, migration, schema, API, IVR dispatch, notification, tests all done. | `make validate`, 631 tests pass. | booking_mode conflated with pricing; kept strictly separate. |
+
+### EPIC L - Owner acquisition and manual pilot onboarding
+
+| Status | ID | Priority | Goal | Scope | Out | Acceptance | Validation | Risk |
+|--------|----|----------|------|-------|-----|------------|------------|------|
+| [x] | AVS-L001 | P1 | Owner lead intake for manual pilot onboarding. | Public lead submission endpoint (`POST /api/v1/owner-leads`). `OwnerLead` model (not tenant-scoped). Admin listing + status management. Rate-limited (5/hour/IP). URL/email/phone validation. Phone normalization. Two booking mode interests: external_booking_link and standalone_booking. | Full owner dashboard, billing, phone provisioning, automated onboarding. | Public endpoint returns 201, stores lead, exposes only public-safe fields. Admin can list/get/update status. 35 tests pass. | `make validate`. 673 tests pass. | Interested salons have no clear path to pilot. |
+| [ ] | AVS-L002 | P1 | Manual pilot onboarding runbook. | Operator checklist for onboarding a salon from a submitted lead. Covers both external_booking_link and standalone_booking modes. IVR test call verification. Transfer phone config. | Automated onboarding. | Developer/operator can onboard one test salon from lead data. | Docs review / policy guards. | Pilot setup is inconsistent. |
+| [ ] | AVS-L003 | P2 | Minimal owner dashboard skeleton. | Define pages/routes needed for future owner-facing UI. No full implementation. | Full frontend app. | Docs define dashboard MVP scope clearly. | Docs review. | Frontend work starts without agreed scope. |
+| [ ] | AVS-L004 | P4 | Self-service onboarding API. | Signup/guided setup flow via API (staff, services, hours). | Frontend wizard, billing. | Owner can complete initial setup by API calls. | API tests. | Manual onboarding blocks scale. |
+
+See `docs/product/owner-acquisition.md` for flow, booking modes, and upgrade path.
 
 ## Production expansion backlog
 
