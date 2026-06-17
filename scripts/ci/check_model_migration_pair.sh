@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck source=scripts/ci/_lib.sh
 source "$ROOT/scripts/ci/_lib.sh"
 
-OVERRIDE="$ROOT/scripts/ci/allow-no-migration"
+OVERRIDE="scripts/ci/allow-no-migration"
 
 if ! any_path_changed '^app/models/'; then
   echo "model-migration-pair: no model changes detected"

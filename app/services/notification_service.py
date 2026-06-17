@@ -1,11 +1,12 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.job_queue import Job, enqueue_job
 from app.core.sms import SmsMessage
-from app.models.booking import Booking
+from app.models.booking import Booking, BookingStatus
 from app.models.business import Business
 from app.models.customer import Customer
 from app.models.notification_outbox import (
@@ -15,6 +16,9 @@ from app.models.notification_outbox import (
     NotificationStatus,
 )
 from app.models.service import Service
+from app.services.business_service import require_business
+from app.services.customer_service import require_customer
+from app.services.service_service import require_service
 from app.services.sms_provider import SmsProvider, get_sms_provider
 
 SEND_NOTIFICATION_JOB = "send_notification"
@@ -135,6 +139,61 @@ def enqueue_external_booking_link_sms(
     db.add(intent)
     db.flush()
     return intent
+
+
+def enqueue_due_reminders(db: Session) -> int:
+    """Enqueue a reminder SMS for confirmed bookings starting within the
+    reminder lead window. Idempotent: skips bookings that already have a
+    BOOKING_REMINDER outbox row, so it is safe to call on every maintenance
+    tick regardless of cadence."""
+    now = datetime.now(timezone.utc)
+    threshold = now + timedelta(minutes=settings.reminder_lead_minutes)
+
+    due_bookings = (
+        db.query(Booking)
+        .filter(
+            Booking.status == BookingStatus.CONFIRMED,
+            Booking.starts_at > now,
+            Booking.starts_at <= threshold,
+        )
+        .all()
+    )
+
+    count = 0
+    for booking in due_bookings:
+        already_queued = (
+            db.query(NotificationOutbox)
+            .filter(
+                NotificationOutbox.booking_id == booking.id,
+                NotificationOutbox.purpose == NotificationPurpose.BOOKING_REMINDER,
+            )
+            .first()
+        )
+        if already_queued is not None:
+            continue
+
+        business = require_business(db, booking.business_id, booking.tenant_id)
+        customer = require_customer(db, booking.customer_id, booking.tenant_id)
+        service = require_service(db, booking.service_id, booking.tenant_id)
+        when = _format_local_time(booking.starts_at, business)
+
+        intent = NotificationOutbox(
+            tenant_id=booking.tenant_id,
+            business_id=booking.business_id,
+            booking_id=booking.id,
+            channel=NotificationChannel.SMS,
+            purpose=NotificationPurpose.BOOKING_REMINDER,
+            recipient_phone=customer.phone,
+            body=f"Reminder: your {service.name} appointment at {business.name} is at {when}.",
+        )
+        db.add(intent)
+        db.flush()
+        enqueue_send_notification_job(intent.id)
+        count += 1
+
+    if count:
+        db.commit()
+    return count
 
 
 def send_notification_in_worker(

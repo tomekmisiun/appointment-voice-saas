@@ -18,8 +18,8 @@ Twilio signature validation, call transfer (business_phone and staff policies),
 transfer unavailable fallback, demo seed script, smoke tests, booking_mode/subscription_plan
 dimensions, exponential retry backoff, DLQ infrastructure, booking lifecycle audit logs.
 
-Not implemented: reminder SMS, SMS reply handling, reschedule, DLQ alerting
-integration, CRM, waitlist, billing, frontend.
+Not implemented: SMS reply handling, reschedule, DLQ alerting integration,
+CRM, waitlist, billing, frontend.
 
 ## Product goal
 
@@ -250,7 +250,7 @@ the task explicitly de-risks the MVP.
 
 | Status | ID | Priority | Goal | Scope | Out | Acceptance | Validation | Risk |
 |--------|----|----------|------|-------|-----|------------|------------|------|
-| [ ] | P1-001 | P1 | Send reminder SMS. | Reminder schedule before appointment. | Marketing campaigns. | Reminder intent is queued and sent once. | Worker tests. | No-shows remain high. |
+| [x] | P1-001 | P1 | Send reminder SMS. | Reminder schedule before appointment. | Marketing campaigns. | Reminder intent is queued and sent once. | Worker tests. | No-shows remain high. | done: `enqueue_due_reminders()` runs on the worker maintenance tick, queues one BOOKING_REMINDER per confirmed booking within `settings.reminder_lead_minutes`, idempotent via existing-outbox-row check — `tests/test_avs_p1001_reminder_sms.py` |
 | [ ] | P1-002 | P1 | Handle SMS reply confirm/cancel. | Parse simple replies and update booking. | Free-form NLP. | Confirm/cancel replies are idempotent. | Webhook tests. | Customers cannot manage bookings. |
 | [ ] | P1-003 | P1 | Reschedule by customer IVR. | Customer finds booking by phone and selects new slot. | Staff preference. | Reschedule updates booking/SMS/calendar. | IVR E2E tests. | Support burden stays high. |
 | [ ] | P1-004 | P1 | Reschedule by business/admin. | API workflow for changing slot/staff. | Frontend. | Business can reschedule and notify parties. | API/service tests. | Staff cannot recover schedule changes. |
@@ -325,22 +325,22 @@ the task explicitly de-risks the MVP.
 **Scope:** All 50 P1–P4 backlog items inspected against application code, models,
 services, routes, worker, migrations, tests, and docs.
 
-**Summary (updated 2026-06-17 after P1-005/P1-006/P1-007):**
-- 3 items fully implemented: P1-005, P1-006, P1-007 (IVR timeout/invalid-input/
-  repeat-menu — see rows above for evidence)
+**Summary (updated 2026-06-17 after P1-001/P1-005/P1-006/P1-007):**
+- 4 items fully implemented: P1-001, P1-005, P1-006, P1-007 (reminder SMS,
+  IVR timeout/invalid-input/repeat-menu — see rows above for evidence)
 - 7 items partially implemented (noted inline above)
 - 3 items already covered by completed MVP work: P1-010 (exponential backoff —
   `calculate_retry_delay_seconds()` in `app/core/job_queue.py`), the DLQ
   *infrastructure* portion of P1-011 (`move_job_to_failed_queue()` etc.), and
   the create/cancel portion of P1-013 (`AuditLog` + `audit_log_service.py`)
-- 37 items not implemented
+- 36 items not implemented
 
 **High-risk non-duplicates confirmed:** No P1–P4 item was accidentally
 implemented as a side-effect of MVP work. `PlanPolicyService` is an intentional
 stub for P4-008 only. The DLQ alerting half of P1-011 is genuinely missing.
 
 **Recommended implementation order for pilot:**
-1. P1-001 — Reminder SMS (infra ready; add scheduled enqueue + purpose enum)
+1. ~~P1-001 — Reminder SMS~~ done
 2. P4-001 — Tenancy query audit (run before new expansion to catch leaks early)
 3. ~~P1-005/P1-006/P1-007 — IVR timeout/invalid/repeat~~ done
 4. P1-002 — SMS reply confirm/cancel (webhook route exists; add parser)

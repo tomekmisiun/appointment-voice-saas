@@ -145,6 +145,7 @@ class Settings(BaseSettings):
     ivr_session_ttl_minutes: int = Field(default=10, gt=0)
     ivr_slot_search_days: int = Field(default=7, gt=0)
     ivr_max_slots: int = Field(default=5, gt=0)
+    reminder_lead_minutes: int = Field(default=1440, gt=0)
     worker_shutdown_grace_seconds: float = Field(default=60.0, ge=0)
     readiness_check_s3_enabled: bool = False
     twilio_account_sid: str = ""
