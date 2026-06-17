@@ -95,7 +95,8 @@ Workflow changes must not weaken:
 - Trivy CRITICAL/HIGH blocking (`exit-code: "1"`)
 - required `test` job
 - `docker-build` dependency on `test`
-- dependency review severity gate (`fail-on-severity: high`)
+- dependency vulnerability gate (`pip-audit` job in `dependency-review.yml`,
+  must not be `continue-on-error`)
 
 **Bypass:** restore the guard or get explicit maintainer approval with rationale
 in the PR description.
@@ -104,6 +105,14 @@ in the PR description.
 
 The `secrets-scan` job runs [gitleaks](https://github.com/gitleaks/gitleaks)
 on every PR and push to `main`.
+
+### Dependency vulnerability scan
+
+The `pip-audit` job (`.github/workflows/dependency-review.yml`) exports the
+`uv.lock` runtime dependencies and runs
+[pip-audit](https://github.com/pypa/pip-audit) against them on every PR.
+`actions/dependency-review-action` is not used because it requires GitHub
+Advanced Security, which is not enabled on this (private) repo.
 
 ## Pre-commit (cheap local checks)
 

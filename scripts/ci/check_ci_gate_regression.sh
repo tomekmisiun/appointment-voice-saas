@@ -30,13 +30,8 @@ if [ -n "$workflow_diff" ]; then
     fi
   fi
 
-  if grep -Fq 'dependency-review-action' <<<"$workflow_diff"; then
-    if grep -Eq '^-.*fail-on-severity:' <<<"$workflow_diff" && ! grep -Eq '^\+.*fail-on-severity:' <<<"$workflow_diff"; then
-      errors+=("removed dependency review severity gate")
-    fi
-    if grep -Eq '^-.*fail-on-scopes:' <<<"$workflow_diff" && ! grep -Eq '^\+.*fail-on-scopes:' <<<"$workflow_diff"; then
-      errors+=("removed dependency review scope gate")
-    fi
+  if grep -Eq '^-.*pip-audit' <<<"$workflow_diff" && ! grep -Eq '^\+.*pip-audit' <<<"$workflow_diff"; then
+    errors+=("removed dependency vulnerability gate (pip-audit)")
   fi
 
   if grep -Eq '^-  test:' <<<"$workflow_diff" && ! grep -Eq '^\+  test:' <<<"$workflow_diff"; then
@@ -62,8 +57,14 @@ if [ -f "$current_ci" ]; then
   fi
 fi
 
-if [ -f "$dep_review" ] && ! grep -Fq 'fail-on-severity: high' "$dep_review"; then
-  errors+=("dependency-review.yml must keep fail-on-severity: high")
+if [ -f "$dep_review" ]; then
+  if ! grep -Fq 'pip-audit' "$dep_review"; then
+    errors+=("dependency-review.yml must keep a pip-audit (or equivalent) vulnerability gate")
+  fi
+  audit_block="$(awk '/uses: pypa\/gh-action-pip-audit/{p=1} p{print; if (/^$/) exit}' "$dep_review")"
+  if grep -Fq 'continue-on-error: true' <<<"$audit_block"; then
+    errors+=("dependency-review.yml pip-audit step must not be continue-on-error")
+  fi
 fi
 
 if [ "${#errors[@]}" -eq 0 ]; then
