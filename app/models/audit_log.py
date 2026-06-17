@@ -20,6 +20,7 @@ class AuditAction(StrEnum):
     BOOKING_CANCELLED = "booking.cancelled"
     BOOKING_RESCHEDULED = "booking.rescheduled"
     BOOKING_CONFIRMED = "booking.confirmed"
+    CUSTOMER_ANONYMIZED = "customer.anonymized"
 
 
 class AuditLog(Base):
