@@ -4,7 +4,7 @@ Verified as of 2026-06-17. Updated during `audit/backlog-reality-check`.
 
 ## Current Status
 
-All MVP foundation epics (A–K) implemented. 631 tests pass. CI green.
+All MVP foundation epics (A–K) implemented, plus AVS-L001 (owner lead intake). 673 tests pass. CI green.
 
 The product can be fully demonstrated locally using fake SMS and fake calendar
 providers. Real Twilio voice and SMS providers are wired and configured via env
@@ -107,6 +107,20 @@ vars. A pilot can be set up against the `docs/mvp-pilot-deployment-checklist.md`
 - Cancellation smoke: `tests/test_avs_j004_smoke_cancellation.py`.
 - README demo scenario documented.
 - MVP pilot deployment checklist: `docs/mvp-pilot-deployment-checklist.md`.
+
+### Owner Lead Intake (EPIC L / AVS-L001 — done)
+
+- Public pilot lead intake endpoint: `POST /api/v1/owner-leads` (no auth, rate-limited 5/hr/IP).
+- `OwnerLead` model — not tenant-scoped (prospective new tenants).
+- Fields: business_name, owner_name, email, phone_number/normalized, city, booking_mode_interest, external_booking_url, message, status.
+- `booking_mode_interest` enum: `external_booking_link`, `standalone_booking`, `unsure`.
+- `status` lifecycle: `new → contacted → qualified → onboarded / rejected`.
+- Admin endpoints: `GET /api/v1/owner-leads`, `GET /api/v1/owner-leads/{id}`, `PATCH /api/v1/owner-leads/{id}/status`.
+- URL validation (http/https only, no newlines), email validation, phone normalization.
+- Public response exposes only safe fields (no email/phone/message).
+- Migration: `l001a2b3c4d5e`.
+- 35 tests in `tests/test_avs_l001_owner_lead.py`.
+- Docs: `docs/product/owner-acquisition.md`.
 
 ### Booking Mode and Subscription Plan (EPIC K — done)
 

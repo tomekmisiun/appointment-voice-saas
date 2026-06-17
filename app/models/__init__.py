@@ -1,4 +1,5 @@
 from app.models.audit_log import AuditLog
+from app.models.owner_lead import OwnerLead
 from app.models.availability_exception import AvailabilityException
 from app.models.booking import Booking
 from app.models.business import Business
@@ -21,6 +22,7 @@ from app.models.working_hours import WorkingHours
 
 __all__ = [
     "AuditLog",
+    "OwnerLead",
     "BusinessTransferHours",
     "AvailabilityException",
     "Booking",
