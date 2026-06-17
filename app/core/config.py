@@ -156,6 +156,8 @@ class Settings(BaseSettings):
     twilio_voice_rate_limit_window_seconds: int = Field(default=60, gt=0)
     twilio_sms_status_rate_limit_limit: int = Field(default=300, gt=0)
     twilio_sms_status_rate_limit_window_seconds: int = Field(default=60, gt=0)
+    twilio_sms_inbound_rate_limit_limit: int = Field(default=300, gt=0)
+    twilio_sms_inbound_rate_limit_window_seconds: int = Field(default=60, gt=0)
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

@@ -170,7 +170,7 @@ Two independent dimensions added to `Business`:
 | BUG-001 | ~~Twilio keypress route used `business.phone` instead of `ivr_response.transfer_destination` for STAFF policy transfers~~ | HIGH | **Fixed in audit** |
 | GAP-001 | ~~IVR timeout/no-input has no explicit recovery prompt~~ | MEDIUM | **Fixed — P1-005** |
 | GAP-002 | ~~No IVR repeat menu key~~ | LOW | **Fixed — P1-007** |
-| GAP-003 | No SMS reply parsing (confirm/cancel by text reply) | MEDIUM | Open — P1-002 |
+| GAP-003 | ~~No SMS reply parsing (confirm/cancel by text reply)~~ | MEDIUM | **Fixed — P1-002** |
 | GAP-004 | No reschedule flow (IVR or admin) | MEDIUM | Open — P1-003/P1-004 |
 | GAP-005 | ~~No reminder SMS~~ | MEDIUM | **Fixed — P1-001** |
 | GAP-006 | No IVR backend-unavailable fallback | MEDIUM | Open — P1-008 |
@@ -191,22 +191,23 @@ Two independent dimensions added to `Business`:
 
 ## Not Implemented (Expansion Backlog)
 
-Audited 2026-06-17, updated 2026-06-17 after P1-001/P1-005/P1-006/P1-007. 50
-P1–P4 items checked; 4 fully implemented, 7 partially, 3 already covered by
+Audited 2026-06-17, updated 2026-06-17 after P1-001/P1-002/P1-005/P1-006/P1-007.
+50 P1–P4 items checked; 5 fully implemented, 7 partially, 3 already covered by
 MVP infrastructure.
 
 **P1 — Must-have for pilot:**
-- NOT_IMPLEMENTED: SMS reply handling, reschedule (IVR + API),
-  backend-unavailable fallback.
+- NOT_IMPLEMENTED: reschedule (IVR + API), backend-unavailable fallback.
 - PARTIAL: separate SMS/calendar queues (job types exist; single queue),
   DLQ alerting (DLQ infra exists in `app/core/job_queue.py`; alert signal missing),
   failed-integration metrics (Prometheus wired; provider-specific alerts missing),
   audit log expansion (create/cancel logged; reschedule/override audit pending).
 - DONE: reminder SMS queued once per booking within `reminder_lead_minutes`
-  of the appointment via the worker maintenance tick (P1-001), IVR no-input
-  timeout handling with consecutive-miss termination (P1-005), IVR
-  invalid-input retry counter with session termination after 5 keys
-  (P1-006), IVR repeat-menu key `*` at every interactive step (P1-007).
+  of the appointment via the worker maintenance tick (P1-001), inbound SMS
+  reply confirm/cancel parsing via `/webhooks/twilio/sms/{business_id}/inbound`
+  acting on the customer's soonest upcoming booking, idempotent cancel
+  (P1-002), IVR no-input timeout handling with consecutive-miss termination
+  (P1-005), IVR invalid-input retry counter with session termination after 5
+  keys (P1-006), IVR repeat-menu key `*` at every interactive step (P1-007).
 - DONE (covered by MVP): exponential backoff (`calculate_retry_delay_seconds()`).
 
 **P2 — High business impact:**
