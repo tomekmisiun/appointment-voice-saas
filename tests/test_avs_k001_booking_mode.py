@@ -11,7 +11,7 @@ from app.models.business import BookingMode, SubscriptionPlan
 from app.models.notification_outbox import NotificationOutbox, NotificationPurpose
 from app.models.tenant import Tenant
 from app.schemas.business import BusinessCreate
-from app.services.business_service import create_business, get_business
+from app.services.business_service import create_business
 from app.services.notification_service import enqueue_external_booking_link_sms
 from app.services.plan_policy_service import PlanPolicy, get_plan_policy
 from tests.database import auth_headers, login_user, promote_to_admin, register_user
