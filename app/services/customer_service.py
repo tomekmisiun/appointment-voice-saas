@@ -4,7 +4,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.domain_errors import ConflictError, NotFoundError
+from app.models.audit_log import AuditAction
+from app.models.client import Client
 from app.models.customer import Customer
+from app.services.audit_log_service import create_audit_log
 from app.services.business_service import require_business
 
 
@@ -123,6 +126,51 @@ def update_customer(
     customer = require_customer(db, customer_id, tenant_id)
     if name is not None:
         customer.name = name
+    db.commit()
+    db.refresh(customer)
+    return customer
+
+
+def gdpr_delete_customer(
+    db: Session,
+    customer_id: int,
+    tenant_id: int,
+    *,
+    actor_id: int | None = None,
+) -> Customer:
+    """Anonymize a customer's personal data on request. Not a hard delete:
+    Booking.customer_id has no ON DELETE clause (defaults to RESTRICT), so a
+    customer with any booking history can't be removed without breaking
+    that constraint — and deleting the row would also break the booking and
+    audit trail businesses are required to keep. Scrubs PII on the Customer
+    and any linked Client (P2-001) while leaving both rows, and everything
+    that references them, intact. Applies regardless of booking status —
+    GDPR erasure requests aren't conditional on having no upcoming
+    appointment."""
+    customer = require_customer(db, customer_id, tenant_id)
+    customer.name = None
+    customer.phone = "deleted"
+    customer.phone_normalized = f"deleted-{customer.id}"
+
+    client = (
+        db.query(Client)
+        .filter(Client.tenant_id == tenant_id, Client.customer_id == customer.id)
+        .first()
+    )
+    if client is not None:
+        client.name = "Deleted client"
+        client.email = None
+        client.phone = None
+        client.notes = None
+
+    create_audit_log(
+        db,
+        tenant_id=tenant_id,
+        admin_id=actor_id,
+        action=AuditAction.CUSTOMER_ANONYMIZED,
+        source=f"customer_id={customer.id}",
+        commit=False,
+    )
     db.commit()
     db.refresh(customer)
     return customer

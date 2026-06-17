@@ -192,8 +192,8 @@ Two independent dimensions added to `Business`:
 ## Not Implemented (Expansion Backlog)
 
 Audited 2026-06-17, updated 2026-06-17 after P1-001 through P1-013 (see below)
-and P2-001 through P2-004.
-50 P1–P4 items checked; 15 fully implemented, 4 partially, 2 already covered by
+and P2-001 through P2-005.
+50 P1–P4 items checked; 16 fully implemented, 4 partially, 2 already covered by
 MVP infrastructure.
 
 **P1 — Must-have for pilot:**
@@ -234,10 +234,10 @@ MVP infrastructure.
 - DONE (covered by MVP): exponential backoff (`calculate_retry_delay_seconds()`).
 
 **P2 — High business impact:**
-- NOT_IMPLEMENTED: GDPR delete, preferred staff selection, last-staff
-  suggestion, multi-service appointments, combined-duration availability,
-  waitlist model, waitlist-on-cancellation offer, waitlist
-  timeout/escalation, owner metrics API, CSV export.
+- NOT_IMPLEMENTED: preferred staff selection, last-staff suggestion,
+  multi-service appointments, combined-duration availability, waitlist
+  model, waitlist-on-cancellation offer, waitlist timeout/escalation, owner
+  metrics API, CSV export.
 - DONE: CRM clients table — `Client` model (name/email/phone/notes), optionally
   linked 1:1 to a `Customer` via `customer_id`; CRUD at
   `/businesses/{business_id}/clients` (P2-001), bookings linked to clients —
@@ -247,7 +247,11 @@ MVP infrastructure.
   ("Welcome back, {name}!") for a caller phone matching an existing
   Customer/Client for the exact business+tenant (P2-003), client booking
   history exposed at `GET /businesses/{business_id}/clients/{client_id}/bookings`
-  (P2-004).
+  (P2-004), GDPR delete via `POST /businesses/{business_id}/customers/{customer_id}/gdpr-delete`
+  — anonymizes PII on the `Customer` and any linked `Client` rather than
+  hard-deleting (no `ON DELETE` clause on `Booking.customer_id`, and a hard
+  delete would break the booking/audit trail); applies regardless of
+  booking status (P2-005).
 
 **P3 — Operational extensions:**
 - NOT_IMPLEMENTED: salon/staff hours intersection, recurring staff blocks,
