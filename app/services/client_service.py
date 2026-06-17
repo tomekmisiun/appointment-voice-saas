@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.core.domain_errors import ConflictError, NotFoundError
+from app.models.booking import Booking
 from app.models.client import Client
 from app.services.business_service import require_business
 from app.services.customer_service import require_customer
@@ -70,6 +71,32 @@ def list_clients(
         db.query(Client)
         .filter(Client.business_id == business_id, Client.tenant_id == tenant_id)
         .order_by(Client.id.asc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+def get_bookings_for_client(
+    db: Session,
+    client_id: int,
+    tenant_id: int,
+    *,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[Booking]:
+    """Booking history for a client, joined through the linked Customer.
+    No denormalized client_id on Booking: Client.customer_id is already
+    unique per business (from P2-001), so Booking -> Customer -> Client is
+    a complete, non-duplicated path. A client with no linked customer has
+    no booking history by definition."""
+    client = require_client(db, client_id, tenant_id)
+    if client.customer_id is None:
+        return []
+    return (
+        db.query(Booking)
+        .filter(Booking.customer_id == client.customer_id, Booking.tenant_id == tenant_id)
+        .order_by(Booking.starts_at.desc())
         .offset(skip)
         .limit(limit)
         .all()

@@ -192,8 +192,8 @@ Two independent dimensions added to `Business`:
 ## Not Implemented (Expansion Backlog)
 
 Audited 2026-06-17, updated 2026-06-17 after P1-001 through P1-013 (see below)
-and P2-001.
-50 P1–P4 items checked; 12 fully implemented, 4 partially, 2 already covered by
+and P2-001/P2-002.
+50 P1–P4 items checked; 13 fully implemented, 4 partially, 2 already covered by
 MVP infrastructure.
 
 **P1 — Must-have for pilot:**
@@ -241,7 +241,10 @@ MVP infrastructure.
   CSV export.
 - DONE: CRM clients table — `Client` model (name/email/phone/notes), optionally
   linked 1:1 to a `Customer` via `customer_id`; CRUD at
-  `/businesses/{business_id}/clients` (P2-001).
+  `/businesses/{business_id}/clients` (P2-001), bookings linked to clients —
+  no new column needed since `Booking.customer_id` + `Client.customer_id`
+  (already unique per business) is a complete path; `get_bookings_for_client()`
+  in `client_service.py` (P2-002).
 
 **P3 — Operational extensions:**
 - NOT_IMPLEMENTED: salon/staff hours intersection, recurring staff blocks,
