@@ -69,15 +69,12 @@ def update_working_hours_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin")),
 ):
-    from fastapi import HTTPException
-    try:
-        return update_working_hours(
-            db, wh_id, current_user.tenant_id,
-            start_time=body.start_time,
-            end_time=body.end_time,
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return update_working_hours(
+        db, wh_id, current_user.tenant_id,
+        business_id=business_id,
+        start_time=body.start_time,
+        end_time=body.end_time,
+    )
 
 
 @router.delete("/{wh_id}", status_code=status.HTTP_204_NO_CONTENT)

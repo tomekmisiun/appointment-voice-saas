@@ -71,7 +71,7 @@ def delete_service_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin")),
 ):
-    delete_service(db, service_id, current_user.tenant_id)
+    delete_service(db, service_id, current_user.tenant_id, business_id=business_id)
 
 
 @router.patch("/{service_id}", response_model=ServiceRead)

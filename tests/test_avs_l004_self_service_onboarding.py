@@ -271,6 +271,42 @@ def test_service_delete_requires_admin(admin, client, db):
     assert resp.status_code == 403
 
 
+def test_service_delete_with_confirmed_booking_returns_409(admin, client, db):
+    from datetime import datetime, timezone
+
+    from app.services.booking_service import create_booking
+    from app.services.customer_service import get_or_create_customer
+
+    biz_resp = client.post(_ONBOARDING_URL, json={
+        "business": {"name": "Booking Block Salon", "timezone": "Europe/Warsaw"},
+        "services": [{"name": "Haircut", "duration_minutes": 30}],
+        "working_hours": [{"day_of_week": 0, "start_time": "09:00", "end_time": "17:00"}],
+    }, headers=admin["headers"])
+    biz_id = biz_resp.json()["business_id"]
+    svc_id = client.get(
+        f"/api/v1/businesses/{biz_id}/services", headers=admin["headers"]
+    ).json()[0]["id"]
+
+    customer = get_or_create_customer(
+        db, tenant_id=1, business_id=biz_id, phone="+48900800700"
+    )
+    create_booking(
+        db,
+        tenant_id=1,
+        business_id=biz_id,
+        customer_id=customer.id,
+        service_id=svc_id,
+        staff_id=None,
+        starts_at=datetime(2026, 12, 1, 10, 0, tzinfo=timezone.utc),
+    )
+
+    resp = client.delete(
+        f"/api/v1/businesses/{biz_id}/services/{svc_id}",
+        headers=admin["headers"],
+    )
+    assert resp.status_code == 409
+
+
 # ---------------------------------------------------------------------------
 # PATCH /api/v1/businesses/{id}/working-hours/{wh_id}
 # ---------------------------------------------------------------------------
@@ -348,6 +384,25 @@ def test_working_hours_patch_missing_returns_404(admin, client):
         headers=admin["headers"],
     )
     assert resp.status_code == 404
+
+
+def test_working_hours_patch_start_time_conflicts_with_persisted_end(admin, client):
+    biz_resp = client.post(_ONBOARDING_URL, json={
+        "business": {"name": "WH Conflict Salon", "timezone": "Europe/Warsaw"},
+        "working_hours": [{"day_of_week": 5, "start_time": "09:00", "end_time": "13:00"}],
+    }, headers=admin["headers"])
+    biz_id = biz_resp.json()["business_id"]
+
+    wh_id = client.get(
+        f"/api/v1/businesses/{biz_id}/working-hours", headers=admin["headers"]
+    ).json()[0]["id"]
+
+    resp = client.patch(
+        f"/api/v1/businesses/{biz_id}/working-hours/{wh_id}",
+        json={"start_time": "20:00"},
+        headers=admin["headers"],
+    )
+    assert resp.status_code == 400
 
 
 def test_working_hours_patch_requires_admin(admin, client):

@@ -1,10 +1,10 @@
 from sqlalchemy.orm import Session
 
+from app.models.business import Business
+from app.models.service import Service
+from app.models.staff import Staff
+from app.models.working_hours import WorkingHours
 from app.schemas.onboarding import OnboardingSetupRequest, OnboardingSetupResponse
-from app.services.business_service import create_business
-from app.services.service_service import create_service
-from app.services.staff_service import create_staff
-from app.services.working_hours_service import create_working_hours
 
 
 def setup_business_onboarding(
@@ -13,50 +13,59 @@ def setup_business_onboarding(
     tenant_id: int,
     request: OnboardingSetupRequest,
 ) -> OnboardingSetupResponse:
-    biz = request.business
-    business = create_business(
-        db,
+    """Create business + staff + services + working hours in one transaction.
+
+    Builds ORM objects directly and issues a single db.commit() at the end
+    so that a failure on any item rolls back the entire setup.
+    """
+    biz_spec = request.business
+    business = Business(
         tenant_id=tenant_id,
-        name=biz.name,
-        timezone=biz.timezone,
-        phone=biz.phone,
-        booking_mode=biz.booking_mode,
-        external_booking_url=biz.external_booking_url,
-        external_booking_label=biz.external_booking_label,
-        external_booking_provider=biz.external_booking_provider,
-        subscription_plan=biz.subscription_plan,
+        name=biz_spec.name,
+        timezone=biz_spec.timezone,
+        phone=biz_spec.phone,
+        is_active=True,
+        booking_mode=biz_spec.booking_mode,
+        external_booking_url=biz_spec.external_booking_url,
+        external_booking_label=biz_spec.external_booking_label,
+        external_booking_provider=biz_spec.external_booking_provider,
+        subscription_plan=biz_spec.subscription_plan,
     )
+    db.add(business)
+    db.flush()  # get business.id before adding dependents
 
-    for staff_item in request.staff:
-        create_staff(
-            db,
+    for item in request.staff:
+        db.add(Staff(
             tenant_id=tenant_id,
             business_id=business.id,
-            name=staff_item.name,
-            phone=staff_item.phone,
-        )
+            name=item.name,
+            phone=item.phone,
+            is_active=True,
+        ))
 
-    for svc_item in request.services:
-        create_service(
-            db,
+    for item in request.services:
+        db.add(Service(
             tenant_id=tenant_id,
             business_id=business.id,
-            name=svc_item.name,
-            duration_minutes=svc_item.duration_minutes,
-            price_minor_units=svc_item.price_minor_units,
-            currency=svc_item.currency,
-        )
+            name=item.name,
+            duration_minutes=item.duration_minutes,
+            is_active=True,
+            price_minor_units=item.price_minor_units,
+            currency=item.currency,
+        ))
 
-    for wh_item in request.working_hours:
-        create_working_hours(
-            db,
+    for item in request.working_hours:
+        db.add(WorkingHours(
             tenant_id=tenant_id,
             business_id=business.id,
             staff_id=None,
-            day_of_week=wh_item.day_of_week,
-            start_time=wh_item.start_time,
-            end_time=wh_item.end_time,
-        )
+            day_of_week=item.day_of_week,
+            start_time=item.start_time,
+            end_time=item.end_time,
+        ))
+
+    db.commit()
+    db.refresh(business)
 
     return OnboardingSetupResponse(
         business_id=business.id,
