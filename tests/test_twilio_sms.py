@@ -1,12 +1,17 @@
 """Tests for Twilio SMS provider (AVS-H003) and SMS status webhook (AVS-H004)."""
 import uuid
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+from app.models.booking import BookingStatus
 from app.models.notification_outbox import NotificationOutbox, NotificationStatus
 from app.models.tenant import Tenant
+from app.services.booking_service import create_booking
 from app.services.business_service import create_business
+from app.services.customer_service import get_or_create_customer
+from app.services.service_service import create_service
 from tests.database import promote_to_admin, register_user
 
 
@@ -183,3 +188,70 @@ def test_sms_status_idempotent(sms_domain, db):
     assert resp2.status_code == 204
     db.refresh(notif)
     assert notif.status == NotificationStatus.FAILED
+
+
+# ---------------------------------------------------------------------------
+# SMS inbound reply webhook (P1-002)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture()
+def sms_reply_domain(db, client):
+    register_user(client, "sms_reply_admin@example.com")
+    promote_to_admin(db, "sms_reply_admin@example.com")
+
+    tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
+    biz = create_business(db, tenant_id=tenant.id, name="Reply Webhook Salon", timezone="UTC")
+    svc = create_service(db, tenant_id=tenant.id, business_id=biz.id, name="Cut", duration_minutes=30)
+    customer = get_or_create_customer(
+        db, tenant_id=tenant.id, business_id=biz.id, phone="+48811100000"
+    )
+    booking = create_booking(
+        db,
+        tenant_id=tenant.id,
+        business_id=biz.id,
+        customer_id=customer.id,
+        service_id=svc.id,
+        staff_id=None,
+        starts_at=datetime.now(timezone.utc) + timedelta(hours=3),
+    )
+    return {"client": client, "business": biz, "customer": customer, "booking": booking}
+
+
+def test_sms_inbound_cancel_cancels_booking(sms_reply_domain, db):
+    client = sms_reply_domain["client"]
+    biz = sms_reply_domain["business"]
+    customer = sms_reply_domain["customer"]
+    booking = sms_reply_domain["booking"]
+
+    resp = client.post(
+        f"/api/v1/webhooks/twilio/sms/{biz.id}/inbound",
+        data={"From": customer.phone, "Body": "X"},
+    )
+
+    assert resp.status_code == 204
+    db.refresh(booking)
+    assert booking.status == BookingStatus.CANCELLED
+
+
+def test_sms_inbound_confirm_leaves_booking_confirmed(sms_reply_domain, db):
+    client = sms_reply_domain["client"]
+    biz = sms_reply_domain["business"]
+    customer = sms_reply_domain["customer"]
+    booking = sms_reply_domain["booking"]
+
+    resp = client.post(
+        f"/api/v1/webhooks/twilio/sms/{biz.id}/inbound",
+        data={"From": customer.phone, "Body": "C"},
+    )
+
+    assert resp.status_code == 204
+    db.refresh(booking)
+    assert booking.status == BookingStatus.CONFIRMED
+
+
+def test_sms_inbound_unknown_business_returns_no_content(db, client):
+    resp = client.post(
+        "/api/v1/webhooks/twilio/sms/999999/inbound",
+        data={"From": "+48800000000", "Body": "X"},
+    )
+    assert resp.status_code == 204

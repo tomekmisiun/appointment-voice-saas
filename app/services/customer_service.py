@@ -63,6 +63,20 @@ def get_or_create_customer(
     return customer
 
 
+def get_customer_by_phone(
+    db: Session, *, business_id: int, tenant_id: int, phone: str
+) -> Customer | None:
+    return (
+        db.query(Customer)
+        .filter(
+            Customer.business_id == business_id,
+            Customer.tenant_id == tenant_id,
+            Customer.phone_normalized == normalize_phone(phone),
+        )
+        .first()
+    )
+
+
 def get_customer(db: Session, customer_id: int, tenant_id: int) -> Customer | None:
     return (
         db.query(Customer)
