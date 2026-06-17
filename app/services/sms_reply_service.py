@@ -3,6 +3,8 @@ from enum import StrEnum
 from sqlalchemy.orm import Session
 
 from app.core.domain_errors import ConflictError
+from app.models.audit_log import AuditAction
+from app.services.audit_log_service import create_audit_log
 from app.services.booking_service import cancel_booking, get_next_confirmed_booking
 from app.services.customer_service import get_customer_by_phone
 
@@ -35,9 +37,10 @@ def handle_sms_reply(
 ) -> SmsReplyIntent:
     """Parse a simple confirm/cancel SMS reply and update the customer's
     soonest upcoming confirmed booking. Idempotent: a CANCEL reply on an
-    already-cancelled booking is a no-op rather than an error. CONFIRM is
-    also a no-op since bookings are already confirmed at creation — it only
-    acknowledges the reply was understood."""
+    already-cancelled booking is a no-op rather than an error. CONFIRM
+    doesn't change booking state (bookings are already confirmed at
+    creation) but does log a BOOKING_CONFIRMED audit entry as proof the
+    customer engaged with the reminder."""
     intent = parse_reply_intent(body)
     if intent == SmsReplyIntent.UNRECOGNIZED:
         return intent
@@ -59,5 +62,14 @@ def handle_sms_reply(
             cancel_booking(db, booking.id, tenant_id, reason="customer_sms_reply")
         except ConflictError:
             pass
+    elif intent == SmsReplyIntent.CONFIRM:
+        create_audit_log(
+            db,
+            tenant_id=tenant_id,
+            admin_id=None,
+            action=AuditAction.BOOKING_CONFIRMED,
+            target_booking_id=booking.id,
+            source="sms_reply",
+        )
 
     return intent

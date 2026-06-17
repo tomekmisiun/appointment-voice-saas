@@ -18,6 +18,8 @@ class AuditAction(StrEnum):
     TENANT_DEACTIVATED = "tenant.deactivated"
     BOOKING_CREATED = "booking.created"
     BOOKING_CANCELLED = "booking.cancelled"
+    BOOKING_RESCHEDULED = "booking.rescheduled"
+    BOOKING_CONFIRMED = "booking.confirmed"
 
 
 class AuditLog(Base):

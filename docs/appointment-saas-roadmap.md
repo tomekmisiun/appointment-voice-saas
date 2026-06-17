@@ -262,7 +262,7 @@ the task explicitly de-risks the MVP.
 | [x] | P1-010 | P1 | Add exponential backoff. | Backoff policy for SMS/calendar retries. | Manual retry UI. | Retry intervals are bounded and tested. | Worker tests. | Provider incidents amplify traffic. | covered by AVS-E007: `calculate_retry_delay_seconds()` in `app/core/job_queue.py` uses 2^(attempts-1) with configurable base and max caps |
 | [x] | P1-011 | P1 | Add DLQ and alerting. | Failed async operation DLQ plus alert signal. | Pager provider setup. | Exhausted jobs are visible. | Worker/metrics tests. | Silent async data loss. | done: new `worker_failed_queue_depth` Prometheus gauge refreshed every maintenance tick via `get_failed_queue_depth()`, plus `WorkerFailedQueueBacklog`/`WorkerJobFailureRate` Alertmanager rules in `observability/prometheus/rules/worker-alerts.yml` — no Slack/PagerDuty credentials exist in this repo, so the alert signal is Prometheus/Alertmanager (already wired), not a new external webhook integration — `tests/test_job_queue.py`, `tests/test_worker.py`, `tests/test_worker_metrics.py` |
 | [x] | P1-012 | P1 | Monitor failed integrations. | Metrics/logs for provider failures and backlog. | Full dashboard. | Alerts can be wired from documented metrics. | Metrics tests/docs. | Pilot failures go unnoticed. | done: `sms_provider_requests_total{provider,status}` and `calendar_provider_requests_total{provider,operation,status}` instrumented at the actual provider call sites (`SmsProvider.send()`, calendar provider's `create_event()`/`cancel_event()`) — finer-grained than job-level since a job can retry against the provider multiple times; documented in `docs/observability-production.md` — `tests/test_notification_worker.py`, `tests/test_calendar_worker.py`, `tests/test_worker_metrics.py` |
-| [ ] | P1-013 | P1 | Expand booking lifecycle audit logs. | Add audit events for reschedule, SMS reply accept/cancel, and admin override — create/cancel already logged. | Compliance export. | All lifecycle events are queryable with actor. | Service/API tests. | Disputes lack evidence. | partial: `AuditLog` model with `AuditAction` enum and `create_audit_log()` in `app/services/audit_log_service.py` covers create and cancel — extend when reschedule (P1-003/P1-004) and override (P3-012) are implemented |
+| [ ] | P1-013 | P1 | Expand booking lifecycle audit logs. | Add audit events for reschedule, SMS reply accept/cancel, and admin override — create/cancel already logged. | Compliance export. | All lifecycle events are queryable with actor. | Service/API tests. | Disputes lack evidence. | partial: create/cancel/reschedule/SMS-reply-confirm all logged now — `BOOKING_RESCHEDULED` (linked to the old booking id via `source`) added in `reschedule_booking()`, `BOOKING_CONFIRMED` added in the SMS reply CONFIRM path (SMS reply CANCEL already produced `BOOKING_CANCELLED` via the existing `cancel_booking()` path); admin override audit still pending P3-012 (the override feature itself doesn't exist yet) — `tests/test_booking_audit.py`, `tests/test_avs_p1002_sms_reply_confirm_cancel.py` |
 
 ### PRIORITY 2 - High business impact
 
@@ -325,14 +325,16 @@ the task explicitly de-risks the MVP.
 **Scope:** All 50 P1–P4 backlog items inspected against application code, models,
 services, routes, worker, migrations, tests, and docs.
 
-**Summary (updated 2026-06-17 after P1-001/P1-002/P1-003/P1-004/P1-005/P1-006/P1-007/P1-008/P1-009/P1-011/P1-012):**
+**Summary (updated 2026-06-17 after P1-001/P1-002/P1-003/P1-004/P1-005/P1-006/P1-007/P1-008/P1-009/P1-011/P1-012/P1-013):**
 - 11 items fully implemented: P1-001, P1-002, P1-003, P1-004, P1-005, P1-006,
   P1-007, P1-008, P1-009, P1-011, P1-012 (reminder SMS, SMS reply
   confirm/cancel, IVR + admin reschedule, IVR
   timeout/invalid-input/repeat-menu/backend-unavailable fallback,
   per-job-type Redis queues, DLQ depth/failure-rate alerting,
   provider-level failure metrics — see rows above for evidence)
-- 4 items partially implemented (noted inline above)
+- 4 items partially implemented (noted inline above), including P1-013 which
+  now also covers reschedule and SMS-confirm audit events — only the admin
+  override portion (blocked on P3-012, which doesn't exist yet) is missing
 - 2 items already covered by completed MVP work: P1-010 (exponential backoff —
   `calculate_retry_delay_seconds()` in `app/core/job_queue.py`) and the
   create/cancel portion of P1-013 (`AuditLog` + `audit_log_service.py`)

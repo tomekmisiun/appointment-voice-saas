@@ -238,13 +238,16 @@ def reschedule_booking(
     time update: the calendar adapter only supports create/cancel for an
     event, not updating an already-synced event's time, so cancel+create is
     the only way to get the calendar in sync with the new time. This reuses
-    cancel_booking()/create_booking() as-is, so audit logging, notifications,
-    and calendar sync all keep working unchanged — the tradeoff is the
-    booking gets a new id and the customer gets both a cancellation and a
-    new confirmation notification."""
+    cancel_booking()/create_booking() as-is, so notifications and calendar
+    sync keep working unchanged — the tradeoff is the booking gets a new id
+    and the customer gets both a cancellation and a new confirmation
+    notification. On top of the cancel/create audit entries those calls
+    already log, this also logs a single BOOKING_RESCHEDULED entry on the
+    new booking (source records the old booking id) so the pair reads as a
+    reschedule rather than two unrelated events."""
     old_booking = require_booking(db, booking_id, tenant_id)
     cancel_booking(db, old_booking.id, tenant_id, reason=reason, actor_id=actor_id)
-    return create_booking(
+    new_booking = create_booking(
         db,
         tenant_id=tenant_id,
         business_id=old_booking.business_id,
@@ -255,3 +258,12 @@ def reschedule_booking(
         source=source,
         actor_id=actor_id,
     )
+    create_audit_log(
+        db,
+        tenant_id=tenant_id,
+        admin_id=actor_id,
+        action=AuditAction.BOOKING_RESCHEDULED,
+        target_booking_id=new_booking.id,
+        source=f"rescheduled_from_booking_{old_booking.id}",
+    )
+    return new_booking
