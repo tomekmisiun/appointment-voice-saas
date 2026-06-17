@@ -4,7 +4,7 @@ Verified as of 2026-06-17. Updated during `audit/backlog-reality-check`.
 
 ## Current Status
 
-All MVP foundation epics (A–K) implemented, plus AVS-L001 (owner lead intake). 673 tests pass. CI green.
+All MVP foundation epics (A–K) implemented, plus AVS-L001 (owner lead intake) and AVS-L002 (pilot onboarding runbook). 673 tests pass. CI green.
 
 The product can be fully demonstrated locally using fake SMS and fake calendar
 providers. Real Twilio voice and SMS providers are wired and configured via env
@@ -107,6 +107,14 @@ vars. A pilot can be set up against the `docs/mvp-pilot-deployment-checklist.md`
 - Cancellation smoke: `tests/test_avs_j004_smoke_cancellation.py`.
 - README demo scenario documented.
 - MVP pilot deployment checklist: `docs/mvp-pilot-deployment-checklist.md`.
+
+### Manual Pilot Onboarding Runbook (AVS-L002 — done)
+
+- Operator runbook: `docs/runbooks/pilot-onboarding.md`.
+- Covers full lifecycle: lead review → qualify → create tenant/business → configure IVR → verify via simulation → hand off.
+- Two paths: external booking link (minimal setup) and standalone booking (staff, services, working hours).
+- Includes IVR simulation verification checklist, notification outbox check, troubleshooting table.
+- No runtime code changes — docs only.
 
 ### Owner Lead Intake (EPIC L / AVS-L001 — done)
 
