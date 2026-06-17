@@ -65,6 +65,34 @@ class _FailingSmsProvider:
         return SmsSendResult(success=False, error="provider_unavailable")
 
 
+def test_send_notification_in_worker_observes_success_metric(db, monkeypatch):
+    intent = _create_pending_intent(db)
+    observed = []
+    monkeypatch.setattr(
+        "app.services.notification_service.observe_sms_provider_request",
+        lambda **kwargs: observed.append(kwargs),
+    )
+
+    send_notification_in_worker(db, notification_id=intent.id, sms_provider=FakeSmsProvider())
+
+    assert observed == [{"provider": "fake", "status": "success"}]
+
+
+def test_send_notification_in_worker_observes_failure_metric_with_fallback_name(db, monkeypatch):
+    intent = _create_pending_intent(db)
+    observed = []
+    monkeypatch.setattr(
+        "app.services.notification_service.observe_sms_provider_request",
+        lambda **kwargs: observed.append(kwargs),
+    )
+
+    with pytest.raises(SmsDeliveryError):
+        send_notification_in_worker(db, notification_id=intent.id, sms_provider=_FailingSmsProvider())
+
+    # _FailingSmsProvider has no .name attribute; falls back to the class name.
+    assert observed == [{"provider": "_FailingSmsProvider", "status": "failure"}]
+
+
 def test_send_notification_in_worker_keeps_pending_and_raises_on_first_failure(db):
     intent = _create_pending_intent(db)
 

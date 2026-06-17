@@ -4,6 +4,8 @@ import httpx
 
 from app.core.metrics import (
     configure_metrics,
+    observe_calendar_provider_request,
+    observe_sms_provider_request,
     observe_worker_failed_queue_depth,
     observe_worker_job,
 )
@@ -49,6 +51,35 @@ def test_worker_failed_queue_depth_gauge_is_exposed(monkeypatch):
 
         assert response.status_code == 200
         assert "worker_failed_queue_depth 7.0" in response.text
+    finally:
+        stop_metrics_server()
+
+
+def test_provider_failure_metrics_are_exposed(monkeypatch):
+    # Counters are process-global and never reset between tests, so use a
+    # label value unique to this test instead of asserting an absolute count
+    # (other tests legitimately increment provider="null"/"twilio" too).
+    monkeypatch.setattr("app.core.config.settings.metrics_require_auth", False)
+    configure_metrics()
+    observe_sms_provider_request(provider="__test_sms_provider__", status="failure")
+    observe_calendar_provider_request(
+        provider="__test_calendar_provider__", operation="sync", status="failure"
+    )
+    port = start_metrics_server(host="127.0.0.1", port=0)
+
+    try:
+        response = _get_metrics(f"http://127.0.0.1:{port}/metrics")
+
+        assert response.status_code == 200
+        assert (
+            'sms_provider_requests_total{provider="__test_sms_provider__",status="failure"} 1.0'
+            in response.text
+        )
+        assert (
+            'calendar_provider_requests_total{operation="sync",'
+            'provider="__test_calendar_provider__",status="failure"} 1.0'
+            in response.text
+        )
     finally:
         stop_metrics_server()
 

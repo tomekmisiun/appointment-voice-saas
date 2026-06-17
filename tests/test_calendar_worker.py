@@ -152,6 +152,52 @@ def test_cancel_failed_is_terminal(db):
     assert event.status == CalendarSyncStatus.CANCEL_FAILED
 
 
+# --- provider failure metrics (P1-012) ---
+
+def test_sync_success_observes_provider_metric(db, monkeypatch):
+    _tenant_id, _booking, event = _setup(db)
+    observed = []
+    monkeypatch.setattr(
+        "app.services.calendar_service.observe_calendar_provider_request",
+        lambda **kwargs: observed.append(kwargs),
+    )
+
+    sync_calendar_event_in_worker(db, event_id=event.id, calendar_provider=FakeCalendarProvider())
+
+    assert observed == [{"provider": "null", "operation": "sync", "status": "success"}]
+
+
+def test_sync_failure_observes_provider_metric(db, monkeypatch):
+    _tenant_id, _booking, event = _setup(db)
+    observed = []
+    monkeypatch.setattr(
+        "app.services.calendar_service.observe_calendar_provider_request",
+        lambda **kwargs: observed.append(kwargs),
+    )
+
+    with pytest.raises(CalendarSyncError):
+        sync_calendar_event_in_worker(db, event_id=event.id, calendar_provider=_FailingCalendarProvider())
+
+    assert observed == [{"provider": "null", "operation": "sync", "status": "failure"}]
+
+
+def test_cancel_failure_observes_provider_metric(db, monkeypatch):
+    _tenant_id, _booking, event = _setup(db)
+    sync_calendar_event_in_worker(db, event_id=event.id, calendar_provider=FakeCalendarProvider())
+    observed = []
+    monkeypatch.setattr(
+        "app.services.calendar_service.observe_calendar_provider_request",
+        lambda **kwargs: observed.append(kwargs),
+    )
+
+    with pytest.raises(CalendarCancelError):
+        cancel_calendar_event_in_worker(
+            db, event_id=event.id, calendar_provider=_FailingCalendarProvider()
+        )
+
+    assert observed == [{"provider": "null", "operation": "cancel", "status": "failure"}]
+
+
 # --- worker dispatch ---
 
 def test_handle_job_dispatches_sync_calendar_event_job(db, monkeypatch):

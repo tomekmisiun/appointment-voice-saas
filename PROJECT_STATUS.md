@@ -177,7 +177,7 @@ Two independent dimensions added to `Business`:
 | GAP-007 | `HTTP_422_UNPROCESSABLE_ENTITY` deprecation warning from starlette 1.3.1 | LOW | Monitor — non-breaking |
 | GAP-008 | CalendarIntegration staff_id not FK-validated at DB level | LOW | Open — AVS-TD-028 |
 | GAP-009 | Phone numbers not masked in structured logs | MEDIUM | Open — Privacy risk |
-| GAP-010 | No DLQ alerting or metrics for failed async jobs | MEDIUM | Partial — P1-011 done, P1-012 still open |
+| GAP-010 | ~~No DLQ alerting or metrics for failed async jobs~~ | MEDIUM | **Fixed — P1-011/P1-012** |
 
 ## Readiness Assessment
 
@@ -186,20 +186,18 @@ Two independent dimensions added to `Business`:
 | NOT_READY | ✅ Exceeds | All core flows demonstrable |
 | PORTFOLIO_READY | ✅ Yes | Clean domain, tests, CI, real providers, honest limitations |
 | MVP_DEMO_READY | ✅ Yes | Full local simulated call-to-booking-to-SMS-to-calendar works |
-| PILOT_READY | ✅ Yes | Providers wired; BUG-001 fixed; IVR timeout/invalid-input/repeat/reschedule handled, admin reschedule API added, IVR degrades gracefully on DB/Redis outage instead of exposing raw errors, per-job-type queues, DLQ depth/failure-rate alerting wired (P1-001 through P1-009, P1-011); only provider-specific failure monitoring (P1-012) remains open as a P1 gap |
-| PRODUCTION_READY | ❌ No | Missing: provider-specific failure monitoring, CRM, billing, monitoring dashboards |
+| PILOT_READY | ✅ Yes | Providers wired; BUG-001 fixed; IVR timeout/invalid-input/repeat/reschedule handled, admin reschedule API added, IVR degrades gracefully on DB/Redis outage instead of exposing raw errors, per-job-type queues, DLQ depth/failure-rate alerting, provider-level failure metrics wired (P1-001 through P1-009, P1-011, P1-012); only the reschedule/override portion of audit log expansion (P1-013) remains open as a P1 gap |
+| PRODUCTION_READY | ❌ No | Missing: full audit log coverage (reschedule/override), CRM, billing, monitoring dashboards |
 
 ## Not Implemented (Expansion Backlog)
 
-Audited 2026-06-17, updated 2026-06-17 after P1-001/P1-002/P1-003/P1-004/P1-005/P1-006/P1-007/P1-008/P1-009/P1-011.
-50 P1–P4 items checked; 10 fully implemented, 5 partially, 2 already covered by
+Audited 2026-06-17, updated 2026-06-17 after P1-001/P1-002/P1-003/P1-004/P1-005/P1-006/P1-007/P1-008/P1-009/P1-011/P1-012.
+50 P1–P4 items checked; 11 fully implemented, 4 partially, 2 already covered by
 MVP infrastructure.
 
 **P1 — Must-have for pilot:**
 - NOT_IMPLEMENTED: none (all remaining P1 items are partial — see below).
-- PARTIAL: failed-integration metrics (Prometheus wired; provider-specific
-  SMS/calendar failure rates and alert thresholds not yet added),
-  audit log expansion (create/cancel logged; reschedule/override audit pending).
+- PARTIAL: audit log expansion (create/cancel logged; reschedule/override audit pending).
 - DONE: reminder SMS queued once per booking within `reminder_lead_minutes`
   of the appointment via the worker maintenance tick (P1-001), inbound SMS
   reply confirm/cancel parsing via `/webhooks/twilio/sms/{business_id}/inbound`
@@ -222,7 +220,12 @@ MVP infrastructure.
   FIFO list (P1-009), DLQ alerting via the new `worker_failed_queue_depth`
   Prometheus gauge (refreshed every maintenance tick) plus two Alertmanager
   rules in `observability/prometheus/rules/worker-alerts.yml`
-  (`WorkerFailedQueueBacklog`, `WorkerJobFailureRate`) (P1-011).
+  (`WorkerFailedQueueBacklog`, `WorkerJobFailureRate`) (P1-011), provider-level
+  failure metrics (`sms_provider_requests_total`,
+  `calendar_provider_requests_total`) instrumented at the actual
+  `SmsProvider.send()`/calendar provider call sites — finer-grained than
+  job-level since a job can retry against the provider multiple times
+  (P1-012).
 - DONE (covered by MVP): exponential backoff (`calculate_retry_delay_seconds()`).
 
 **P2 — High business impact:**
