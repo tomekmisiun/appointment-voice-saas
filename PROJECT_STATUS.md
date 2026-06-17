@@ -186,18 +186,19 @@ Two independent dimensions added to `Business`:
 | NOT_READY | ✅ Exceeds | All core flows demonstrable |
 | PORTFOLIO_READY | ✅ Yes | Clean domain, tests, CI, real providers, honest limitations |
 | MVP_DEMO_READY | ✅ Yes | Full local simulated call-to-booking-to-SMS-to-calendar works |
-| PILOT_READY | ✅ Yes | Providers wired; BUG-001 fixed; IVR timeout/invalid-input/repeat/reschedule handled, admin reschedule API added, IVR degrades gracefully on DB/Redis outage instead of exposing raw errors, per-job-type queues, DLQ depth/failure-rate alerting, provider-level failure metrics wired (P1-001 through P1-009, P1-011, P1-012); only the reschedule/override portion of audit log expansion (P1-013) remains open as a P1 gap |
-| PRODUCTION_READY | ❌ No | Missing: full audit log coverage (reschedule/override), CRM, billing, monitoring dashboards |
+| PILOT_READY | ✅ Yes | Providers wired; BUG-001 fixed; IVR timeout/invalid-input/repeat/reschedule handled, admin reschedule API added, IVR degrades gracefully on DB/Redis outage instead of exposing raw errors, per-job-type queues, DLQ depth/failure-rate alerting, provider-level failure metrics, create/cancel/reschedule/SMS-confirm audit trail wired (P1-001 through P1-009, P1-011 through P1-013); only the admin-override portion of audit logging (blocked on P3-012, which doesn't exist yet) remains open |
+| PRODUCTION_READY | ❌ No | Missing: admin override audit trail (needs P3-012 first), CRM, billing, monitoring dashboards |
 
 ## Not Implemented (Expansion Backlog)
 
-Audited 2026-06-17, updated 2026-06-17 after P1-001/P1-002/P1-003/P1-004/P1-005/P1-006/P1-007/P1-008/P1-009/P1-011/P1-012.
+Audited 2026-06-17, updated 2026-06-17 after P1-001/P1-002/P1-003/P1-004/P1-005/P1-006/P1-007/P1-008/P1-009/P1-011/P1-012/P1-013.
 50 P1–P4 items checked; 11 fully implemented, 4 partially, 2 already covered by
 MVP infrastructure.
 
 **P1 — Must-have for pilot:**
 - NOT_IMPLEMENTED: none (all remaining P1 items are partial — see below).
-- PARTIAL: audit log expansion (create/cancel logged; reschedule/override audit pending).
+- PARTIAL: audit log expansion (create/cancel/reschedule/SMS-confirm logged;
+  admin-override audit pending P3-012, which doesn't exist yet).
 - DONE: reminder SMS queued once per booking within `reminder_lead_minutes`
   of the appointment via the worker maintenance tick (P1-001), inbound SMS
   reply confirm/cancel parsing via `/webhooks/twilio/sms/{business_id}/inbound`
@@ -225,7 +226,10 @@ MVP infrastructure.
   `calendar_provider_requests_total`) instrumented at the actual
   `SmsProvider.send()`/calendar provider call sites — finer-grained than
   job-level since a job can retry against the provider multiple times
-  (P1-012).
+  (P1-012), `BOOKING_RESCHEDULED` audit entry on the new booking (`source`
+  links back to the old booking id) and `BOOKING_CONFIRMED` audit entry on
+  SMS reply CONFIRM, on top of the existing create/cancel audit trail
+  (P1-013).
 - DONE (covered by MVP): exponential backoff (`calculate_retry_delay_seconds()`).
 
 **P2 — High business impact:**

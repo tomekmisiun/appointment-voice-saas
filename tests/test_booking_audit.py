@@ -119,6 +119,54 @@ def test_cancel_booking_emits_audit_log(db, client):
     assert entry.source == BookingSource.API
 
 
+def test_reschedule_booking_emits_audit_log_linked_to_old_booking(db, client):
+    register_user(client, "reschedule-audit@example.com")
+    promote_to_admin(db, "reschedule-audit@example.com")
+    actor = db.query(User).filter(User.email == "reschedule-audit@example.com").one()
+
+    tenant_id, biz_id, staff_id, svc_id, customer_id = _setup(db)
+    from app.services.booking_service import reschedule_booking
+
+    old_booking = create_booking(
+        db,
+        tenant_id=tenant_id,
+        business_id=biz_id,
+        customer_id=customer_id,
+        service_id=svc_id,
+        staff_id=staff_id,
+        starts_at=_STARTS_AT,
+    )
+
+    new_booking = reschedule_booking(
+        db,
+        old_booking.id,
+        tenant_id,
+        new_starts_at=datetime(2027, 9, 2, 10, 0, 0, tzinfo=timezone.utc),
+        actor_id=actor.id,
+    )
+
+    logs = get_audit_logs(db, tenant_id)
+    entry = next(
+        (
+            log for log in logs
+            if log.action == AuditAction.BOOKING_RESCHEDULED and log.target_booking_id == new_booking.id
+        ),
+        None,
+    )
+    assert entry is not None
+    assert entry.admin_id == actor.id
+    assert entry.source == f"rescheduled_from_booking_{old_booking.id}"
+
+    cancelled_entry = next(
+        (
+            log for log in logs
+            if log.action == AuditAction.BOOKING_CANCELLED and log.target_booking_id == old_booking.id
+        ),
+        None,
+    )
+    assert cancelled_entry is not None
+
+
 def test_audit_log_isolated_to_tenant(db):
     tenant_id, biz_id, staff_id, svc_id, customer_id = _setup(db)
 

@@ -94,6 +94,30 @@ def test_confirm_reply_does_not_change_booking_state(db):
     assert booking.status == BookingStatus.CONFIRMED
 
 
+def test_confirm_reply_emits_audit_log(db):
+    from app.models.audit_log import AuditAction
+    from app.services.audit_log_service import get_audit_logs
+
+    tenant_id, biz, svc, customer = _setup(db)
+    booking = _book(db, tenant_id, biz, svc, customer)
+
+    handle_sms_reply(
+        db, business_id=biz.id, tenant_id=tenant_id, from_phone=customer.phone, body="C"
+    )
+
+    logs = get_audit_logs(db, tenant_id)
+    entry = next(
+        (
+            log for log in logs
+            if log.action == AuditAction.BOOKING_CONFIRMED and log.target_booking_id == booking.id
+        ),
+        None,
+    )
+    assert entry is not None
+    assert entry.admin_id is None
+    assert entry.source == "sms_reply"
+
+
 def test_unrecognized_reply_does_not_touch_booking(db):
     tenant_id, biz, svc, customer = _setup(db)
     booking = _book(db, tenant_id, biz, svc, customer)

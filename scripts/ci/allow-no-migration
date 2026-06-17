@@ -1,1 +1,2 @@
 Added NotificationPurpose.BOOKING_REMINDER to an existing String(64) `purpose` column (no native DB enum); no DDL change needed (P1-001).
+Added AuditAction.BOOKING_RESCHEDULED and BOOKING_CONFIRMED to an existing String `action` column (no native DB enum); no DDL change needed (P1-013).
