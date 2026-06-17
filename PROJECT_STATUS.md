@@ -191,8 +191,9 @@ Two independent dimensions added to `Business`:
 
 ## Not Implemented (Expansion Backlog)
 
-Audited 2026-06-17, updated 2026-06-17 after P1-001/P1-002/P1-003/P1-004/P1-005/P1-006/P1-007/P1-008/P1-009/P1-011/P1-012/P1-013.
-50 P1–P4 items checked; 11 fully implemented, 4 partially, 2 already covered by
+Audited 2026-06-17, updated 2026-06-17 after P1-001 through P1-013 (see below)
+and P2-001.
+50 P1–P4 items checked; 12 fully implemented, 4 partially, 2 already covered by
 MVP infrastructure.
 
 **P1 — Must-have for pilot:**
@@ -233,11 +234,14 @@ MVP infrastructure.
 - DONE (covered by MVP): exponential backoff (`calculate_retry_delay_seconds()`).
 
 **P2 — High business impact:**
-- NOT_IMPLEMENTED: CRM clients table, client booking history, returning caller
-  recognition, GDPR delete, preferred staff selection, last-staff suggestion,
-  multi-service appointments, combined-duration availability, waitlist model,
+- NOT_IMPLEMENTED: client booking history, returning caller recognition, GDPR
+  delete, preferred staff selection, last-staff suggestion, multi-service
+  appointments, combined-duration availability, waitlist model,
   waitlist-on-cancellation offer, waitlist timeout/escalation, owner metrics API,
   CSV export.
+- DONE: CRM clients table — `Client` model (name/email/phone/notes), optionally
+  linked 1:1 to a `Customer` via `customer_id`; CRUD at
+  `/businesses/{business_id}/clients` (P2-001).
 
 **P3 — Operational extensions:**
 - NOT_IMPLEMENTED: salon/staff hours intersection, recurring staff blocks,
