@@ -16,6 +16,7 @@ from app.services.booking_service import (
     create_booking,
     get_next_confirmed_booking,
     require_booking,
+    reschedule_booking,
 )
 from app.services.business_service import require_business
 from app.services.customer_service import get_customer_by_phone, get_or_create_customer
@@ -523,25 +524,15 @@ def _handle_reschedule_slot_selection(db: Session, session: VoiceSession, key: s
             db, session, IvrResponse(prompt=prompt, options=options, session_id=session.id)
         )
 
-    old_booking = require_booking(db, session.managed_booking_id, session.tenant_id)
     chosen = candidates[idx]
     starts_at = datetime.fromisoformat(chosen["start"])
-    customer = get_or_create_customer(
-        db,
-        tenant_id=session.tenant_id,
-        business_id=session.business_id,
-        phone=session.caller_phone,
-    )
 
-    cancel_booking(db, old_booking.id, session.tenant_id, reason="customer_rescheduled_via_ivr")
-    new_booking = create_booking(
+    new_booking = reschedule_booking(
         db,
-        tenant_id=session.tenant_id,
-        business_id=session.business_id,
-        customer_id=customer.id,
-        service_id=old_booking.service_id,
-        staff_id=old_booking.staff_id,
-        starts_at=starts_at,
+        session.managed_booking_id,
+        session.tenant_id,
+        new_starts_at=starts_at,
+        reason="customer_rescheduled_via_ivr",
         source=BookingSource.IVR,
     )
 

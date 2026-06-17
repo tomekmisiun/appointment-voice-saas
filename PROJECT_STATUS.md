@@ -171,7 +171,7 @@ Two independent dimensions added to `Business`:
 | GAP-001 | ~~IVR timeout/no-input has no explicit recovery prompt~~ | MEDIUM | **Fixed — P1-005** |
 | GAP-002 | ~~No IVR repeat menu key~~ | LOW | **Fixed — P1-007** |
 | GAP-003 | ~~No SMS reply parsing (confirm/cancel by text reply)~~ | MEDIUM | **Fixed — P1-002** |
-| GAP-004 | No reschedule flow (IVR or admin) | MEDIUM | Partial — IVR done (P1-003), admin still open (P1-004) |
+| GAP-004 | ~~No reschedule flow (IVR or admin)~~ | MEDIUM | **Fixed — P1-003/P1-004** |
 | GAP-005 | ~~No reminder SMS~~ | MEDIUM | **Fixed — P1-001** |
 | GAP-006 | No IVR backend-unavailable fallback | MEDIUM | Open — P1-008 |
 | GAP-007 | `HTTP_422_UNPROCESSABLE_ENTITY` deprecation warning from starlette 1.3.1 | LOW | Monitor — non-breaking |
@@ -186,17 +186,17 @@ Two independent dimensions added to `Business`:
 | NOT_READY | ✅ Exceeds | All core flows demonstrable |
 | PORTFOLIO_READY | ✅ Yes | Clean domain, tests, CI, real providers, honest limitations |
 | MVP_DEMO_READY | ✅ Yes | Full local simulated call-to-booking-to-SMS-to-calendar works |
-| PILOT_READY | ⚠️ Conditional | Providers wired; BUG-001 fixed; IVR timeout/invalid-input/repeat/reschedule handled (P1-005/P1-006/P1-007/P1-003); but P1 gaps (no retry alerting, no admin reschedule) remain |
-| PRODUCTION_READY | ❌ No | Missing: admin reschedule, DLQ alerting, CRM, billing, monitoring dashboards |
+| PILOT_READY | ⚠️ Conditional | Providers wired; BUG-001 fixed; IVR timeout/invalid-input/repeat/reschedule handled, admin reschedule API added (P1-001/P1-002/P1-003/P1-004/P1-005/P1-006/P1-007); only retry alerting (P1-011/P1-012) and backend-unavailable fallback (P1-008) remain open |
+| PRODUCTION_READY | ❌ No | Missing: DLQ alerting, CRM, billing, monitoring dashboards |
 
 ## Not Implemented (Expansion Backlog)
 
-Audited 2026-06-17, updated 2026-06-17 after P1-001/P1-002/P1-003/P1-005/P1-006/P1-007.
-50 P1–P4 items checked; 6 fully implemented, 7 partially, 3 already covered by
+Audited 2026-06-17, updated 2026-06-17 after P1-001/P1-002/P1-003/P1-004/P1-005/P1-006/P1-007.
+50 P1–P4 items checked; 7 fully implemented, 7 partially, 3 already covered by
 MVP infrastructure.
 
 **P1 — Must-have for pilot:**
-- NOT_IMPLEMENTED: reschedule by business/admin (P1-004), backend-unavailable fallback.
+- NOT_IMPLEMENTED: backend-unavailable fallback (P1-008).
 - PARTIAL: separate SMS/calendar queues (job types exist; single queue),
   DLQ alerting (DLQ infra exists in `app/core/job_queue.py`; alert signal missing),
   failed-integration metrics (Prometheus wired; provider-specific alerts missing),
@@ -206,12 +206,15 @@ MVP infrastructure.
   reply confirm/cancel parsing via `/webhooks/twilio/sms/{business_id}/inbound`
   acting on the customer's soonest upcoming booking, idempotent cancel
   (P1-002), IVR self-service cancel/reschedule of the caller's soonest
-  upcoming booking via main-menu option 3 — reschedule reuses
-  `cancel_booking()`/`create_booking()` for the same service/staff at a new
-  time (P1-003), IVR no-input timeout handling with consecutive-miss
-  termination (P1-005), IVR invalid-input retry counter with session
-  termination after 5 keys (P1-006), IVR repeat-menu key `*` at every
-  interactive step (P1-007).
+  upcoming booking via main-menu option 3 (P1-003), admin reschedule via
+  `POST /businesses/{business_id}/bookings/{booking_id}/reschedule` (P1-004)
+  — both reschedule paths share `reschedule_booking()` in
+  `booking_service.py`, which cancels the old booking and creates a new one
+  for the same service/staff at the new time (the calendar adapter only
+  supports create/cancel, not updating an already-synced event's time), IVR
+  no-input timeout handling with consecutive-miss termination (P1-005), IVR
+  invalid-input retry counter with session termination after 5 keys
+  (P1-006), IVR repeat-menu key `*` at every interactive step (P1-007).
 - DONE (covered by MVP): exponential backoff (`calculate_retry_delay_seconds()`).
 
 **P2 — High business impact:**

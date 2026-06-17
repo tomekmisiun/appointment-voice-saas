@@ -253,7 +253,7 @@ the task explicitly de-risks the MVP.
 | [x] | P1-001 | P1 | Send reminder SMS. | Reminder schedule before appointment. | Marketing campaigns. | Reminder intent is queued and sent once. | Worker tests. | No-shows remain high. | done: `enqueue_due_reminders()` runs on the worker maintenance tick, queues one BOOKING_REMINDER per confirmed booking within `settings.reminder_lead_minutes`, idempotent via existing-outbox-row check — `tests/test_avs_p1001_reminder_sms.py` |
 | [x] | P1-002 | P1 | Handle SMS reply confirm/cancel. | Parse simple replies and update booking. | Free-form NLP. | Confirm/cancel replies are idempotent. | Webhook tests. | Customers cannot manage bookings. | done: `handle_sms_reply()` parses C/CONFIRM/Y/YES and X/CANCEL/N/NO, cancels the customer's soonest upcoming confirmed booking (idempotent — already-cancelled is a no-op), wired to `POST /webhooks/twilio/sms/{business_id}/inbound` — `tests/test_avs_p1002_sms_reply_confirm_cancel.py`, `tests/test_twilio_sms.py` |
 | [x] | P1-003 | P1 | Reschedule by customer IVR. | Customer finds booking by phone and selects new slot. | Staff preference. | Reschedule updates booking/SMS/calendar. | IVR E2E tests. | Support burden stays high. | done: main menu option 3 finds the caller's soonest upcoming confirmed booking by caller ID; caller can cancel or reschedule (same service/staff, new slot via cancel+create) — see `docs/specs/ivr-reschedule.md` and `tests/test_avs_p1003_ivr_reschedule.py` |
-| [ ] | P1-004 | P1 | Reschedule by business/admin. | API workflow for changing slot/staff. | Frontend. | Business can reschedule and notify parties. | API/service tests. | Staff cannot recover schedule changes. |
+| [x] | P1-004 | P1 | Reschedule by business/admin. | API workflow for changing slot/staff. | Frontend. | Business can reschedule and notify parties. | API/service tests. | Staff cannot recover schedule changes. | done: `POST /businesses/{business_id}/bookings/{booking_id}/reschedule` (admin-only) calls the shared `reschedule_booking()` (cancel old + create new at the new time, same service/staff) — `tests/test_avs_p1004_admin_reschedule.py` |
 | [x] | P1-005 | P1 | Handle IVR timeout/no input. | Timeout prompts and terminal state. | Voicemail. | No-input flow is predictable and audited. | IVR tests. | Calls hang or loop forever. | done: `no_input_count` tracked on `VoiceSession`, explicit re-prompt on silence, session terminates (`EXPIRED`) after 3 consecutive misses — `tests/test_avs_p1005_ivr_no_input.py` |
 | [x] | P1-006 | P1 | Handle IVR invalid input. | Retry count and fallback. | Natural language. | Invalid keys do not corrupt session. | IVR tests. | Bad input creates wrong booking. | done: `invalid_key_count` tracked cumulatively across steps, session terminates (`EXPIRED`) after 5 invalid keys — `tests/test_avs_p1006_ivr_invalid_input.py` |
 | [x] | P1-007 | P1 | Add repeat menu option. | Key to replay current prompt/options. | Multi-language prompts. | Caller can repeat menu at each step. | IVR tests. | Caller abandons flow. | done: `*` replays the current prompt at every interactive step without advancing state or incrementing `invalid_key_count` — `tests/test_avs_p1007_ivr_repeat_menu.py` |
@@ -325,16 +325,16 @@ the task explicitly de-risks the MVP.
 **Scope:** All 50 P1–P4 backlog items inspected against application code, models,
 services, routes, worker, migrations, tests, and docs.
 
-**Summary (updated 2026-06-17 after P1-001/P1-002/P1-003/P1-005/P1-006/P1-007):**
-- 6 items fully implemented: P1-001, P1-002, P1-003, P1-005, P1-006, P1-007
-  (reminder SMS, SMS reply confirm/cancel, IVR reschedule,
+**Summary (updated 2026-06-17 after P1-001/P1-002/P1-003/P1-004/P1-005/P1-006/P1-007):**
+- 7 items fully implemented: P1-001, P1-002, P1-003, P1-004, P1-005, P1-006,
+  P1-007 (reminder SMS, SMS reply confirm/cancel, IVR + admin reschedule,
   IVR timeout/invalid-input/repeat-menu — see rows above for evidence)
 - 7 items partially implemented (noted inline above)
 - 3 items already covered by completed MVP work: P1-010 (exponential backoff —
   `calculate_retry_delay_seconds()` in `app/core/job_queue.py`), the DLQ
   *infrastructure* portion of P1-011 (`move_job_to_failed_queue()` etc.), and
   the create/cancel portion of P1-013 (`AuditLog` + `audit_log_service.py`)
-- 34 items not implemented
+- 33 items not implemented
 
 **High-risk non-duplicates confirmed:** No P1–P4 item was accidentally
 implemented as a side-effect of MVP work. `PlanPolicyService` is an intentional
@@ -345,7 +345,7 @@ stub for P4-008 only. The DLQ alerting half of P1-011 is genuinely missing.
 2. P4-001 — Tenancy query audit (run before new expansion to catch leaks early)
 3. ~~P1-005/P1-006/P1-007 — IVR timeout/invalid/repeat~~ done
 4. ~~P1-002 — SMS reply confirm/cancel~~ done
-5. ~~P1-003 — IVR reschedule~~ done (see `docs/specs/ivr-reschedule.md`); P1-004 admin reschedule still open
+5. ~~P1-003/P1-004 — Reschedule (IVR + admin)~~ done (see `docs/specs/ivr-reschedule.md`)
 
 ## Validation commands
 

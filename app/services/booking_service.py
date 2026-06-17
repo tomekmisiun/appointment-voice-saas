@@ -221,3 +221,37 @@ def cancel_booking(
     if cal_event is not None:
         enqueue_cancel_calendar_event_job(cal_event.id)
     return booking
+
+
+def reschedule_booking(
+    db: Session,
+    booking_id: int,
+    tenant_id: int,
+    *,
+    new_starts_at: datetime,
+    reason: str | None = None,
+    actor_id: int | None = None,
+    source: str = BookingSource.API,
+) -> Booking:
+    """Reschedule by cancelling the existing booking and creating a new one
+    at the new time, with the same service/staff/customer. Not an in-place
+    time update: the calendar adapter only supports create/cancel for an
+    event, not updating an already-synced event's time, so cancel+create is
+    the only way to get the calendar in sync with the new time. This reuses
+    cancel_booking()/create_booking() as-is, so audit logging, notifications,
+    and calendar sync all keep working unchanged — the tradeoff is the
+    booking gets a new id and the customer gets both a cancellation and a
+    new confirmation notification."""
+    old_booking = require_booking(db, booking_id, tenant_id)
+    cancel_booking(db, old_booking.id, tenant_id, reason=reason, actor_id=actor_id)
+    return create_booking(
+        db,
+        tenant_id=tenant_id,
+        business_id=old_booking.business_id,
+        customer_id=old_booking.customer_id,
+        service_id=old_booking.service_id,
+        staff_id=old_booking.staff_id,
+        starts_at=new_starts_at,
+        source=source,
+        actor_id=actor_id,
+    )
