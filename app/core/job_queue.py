@@ -131,6 +131,15 @@ class Job:
         )
 
 
+def queue_name_for_job_type(
+    job_type: str, *, base_queue_name: str = settings.worker_queue_name
+) -> str:
+    """Each job type gets its own Redis list so a backlog or outage in one
+    integration (e.g. calendar sync) can't head-of-line block unrelated job
+    types (e.g. SMS) sharing a single queue."""
+    return f"{base_queue_name}:{job_type}"
+
+
 def calculate_retry_delay_seconds(attempts: int) -> int:
     if attempts <= 0:
         return settings.worker_retry_backoff_base_seconds
@@ -144,7 +153,7 @@ def enqueue_job(
     payload: dict,
     *,
     redis: Redis = redis_client,
-    queue_name: str = settings.worker_queue_name,
+    queue_name: str | None = None,
 ) -> Job:
     job = Job(
         id=str(uuid7()),
@@ -152,7 +161,10 @@ def enqueue_job(
         payload=payload,
         request_id=get_request_id(),
     )
-    redis.lpush(queue_name, job.to_json())
+    effective_queue_name = (
+        queue_name if queue_name is not None else queue_name_for_job_type(job_type)
+    )
+    redis.lpush(effective_queue_name, job.to_json())
 
     return job
 
@@ -211,7 +223,7 @@ def schedule_retry(
 def promote_delayed_jobs(
     *,
     redis: Redis = redis_client,
-    queue_name: str = settings.worker_queue_name,
+    base_queue_name: str = settings.worker_queue_name,
     delayed_queue_name: str = settings.worker_delayed_queue_name,
     now: float | None = None,
     limit: int | None = None,
@@ -225,7 +237,8 @@ def promote_delayed_jobs(
             break
 
         if redis.zrem(delayed_queue_name, raw_job):
-            redis.lpush(queue_name, raw_job)
+            job = Job.from_json(raw_job)
+            redis.lpush(queue_name_for_job_type(job.type, base_queue_name=base_queue_name), raw_job)
             promoted_count += 1
 
     return promoted_count
@@ -234,7 +247,7 @@ def promote_delayed_jobs(
 def reclaim_stale_processing_jobs(
     *,
     redis: Redis = redis_client,
-    queue_name: str = settings.worker_queue_name,
+    base_queue_name: str = settings.worker_queue_name,
     processing_queue_name: str = settings.worker_processing_queue_name,
     visibility_timeout_seconds: int = settings.worker_processing_visibility_timeout_seconds,
     now: datetime | None = None,
@@ -257,6 +270,7 @@ def reclaim_stale_processing_jobs(
             continue
 
         if redis.lrem(processing_queue_name, 1, raw_job):
+            queue_name = queue_name_for_job_type(job.type, base_queue_name=base_queue_name)
             redis.lpush(queue_name, job.without_processing_started_at().to_json())
             reclaimed_count += 1
 
@@ -267,9 +281,10 @@ def requeue_job(
     job: Job,
     *,
     redis: Redis = redis_client,
-    queue_name: str = settings.worker_queue_name,
+    base_queue_name: str = settings.worker_queue_name,
 ) -> Job:
     retried_job = job.with_next_attempt()
+    queue_name = queue_name_for_job_type(job.type, base_queue_name=base_queue_name)
     redis.lpush(queue_name, retried_job.to_json())
 
     return retried_job
@@ -310,7 +325,7 @@ def list_failed_jobs(
 def requeue_failed_jobs(
     *,
     redis: Redis = redis_client,
-    queue_name: str = settings.worker_queue_name,
+    base_queue_name: str = settings.worker_queue_name,
     failed_queue_name: str = settings.worker_failed_queue_name,
     limit: int | None = None,
 ) -> int:
@@ -323,6 +338,7 @@ def requeue_failed_jobs(
             break
 
         job = Job.from_json(raw_job)
+        queue_name = queue_name_for_job_type(job.type, base_queue_name=base_queue_name)
         redis.lpush(queue_name, job.to_json())
         requeued_count += 1
 
