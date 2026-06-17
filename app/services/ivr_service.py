@@ -86,6 +86,13 @@ def handle_keypress(
             action=IvrAction.END,
         )
 
+    if key == "":
+        return _handle_no_input(db, session)
+
+    # Reset consecutive-no-input counter on any valid keypress.
+    if session.no_input_count:
+        session.no_input_count = 0
+
     if session.step == IvrStep.INCOMING:
         return _handle_incoming(db, session, key)
     if session.step == IvrStep.SERVICE_SELECTION:
@@ -119,6 +126,86 @@ def expire_stale_sessions(db: Session) -> int:
     if rows:
         db.commit()
     return len(rows)
+
+
+_NO_INPUT_MAX = 3
+
+
+def _handle_no_input(db: Session, session: VoiceSession) -> IvrResponse:
+    session.no_input_count += 1
+    if session.no_input_count >= _NO_INPUT_MAX:
+        session.step = IvrStep.EXPIRED
+        db.commit()
+        return IvrResponse(
+            prompt=(
+                "We didn't receive any input. Your session has ended. "
+                "Please call again to book an appointment."
+            ),
+            action=IvrAction.END,
+        )
+    db.commit()
+    reprompt = _reprompt_for_no_input(db, session)
+    return IvrResponse(
+        prompt="We didn't hear a response. " + reprompt.prompt,
+        options=reprompt.options,
+        action=reprompt.action,
+        session_id=reprompt.session_id,
+        transfer_destination=reprompt.transfer_destination,
+    )
+
+
+def _reprompt_for_no_input(db: Session, session: VoiceSession) -> IvrResponse:
+    if session.step == IvrStep.INCOMING:
+        business = require_business(db, session.business_id, session.tenant_id)
+        return _main_menu_response(session.id, business.booking_mode)
+
+    if session.step == IvrStep.SERVICE_SELECTION:
+        services = list_services(db, session.business_id, session.tenant_id)
+        options = tuple(
+            IvrOption(key=str(i + 1), label=svc.name)
+            for i, svc in enumerate(services[:9])
+        )
+        prompt = "Please select a service: " + ", ".join(
+            f"press {o.key} for {o.label}" for o in options
+        ) + "."
+        return IvrResponse(prompt=prompt, options=options, session_id=session.id)
+
+    if session.step == IvrStep.SLOT_SELECTION:
+        candidates: list[dict] = json.loads(session.slot_candidates or "[]")
+        if not candidates:
+            return IvrResponse(
+                prompt="No slots are available. Please call back later.",
+                action=IvrAction.END,
+                session_id=session.id,
+            )
+        options = tuple(
+            IvrOption(
+                key=str(i + 1),
+                label=_format_slot(
+                    datetime.fromisoformat(c["start"]),
+                    datetime.fromisoformat(c["end"]),
+                ),
+            )
+            for i, c in enumerate(candidates)
+        )
+        prompt = "Please select a slot: " + ", ".join(
+            f"press {o.key} for {o.label}" for o in options
+        ) + "."
+        return IvrResponse(prompt=prompt, options=options, session_id=session.id)
+
+    if session.step == IvrStep.TRANSFER_UNAVAILABLE:
+        return IvrResponse(
+            prompt="Press 1 to go back to the main menu.",
+            options=(IvrOption(key="1", label="Main menu"),),
+            action=IvrAction.CONTINUE,
+            session_id=session.id,
+        )
+
+    return IvrResponse(
+        prompt="Please make a selection.",
+        action=IvrAction.CONTINUE,
+        session_id=session.id,
+    )
 
 
 # --- step handlers ---
