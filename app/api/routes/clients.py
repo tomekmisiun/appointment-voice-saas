@@ -4,9 +4,11 @@ from sqlalchemy.orm import Session
 from app.api.dependencies.auth import get_current_user, require_role
 from app.db.session import get_db
 from app.models.user import User
+from app.schemas.booking import BookingRead
 from app.schemas.client import ClientCreate, ClientRead, ClientUpdate
 from app.services.client_service import (
     create_client,
+    get_bookings_for_client,
     list_clients,
     require_client,
     update_client,
@@ -60,6 +62,25 @@ def get_client_endpoint(
     current_user: User = Depends(get_current_user),
 ):
     return require_client(db, client_id, current_user.tenant_id)
+
+
+@router.get("/{client_id}/bookings", response_model=list[BookingRead])
+def get_client_bookings_endpoint(
+    business_id: int,
+    client_id: int,
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    skip = (page - 1) * size
+    return get_bookings_for_client(
+        db,
+        client_id,
+        current_user.tenant_id,
+        skip=skip,
+        limit=size,
+    )
 
 
 @router.patch("/{client_id}", response_model=ClientRead)
