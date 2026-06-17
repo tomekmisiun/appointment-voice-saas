@@ -172,7 +172,7 @@ Two independent dimensions added to `Business`:
 | GAP-002 | ~~No IVR repeat menu key~~ | LOW | **Fixed — P1-007** |
 | GAP-003 | No SMS reply parsing (confirm/cancel by text reply) | MEDIUM | Open — P1-002 |
 | GAP-004 | No reschedule flow (IVR or admin) | MEDIUM | Open — P1-003/P1-004 |
-| GAP-005 | No reminder SMS | MEDIUM | Open — P1-001 |
+| GAP-005 | ~~No reminder SMS~~ | MEDIUM | **Fixed — P1-001** |
 | GAP-006 | No IVR backend-unavailable fallback | MEDIUM | Open — P1-008 |
 | GAP-007 | `HTTP_422_UNPROCESSABLE_ENTITY` deprecation warning from starlette 1.3.1 | LOW | Monitor — non-breaking |
 | GAP-008 | CalendarIntegration staff_id not FK-validated at DB level | LOW | Open — AVS-TD-028 |
@@ -187,24 +187,26 @@ Two independent dimensions added to `Business`:
 | PORTFOLIO_READY | ✅ Yes | Clean domain, tests, CI, real providers, honest limitations |
 | MVP_DEMO_READY | ✅ Yes | Full local simulated call-to-booking-to-SMS-to-calendar works |
 | PILOT_READY | ⚠️ Conditional | Providers wired; BUG-001 fixed; IVR timeout/invalid-input/repeat handled (P1-005/P1-006/P1-007); but P1 gaps (no retry alerting, no reschedule) remain |
-| PRODUCTION_READY | ❌ No | Missing: reminder SMS, reschedule, DLQ alerting, CRM, billing, monitoring dashboards |
+| PRODUCTION_READY | ❌ No | Missing: reschedule, DLQ alerting, CRM, billing, monitoring dashboards |
 
 ## Not Implemented (Expansion Backlog)
 
-Audited 2026-06-17, updated 2026-06-17 after P1-005/P1-006/P1-007. 50 P1–P4
-items checked; 3 fully implemented, 7 partially, 3 already covered by MVP
-infrastructure.
+Audited 2026-06-17, updated 2026-06-17 after P1-001/P1-005/P1-006/P1-007. 50
+P1–P4 items checked; 4 fully implemented, 7 partially, 3 already covered by
+MVP infrastructure.
 
 **P1 — Must-have for pilot:**
-- NOT_IMPLEMENTED: reminder SMS, SMS reply handling, reschedule (IVR + API),
+- NOT_IMPLEMENTED: SMS reply handling, reschedule (IVR + API),
   backend-unavailable fallback.
 - PARTIAL: separate SMS/calendar queues (job types exist; single queue),
   DLQ alerting (DLQ infra exists in `app/core/job_queue.py`; alert signal missing),
   failed-integration metrics (Prometheus wired; provider-specific alerts missing),
   audit log expansion (create/cancel logged; reschedule/override audit pending).
-- DONE: IVR no-input timeout handling with consecutive-miss termination
-  (P1-005), IVR invalid-input retry counter with session termination after 5
-  keys (P1-006), IVR repeat-menu key `*` at every interactive step (P1-007).
+- DONE: reminder SMS queued once per booking within `reminder_lead_minutes`
+  of the appointment via the worker maintenance tick (P1-001), IVR no-input
+  timeout handling with consecutive-miss termination (P1-005), IVR
+  invalid-input retry counter with session termination after 5 keys
+  (P1-006), IVR repeat-menu key `*` at every interactive step (P1-007).
 - DONE (covered by MVP): exponential backoff (`calculate_retry_delay_seconds()`).
 
 **P2 — High business impact:**

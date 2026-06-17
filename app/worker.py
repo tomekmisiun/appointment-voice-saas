@@ -35,6 +35,7 @@ from app.services.calendar_service import (
 )
 from app.services.notification_service import (
     SEND_NOTIFICATION_JOB,
+    enqueue_due_reminders,
     send_notification_in_worker,
 )
 from app.services.password_reset_service import (
@@ -203,6 +204,7 @@ def run_scheduled_maintenance(now: float | None = None) -> bool:
         webhook_events_deleted = cleanup_old_webhook_events(db)
         audit_logs_deleted = cleanup_old_audit_logs(db)
         voice_sessions_expired = expire_stale_sessions(db)
+        reminders_enqueued = enqueue_due_reminders(db)
     finally:
         db.close()
 
@@ -212,12 +214,14 @@ def run_scheduled_maintenance(now: float | None = None) -> bool:
         "expired_idempotency_records_deleted=%s "
         "old_webhook_events_deleted=%s "
         "old_audit_logs_deleted=%s "
-        "voice_sessions_expired=%s",
+        "voice_sessions_expired=%s "
+        "reminders_enqueued=%s",
         password_reset_deleted,
         idempotency_deleted,
         webhook_events_deleted,
         audit_logs_deleted,
         voice_sessions_expired,
+        reminders_enqueued,
     )
     observe_worker_maintenance(status="completed")
 
