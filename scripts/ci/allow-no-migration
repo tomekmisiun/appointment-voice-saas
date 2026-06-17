@@ -1,2 +1,1 @@
-# Leave this file comment-only unless a PR changes app/models/ without a schema migration.
-# To bypass the CI check, replace this line with a one-line reason in the same PR.
+Added NotificationPurpose.BOOKING_REMINDER to an existing String(64) `purpose` column (no native DB enum); no DDL change needed (P1-001).
