@@ -7,6 +7,7 @@ from app.core.job_queue import (
     calculate_retry_delay_seconds,
     dequeue_job,
     enqueue_job,
+    get_failed_queue_depth,
     move_job_to_failed_queue,
     promote_delayed_jobs,
     queue_name_for_job_type,
@@ -58,6 +59,9 @@ class FakeRedis:
         stop = end + 1 if end >= 0 else None
 
         return queue[start:stop]
+
+    def llen(self, queue_name: str) -> int:
+        return len(self.queues.get(queue_name, []))
 
     def rpop(self, queue_name: str):
         queue = self.queues.get(queue_name, [])
@@ -269,6 +273,24 @@ def test_move_job_to_failed_queue_persists_dead_letter_metadata():
     assert failed_job.failed_at is not None
     assert redis.queues["test_processing"] == []
     assert redis.queues["test_failed"] == [failed_job.to_json()]
+
+
+def test_get_failed_queue_depth_counts_items_in_failed_queue():
+    redis = FakeRedis()
+    redis.lpush("test_failed", Job(id="a", type="demo", payload={}).to_json())
+    redis.lpush("test_failed", Job(id="b", type="demo", payload={}).to_json())
+
+    depth = get_failed_queue_depth(redis=redis, failed_queue_name="test_failed")
+
+    assert depth == 2
+
+
+def test_get_failed_queue_depth_is_zero_for_empty_queue():
+    redis = FakeRedis()
+
+    depth = get_failed_queue_depth(redis=redis, failed_queue_name="test_failed")
+
+    assert depth == 0
 
 
 def test_try_acquire_maintenance_lock_is_exclusive():

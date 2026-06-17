@@ -36,6 +36,7 @@ _worker_jobs_total: Counter | None = None
 _worker_maintenance_runs_total: Counter | None = None
 _dependency_checks_total: Counter | None = None
 _dependency_health_status: Gauge | None = None
+_worker_failed_queue_depth: Gauge | None = None
 _app_info: Gauge | None = None
 
 if TYPE_CHECKING:
@@ -47,6 +48,7 @@ def configure_metrics(app_settings: "Settings | None" = None) -> None:
     global _http_requests_total, _http_request_duration_seconds
     global _worker_jobs_total, _worker_maintenance_runs_total
     global _dependency_checks_total, _dependency_health_status, _app_info
+    global _worker_failed_queue_depth
 
     if _metrics_configured:
         return
@@ -105,6 +107,11 @@ def configure_metrics(app_settings: "Settings | None" = None) -> None:
         "dependency_health_status",
         "Latest dependency health status (1=ok, 0=unavailable).",
         ["dependency"],
+        **gauge_kwargs,
+    )
+    _worker_failed_queue_depth = Gauge(
+        "worker_failed_queue_depth",
+        "Number of jobs currently sitting in the worker dead-letter queue.",
         **gauge_kwargs,
     )
 
@@ -168,6 +175,13 @@ def observe_worker_maintenance(*, status: str) -> None:
         configure_metrics()
 
     _worker_maintenance_runs_total.labels(status=status).inc()
+
+
+def observe_worker_failed_queue_depth(depth: int) -> None:
+    if _worker_failed_queue_depth is None:
+        configure_metrics()
+
+    _worker_failed_queue_depth.set(depth)
 
 
 def observe_dependency_check(*, dependency: str, status: str) -> None:

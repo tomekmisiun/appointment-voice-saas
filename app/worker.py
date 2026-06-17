@@ -7,6 +7,7 @@ from app.core.job_queue import (
     ack_job,
     calculate_retry_delay_seconds,
     dequeue_job,
+    get_failed_queue_depth,
     move_job_to_failed_queue,
     promote_delayed_jobs,
     queue_name_for_job_type,
@@ -16,7 +17,12 @@ from app.core.job_queue import (
 )
 from app.core.log_helpers import job_log_extra
 from app.core.logging import configure_logging
-from app.core.metrics import configure_metrics, observe_worker_job, observe_worker_maintenance
+from app.core.metrics import (
+    configure_metrics,
+    observe_worker_failed_queue_depth,
+    observe_worker_job,
+    observe_worker_maintenance,
+)
 from app.core.metrics_server import start_metrics_server
 from app.core.shutdown import (
     mark_worker_job_finished,
@@ -232,6 +238,9 @@ def run_scheduled_maintenance(now: float | None = None) -> bool:
     finally:
         db.close()
 
+    failed_queue_depth = get_failed_queue_depth()
+    observe_worker_failed_queue_depth(failed_queue_depth)
+
     logger.info(
         "worker_maintenance_completed "
         "expired_password_reset_tokens_deleted=%s "
@@ -239,13 +248,15 @@ def run_scheduled_maintenance(now: float | None = None) -> bool:
         "old_webhook_events_deleted=%s "
         "old_audit_logs_deleted=%s "
         "voice_sessions_expired=%s "
-        "reminders_enqueued=%s",
+        "reminders_enqueued=%s "
+        "failed_queue_depth=%s",
         password_reset_deleted,
         idempotency_deleted,
         webhook_events_deleted,
         audit_logs_deleted,
         voice_sessions_expired,
         reminders_enqueued,
+        failed_queue_depth,
     )
     observe_worker_maintenance(status="completed")
 

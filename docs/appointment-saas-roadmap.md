@@ -260,7 +260,7 @@ the task explicitly de-risks the MVP.
 | [x] | P1-008 | P1 | Add backend-unavailable fallback. | Graceful message/transfer when DB/Redis unavailable. | Full disaster recovery. | IVR does not expose errors or create partial booking. | Failure tests. | Outages produce bad caller experience. | done: voice webhook routes catch `OperationalError`/`RedisError` (and the `HTTPException(503)` `enforce_rate_limit_counter()` already raises for a Redis outage) and return graceful TwiML instead of a raw error; real 403/429 still propagate normally — `tests/test_avs_p1008_ivr_backend_unavailable.py` |
 | [x] | P1-009 | P1 | Extract queues for SMS/calendar. | Separate job types/queues or outbox processors. | New queue vendor. | Side effects are independently observable. | Worker tests. | One failing integration blocks another. | done: every job type gets its own Redis list via `queue_name_for_job_type()`; the worker polls each known type's queue in turn (short per-queue timeout) instead of one shared FIFO list, so a backlog in one type can't delay another — `tests/test_worker.py::test_notification_job_is_not_blocked_by_calendar_backlog` |
 | [x] | P1-010 | P1 | Add exponential backoff. | Backoff policy for SMS/calendar retries. | Manual retry UI. | Retry intervals are bounded and tested. | Worker tests. | Provider incidents amplify traffic. | covered by AVS-E007: `calculate_retry_delay_seconds()` in `app/core/job_queue.py` uses 2^(attempts-1) with configurable base and max caps |
-| [ ] | P1-011 | P1 | Add DLQ and alerting. | Failed async operation DLQ plus alert signal. | Pager provider setup. | Exhausted jobs are visible. | Worker/metrics tests. | Silent async data loss. | partial: DLQ queue exists — `move_job_to_failed_queue()`, `list_failed_jobs()`, `requeue_failed_jobs()` in `app/core/job_queue.py`; alert signal integration (Slack/PagerDuty/metrics threshold) not yet wired |
+| [x] | P1-011 | P1 | Add DLQ and alerting. | Failed async operation DLQ plus alert signal. | Pager provider setup. | Exhausted jobs are visible. | Worker/metrics tests. | Silent async data loss. | done: new `worker_failed_queue_depth` Prometheus gauge refreshed every maintenance tick via `get_failed_queue_depth()`, plus `WorkerFailedQueueBacklog`/`WorkerJobFailureRate` Alertmanager rules in `observability/prometheus/rules/worker-alerts.yml` — no Slack/PagerDuty credentials exist in this repo, so the alert signal is Prometheus/Alertmanager (already wired), not a new external webhook integration — `tests/test_job_queue.py`, `tests/test_worker.py`, `tests/test_worker_metrics.py` |
 | [ ] | P1-012 | P1 | Monitor failed integrations. | Metrics/logs for provider failures and backlog. | Full dashboard. | Alerts can be wired from documented metrics. | Metrics tests/docs. | Pilot failures go unnoticed. | partial: Prometheus metrics `worker_jobs_total[job_type,status]` in `app/core/metrics.py`; provider-specific SMS/calendar failure rates and alert thresholds not yet added |
 | [ ] | P1-013 | P1 | Expand booking lifecycle audit logs. | Add audit events for reschedule, SMS reply accept/cancel, and admin override — create/cancel already logged. | Compliance export. | All lifecycle events are queryable with actor. | Service/API tests. | Disputes lack evidence. | partial: `AuditLog` model with `AuditAction` enum and `create_audit_log()` in `app/services/audit_log_service.py` covers create and cancel — extend when reschedule (P1-003/P1-004) and override (P3-012) are implemented |
 
@@ -325,21 +325,21 @@ the task explicitly de-risks the MVP.
 **Scope:** All 50 P1–P4 backlog items inspected against application code, models,
 services, routes, worker, migrations, tests, and docs.
 
-**Summary (updated 2026-06-17 after P1-001/P1-002/P1-003/P1-004/P1-005/P1-006/P1-007/P1-008/P1-009):**
-- 9 items fully implemented: P1-001, P1-002, P1-003, P1-004, P1-005, P1-006,
-  P1-007, P1-008, P1-009 (reminder SMS, SMS reply confirm/cancel, IVR + admin
-  reschedule, IVR timeout/invalid-input/repeat-menu/backend-unavailable
-  fallback, per-job-type Redis queues — see rows above for evidence)
-- 6 items partially implemented (noted inline above)
-- 3 items already covered by completed MVP work: P1-010 (exponential backoff —
-  `calculate_retry_delay_seconds()` in `app/core/job_queue.py`), the DLQ
-  *infrastructure* portion of P1-011 (`move_job_to_failed_queue()` etc.), and
-  the create/cancel portion of P1-013 (`AuditLog` + `audit_log_service.py`)
-- 32 items not implemented
+**Summary (updated 2026-06-17 after P1-001/P1-002/P1-003/P1-004/P1-005/P1-006/P1-007/P1-008/P1-009/P1-011):**
+- 10 items fully implemented: P1-001, P1-002, P1-003, P1-004, P1-005, P1-006,
+  P1-007, P1-008, P1-009, P1-011 (reminder SMS, SMS reply confirm/cancel, IVR +
+  admin reschedule, IVR timeout/invalid-input/repeat-menu/backend-unavailable
+  fallback, per-job-type Redis queues, DLQ depth/failure-rate alerting — see
+  rows above for evidence)
+- 5 items partially implemented (noted inline above)
+- 2 items already covered by completed MVP work: P1-010 (exponential backoff —
+  `calculate_retry_delay_seconds()` in `app/core/job_queue.py`) and the
+  create/cancel portion of P1-013 (`AuditLog` + `audit_log_service.py`)
+- 33 items not implemented
 
 **High-risk non-duplicates confirmed:** No P1–P4 item was accidentally
 implemented as a side-effect of MVP work. `PlanPolicyService` is an intentional
-stub for P4-008 only. The DLQ alerting half of P1-011 is genuinely missing.
+stub for P4-008 only.
 
 **Recommended implementation order for pilot:**
 1. ~~P1-001 — Reminder SMS~~ done

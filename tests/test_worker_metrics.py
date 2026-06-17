@@ -2,7 +2,11 @@ import time
 
 import httpx
 
-from app.core.metrics import configure_metrics, observe_worker_job
+from app.core.metrics import (
+    configure_metrics,
+    observe_worker_failed_queue_depth,
+    observe_worker_job,
+)
 from app.core.metrics_server import start_metrics_server, stop_metrics_server
 
 
@@ -30,6 +34,21 @@ def test_worker_metrics_server_exposes_prometheus_text(monkeypatch):
 
         assert response.status_code == 200
         assert "worker_jobs_total" in response.text
+    finally:
+        stop_metrics_server()
+
+
+def test_worker_failed_queue_depth_gauge_is_exposed(monkeypatch):
+    monkeypatch.setattr("app.core.config.settings.metrics_require_auth", False)
+    configure_metrics()
+    observe_worker_failed_queue_depth(7)
+    port = start_metrics_server(host="127.0.0.1", port=0)
+
+    try:
+        response = _get_metrics(f"http://127.0.0.1:{port}/metrics")
+
+        assert response.status_code == 200
+        assert "worker_failed_queue_depth 7.0" in response.text
     finally:
         stop_metrics_server()
 

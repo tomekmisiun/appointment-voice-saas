@@ -322,6 +322,14 @@ def list_failed_jobs(
     return [Job.from_json(raw_job) for raw_job in raw_jobs]
 
 
+def get_failed_queue_depth(
+    *,
+    redis: Redis = redis_client,
+    failed_queue_name: str = settings.worker_failed_queue_name,
+) -> int:
+    return redis.llen(failed_queue_name)
+
+
 def requeue_failed_jobs(
     *,
     redis: Redis = redis_client,
