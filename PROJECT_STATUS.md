@@ -173,7 +173,7 @@ Two independent dimensions added to `Business`:
 | GAP-003 | ~~No SMS reply parsing (confirm/cancel by text reply)~~ | MEDIUM | **Fixed — P1-002** |
 | GAP-004 | ~~No reschedule flow (IVR or admin)~~ | MEDIUM | **Fixed — P1-003/P1-004** |
 | GAP-005 | ~~No reminder SMS~~ | MEDIUM | **Fixed — P1-001** |
-| GAP-006 | No IVR backend-unavailable fallback | MEDIUM | Open — P1-008 |
+| GAP-006 | ~~No IVR backend-unavailable fallback~~ | MEDIUM | **Fixed — P1-008** |
 | GAP-007 | `HTTP_422_UNPROCESSABLE_ENTITY` deprecation warning from starlette 1.3.1 | LOW | Monitor — non-breaking |
 | GAP-008 | CalendarIntegration staff_id not FK-validated at DB level | LOW | Open — AVS-TD-028 |
 | GAP-009 | Phone numbers not masked in structured logs | MEDIUM | Open — Privacy risk |
@@ -186,17 +186,17 @@ Two independent dimensions added to `Business`:
 | NOT_READY | ✅ Exceeds | All core flows demonstrable |
 | PORTFOLIO_READY | ✅ Yes | Clean domain, tests, CI, real providers, honest limitations |
 | MVP_DEMO_READY | ✅ Yes | Full local simulated call-to-booking-to-SMS-to-calendar works |
-| PILOT_READY | ⚠️ Conditional | Providers wired; BUG-001 fixed; IVR timeout/invalid-input/repeat/reschedule handled, admin reschedule API added (P1-001/P1-002/P1-003/P1-004/P1-005/P1-006/P1-007); only retry alerting (P1-011/P1-012) and backend-unavailable fallback (P1-008) remain open |
+| PILOT_READY | ✅ Yes | Providers wired; BUG-001 fixed; IVR timeout/invalid-input/repeat/reschedule handled, admin reschedule API added, IVR degrades gracefully on DB/Redis outage instead of exposing raw errors (P1-001/P1-002/P1-003/P1-004/P1-005/P1-006/P1-007/P1-008); only DLQ retry alerting/monitoring (P1-011/P1-012) remain open as P1 gaps |
 | PRODUCTION_READY | ❌ No | Missing: DLQ alerting, CRM, billing, monitoring dashboards |
 
 ## Not Implemented (Expansion Backlog)
 
-Audited 2026-06-17, updated 2026-06-17 after P1-001/P1-002/P1-003/P1-004/P1-005/P1-006/P1-007.
-50 P1–P4 items checked; 7 fully implemented, 7 partially, 3 already covered by
+Audited 2026-06-17, updated 2026-06-17 after P1-001/P1-002/P1-003/P1-004/P1-005/P1-006/P1-007/P1-008.
+50 P1–P4 items checked; 8 fully implemented, 7 partially, 3 already covered by
 MVP infrastructure.
 
 **P1 — Must-have for pilot:**
-- NOT_IMPLEMENTED: backend-unavailable fallback (P1-008).
+- NOT_IMPLEMENTED: none (all remaining P1 items are partial — see below).
 - PARTIAL: separate SMS/calendar queues (job types exist; single queue),
   DLQ alerting (DLQ infra exists in `app/core/job_queue.py`; alert signal missing),
   failed-integration metrics (Prometheus wired; provider-specific alerts missing),
@@ -214,7 +214,10 @@ MVP infrastructure.
   supports create/cancel, not updating an already-synced event's time), IVR
   no-input timeout handling with consecutive-miss termination (P1-005), IVR
   invalid-input retry counter with session termination after 5 keys
-  (P1-006), IVR repeat-menu key `*` at every interactive step (P1-007).
+  (P1-006), IVR repeat-menu key `*` at every interactive step (P1-007), IVR
+  voice webhook returns graceful "technical difficulties" TwiML instead of a
+  raw 500/JSON error when the DB or Redis is unavailable mid-call, with no
+  partial session/booking left behind (P1-008).
 - DONE (covered by MVP): exponential backoff (`calculate_retry_delay_seconds()`).
 
 **P2 — High business impact:**
