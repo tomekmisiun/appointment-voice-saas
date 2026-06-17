@@ -89,7 +89,8 @@ def handle_keypress(
     if key == "":
         return _handle_no_input(db, session)
 
-    # Reset consecutive-no-input counter on any valid keypress.
+    # Reset consecutive-no-input counter on any non-empty keypress (valid or invalid).
+    # Any key press proves the caller is still engaged; only silence should accumulate.
     if session.no_input_count:
         session.no_input_count = 0
 
@@ -129,6 +130,24 @@ def expire_stale_sessions(db: Session) -> int:
 
 
 _NO_INPUT_MAX = 3
+_INVALID_KEY_MAX = 5
+
+
+def _handle_invalid_key(db: Session, session: VoiceSession, reprompt: IvrResponse) -> IvrResponse:
+    """Increment invalid-key counter; terminate session after _INVALID_KEY_MAX total invalid keys."""
+    session.invalid_key_count += 1
+    if session.invalid_key_count >= _INVALID_KEY_MAX:
+        session.step = IvrStep.EXPIRED
+        db.commit()
+        return IvrResponse(
+            prompt=(
+                "Too many invalid inputs. Your session has ended. "
+                "Please call again to book an appointment."
+            ),
+            action=IvrAction.END,
+        )
+    db.commit()
+    return reprompt
 
 
 def _handle_no_input(db: Session, session: VoiceSession) -> IvrResponse:
@@ -221,7 +240,7 @@ def _handle_incoming(db: Session, session: VoiceSession, key: str) -> IvrRespons
         return _handle_transfer_request(db, session)
 
     business = require_business(db, session.business_id, session.tenant_id)
-    return _main_menu_response(session.id, business.booking_mode)
+    return _handle_invalid_key(db, session, _main_menu_response(session.id, business.booking_mode))
 
 
 def _handle_press1_internal(db: Session, session: VoiceSession) -> IvrResponse:
@@ -311,12 +330,13 @@ def _handle_transfer_unavailable(db: Session, session: VoiceSession, key: str) -
         session.step = IvrStep.INCOMING
         db.commit()
         return _main_menu_response(session.id, business.booking_mode)
-    return IvrResponse(
+    reprompt = IvrResponse(
         prompt="Press 1 to go back to the main menu.",
         action=IvrAction.CONTINUE,
         options=(IvrOption(key="1", label="Main menu"),),
         session_id=session.id,
     )
+    return _handle_invalid_key(db, session, reprompt)
 
 
 def _resolve_transfer_destination(db, business, tenant_id: int) -> str | None:
@@ -356,7 +376,9 @@ def _handle_service_selection(
         prompt = "Invalid choice. Please select a service: " + ", ".join(
             f"press {o.key} for {o.label}" for o in options
         ) + "."
-        return IvrResponse(prompt=prompt, options=options, session_id=session.id)
+        return _handle_invalid_key(
+            db, session, IvrResponse(prompt=prompt, options=options, session_id=session.id)
+        )
 
     selected_service = services[idx]
     slots = _find_slots(db, session=session, service_id=selected_service.id)
@@ -423,7 +445,9 @@ def _handle_slot_selection(
         prompt = "Invalid choice. Please select a slot: " + ", ".join(
             f"press {o.key} for {o.label}" for o in options
         ) + "."
-        return IvrResponse(prompt=prompt, options=options, session_id=session.id)
+        return _handle_invalid_key(
+            db, session, IvrResponse(prompt=prompt, options=options, session_id=session.id)
+        )
 
     chosen = candidates[idx]
     starts_at = datetime.fromisoformat(chosen["start"])
