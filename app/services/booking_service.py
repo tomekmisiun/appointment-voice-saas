@@ -142,6 +142,24 @@ def get_next_confirmed_booking(
     )
 
 
+def get_last_staff_booking(
+    db: Session, *, business_id: int, tenant_id: int, customer_id: int
+) -> Booking | None:
+    """Most recent booking (any status) with a staff member assigned, used
+    to suggest reusing the same staff member on a future visit."""
+    return (
+        db.query(Booking)
+        .filter(
+            Booking.business_id == business_id,
+            Booking.tenant_id == tenant_id,
+            Booking.customer_id == customer_id,
+            Booking.staff_id.isnot(None),
+        )
+        .order_by(Booking.starts_at.desc())
+        .first()
+    )
+
+
 def get_booking(db: Session, booking_id: int, tenant_id: int) -> Booking | None:
     return (
         db.query(Booking)
