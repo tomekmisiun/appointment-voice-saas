@@ -1,3 +1,4 @@
 Added NotificationPurpose.BOOKING_REMINDER to an existing String(64) `purpose` column (no native DB enum); no DDL change needed (P1-001).
 Added AuditAction.BOOKING_RESCHEDULED and BOOKING_CONFIRMED to an existing String `action` column (no native DB enum); no DDL change needed (P1-013).
 Added AuditAction.CUSTOMER_ANONYMIZED to an existing String `action` column (no native DB enum); no DDL change needed (P2-005).
+Added IvrStep.STAFF_SELECTION to an existing String(32) `step` column (no native DB enum); no DDL change needed (P2-006).

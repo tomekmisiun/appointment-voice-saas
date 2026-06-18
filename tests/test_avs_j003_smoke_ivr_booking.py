@@ -3,6 +3,10 @@
 Proves the full voice path works locally using seeded demo data:
   simulate call → press 1 (book) → press 1 (service) → press 1 (slot) → press 1 (confirm)
   → booking in DB, SMS enqueued.
+
+The demo business seeds 3 staff members but only business-level working
+hours (no staff-specific schedule), so none of them are "schedulable"
+(P2-006) and the staff-selection step is auto-skipped, preserving this flow.
 """
 import pytest
 

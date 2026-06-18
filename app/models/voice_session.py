@@ -11,6 +11,7 @@ from app.db.base import Base
 class IvrStep(StrEnum):
     INCOMING                  = "incoming"
     SERVICE_SELECTION         = "service_selection"
+    STAFF_SELECTION           = "staff_selection"        # P2-006: optional preferred-staff pick
     SLOT_SELECTION            = "slot_selection"
     BOOKING_CONFIRMED         = "booking_confirmed"
     NO_SLOTS                  = "no_slots"
