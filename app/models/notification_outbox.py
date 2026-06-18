@@ -17,6 +17,7 @@ class NotificationPurpose(StrEnum):
     BOOKING_CANCELLATION  = "booking_cancellation"
     BOOKING_REMINDER      = "booking_reminder"
     EXTERNAL_BOOKING_LINK = "external_booking_link"   # link SMS — no booking_id
+    WAITLIST_OFFER        = "waitlist_offer"          # P2-011 — no booking_id
 
 
 class NotificationStatus(StrEnum):

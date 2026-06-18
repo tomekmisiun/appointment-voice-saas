@@ -1,5 +1,6 @@
 from datetime import date
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.domain_errors import NotFoundError
@@ -86,6 +87,37 @@ def list_waitlist_entries(
         .limit(limit)
         .all()
     )
+
+
+def find_matching_waitlist_entries(
+    db: Session,
+    *,
+    business_id: int,
+    tenant_id: int,
+    service_id: int,
+    desired_date: date,
+    staff_id: int | None = None,
+) -> list[WaitlistEntry]:
+    """WAITING entries for this business/service/date that a newly freed
+    slot would satisfy (P2-011, triggered from cancel_booking()). Entries
+    with no staff preference (staff_id IS NULL) always match; entries that
+    asked for a specific staff member only match if that's the staff
+    member whose slot just opened up. Returns all matches, oldest first --
+    picking a single winner and expiring the rest is P2-012's job."""
+    query = db.query(WaitlistEntry).filter(
+        WaitlistEntry.business_id == business_id,
+        WaitlistEntry.tenant_id == tenant_id,
+        WaitlistEntry.service_id == service_id,
+        WaitlistEntry.desired_date == desired_date,
+        WaitlistEntry.status == WaitlistEntryStatus.WAITING,
+    )
+    if staff_id is not None:
+        query = query.filter(
+            or_(WaitlistEntry.staff_id.is_(None), WaitlistEntry.staff_id == staff_id)
+        )
+    else:
+        query = query.filter(WaitlistEntry.staff_id.is_(None))
+    return query.order_by(WaitlistEntry.created_at.asc()).all()
 
 
 def update_waitlist_entry_status(
