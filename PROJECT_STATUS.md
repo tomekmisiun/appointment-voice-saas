@@ -192,8 +192,8 @@ Two independent dimensions added to `Business`:
 ## Not Implemented (Expansion Backlog)
 
 Audited 2026-06-17, updated 2026-06-18 after P1-001 through P1-013 (see below)
-and P2-001 through P2-007.
-50 P1–P4 items checked; 18 fully implemented, 4 partially, 2 already covered by
+and P2-001 through P2-008.
+50 P1–P4 items checked; 19 fully implemented, 4 partially, 2 already covered by
 MVP infrastructure.
 
 **P1 — Must-have for pilot:**
@@ -234,9 +234,9 @@ MVP infrastructure.
 - DONE (covered by MVP): exponential backoff (`calculate_retry_delay_seconds()`).
 
 **P2 — High business impact:**
-- NOT_IMPLEMENTED: multi-service appointments, combined-duration
-  availability, waitlist model, waitlist-on-cancellation offer, waitlist
-  timeout/escalation, owner metrics API, CSV export.
+- NOT_IMPLEMENTED: combined-duration availability, waitlist model,
+  waitlist-on-cancellation offer, waitlist timeout/escalation, owner
+  metrics API, CSV export.
 - DONE: CRM clients table — `Client` model (name/email/phone/notes), optionally
   linked 1:1 to a `Customer` via `customer_id`; CRUD at
   `/businesses/{business_id}/clients` (P2-001), bookings linked to clients —
@@ -265,7 +265,16 @@ MVP infrastructure.
   with a `staff_id` set; if still active/schedulable, that staff member is
   reordered to the front of the staff-selection menu (always option "1")
   and called out by name; no history, or a no-longer-eligible last staff
-  member, leaves the P2-006 menu unaffected (P2-007).
+  member, leaves the P2-006 menu unaffected (P2-007), multi-service
+  appointment model — new additive `BookingLineItem` model/table
+  (`booking_id`, `service_id`, `position`, `duration_minutes` snapshot)
+  lets a booking carry an ordered list of services; `Booking.service_id`/
+  `ends_at` keep their existing meaning (primary/first service), so every
+  existing single-service code path (IVR, availability search, calendar
+  sync) is completely unaffected; `add_booking_line_item()`/
+  `list_booking_line_items()`/`get_booking_total_duration_minutes()` in
+  `booking_service.py`; not yet wired into availability search or the IVR
+  — that's P2-009 (P2-008).
 
 **P3 — Operational extensions:**
 - NOT_IMPLEMENTED: salon/staff hours intersection, recurring staff blocks,

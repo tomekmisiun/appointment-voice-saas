@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.domain_errors import ConflictError, NotFoundError
 from app.models.audit_log import AuditAction
 from app.models.booking import Booking, BookingSource, BookingStatus
+from app.models.booking_line_item import BookingLineItem
 from app.services.audit_log_service import create_audit_log
 from app.services.business_service import require_business
 from app.services.customer_service import require_customer
@@ -173,6 +174,57 @@ def require_booking(db: Session, booking_id: int, tenant_id: int) -> Booking:
     if booking is None:
         raise NotFoundError("Booking not found")
     return booking
+
+
+def add_booking_line_item(
+    db: Session, *, booking_id: int, tenant_id: int, service_id: int
+) -> BookingLineItem:
+    """Append an additional service to a booking (P2-008). Booking.service_id
+    stays the booking's primary/first service for all existing
+    single-service code paths; line items are purely additive and not yet
+    consulted by availability search or the IVR (P2-009)."""
+    booking = require_booking(db, booking_id, tenant_id)
+    svc = require_service(db, service_id, tenant_id)
+    if svc.business_id != booking.business_id:
+        raise NotFoundError("Service not found")
+
+    next_position = (
+        db.query(BookingLineItem)
+        .filter(BookingLineItem.booking_id == booking_id)
+        .count()
+    )
+    line_item = BookingLineItem(
+        tenant_id=tenant_id,
+        business_id=booking.business_id,
+        booking_id=booking_id,
+        service_id=service_id,
+        position=next_position,
+        duration_minutes=svc.duration_minutes,
+    )
+    db.add(line_item)
+    db.commit()
+    db.refresh(line_item)
+    return line_item
+
+
+def list_booking_line_items(
+    db: Session, booking_id: int, tenant_id: int
+) -> list[BookingLineItem]:
+    require_booking(db, booking_id, tenant_id)
+    return (
+        db.query(BookingLineItem)
+        .filter(BookingLineItem.booking_id == booking_id, BookingLineItem.tenant_id == tenant_id)
+        .order_by(BookingLineItem.position.asc())
+        .all()
+    )
+
+
+def get_booking_total_duration_minutes(db: Session, booking_id: int, tenant_id: int) -> int:
+    """Sum of duration_minutes across this booking's line items. Returns 0
+    if no line items have been added (single-service bookings derive their
+    duration from Booking.ends_at - Booking.starts_at instead)."""
+    line_items = list_booking_line_items(db, booking_id, tenant_id)
+    return sum(item.duration_minutes for item in line_items)
 
 
 def list_bookings(
