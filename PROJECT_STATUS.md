@@ -1,10 +1,10 @@
 # Project Status — Appointment Voice SaaS
 
-Verified as of 2026-06-17. Updated during `audit/backlog-reality-check`.
+Verified as of 2026-06-18.
 
 ## Current Status
 
-All MVP foundation epics (A–K) and full Epic L (L001–L004, owner acquisition + onboarding) implemented. 695 tests pass. CI green.
+All MVP foundation epics (A–K) and full Epic L (L001–L004, owner acquisition + onboarding) implemented. Production expansion backlog P2-001 through P2-012 (CRM, preferred staff, multi-service bookings, waitlist with offer/timeout/escalation) also done. 871 tests pass. CI green.
 
 The product can be fully demonstrated locally using fake SMS and fake calendar
 providers. Real Twilio voice and SMS providers are wired and configured via env
@@ -187,14 +187,13 @@ Two independent dimensions added to `Business`:
 | PORTFOLIO_READY | ✅ Yes | Clean domain, tests, CI, real providers, honest limitations |
 | MVP_DEMO_READY | ✅ Yes | Full local simulated call-to-booking-to-SMS-to-calendar works |
 | PILOT_READY | ✅ Yes | Providers wired; BUG-001 fixed; IVR timeout/invalid-input/repeat/reschedule handled, admin reschedule API added, IVR degrades gracefully on DB/Redis outage instead of exposing raw errors, per-job-type queues, DLQ depth/failure-rate alerting, provider-level failure metrics, create/cancel/reschedule/SMS-confirm audit trail wired (P1-001 through P1-009, P1-011 through P1-013); only the admin-override portion of audit logging (blocked on P3-012, which doesn't exist yet) remains open |
-| PRODUCTION_READY | ❌ No | Missing: admin override audit trail (needs P3-012 first), CRM, billing, monitoring dashboards |
+| PRODUCTION_READY | ❌ No | Missing: admin override audit trail (needs P3-012 first), owner metrics/CSV export (P2-013/P2-014), billing, monitoring dashboards |
 
 ## Not Implemented (Expansion Backlog)
 
 Audited 2026-06-17, updated 2026-06-18 after P1-001 through P1-013 (see below)
-and P2-001 through P2-011.
-50 P1–P4 items checked; 22 fully implemented, 4 partially, 2 already covered by
-MVP infrastructure.
+and P2-001 through P2-012.
+52 P1–P4 items tracked; 24 fully implemented, 7 partially, 21 not yet started.
 
 **P1 — Must-have for pilot:**
 - NOT_IMPLEMENTED: none (all remaining P1 items are partial — see below).
@@ -234,8 +233,7 @@ MVP infrastructure.
 - DONE (covered by MVP): exponential backoff (`calculate_retry_delay_seconds()`).
 
 **P2 — High business impact:**
-- NOT_IMPLEMENTED: waitlist timeout/escalation, owner metrics API, CSV
-  export.
+- NOT_IMPLEMENTED: owner metrics API, CSV export.
 - DONE: CRM clients table — `Client` model (name/email/phone/notes), optionally
   linked 1:1 to a `Customer` via `customer_id`; CRUD at
   `/businesses/{business_id}/clients` (P2-001), bookings linked to clients —
