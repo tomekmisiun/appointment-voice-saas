@@ -192,8 +192,8 @@ Two independent dimensions added to `Business`:
 ## Not Implemented (Expansion Backlog)
 
 Audited 2026-06-17, updated 2026-06-18 after P1-001 through P1-013 (see below)
-and P2-001 through P2-008.
-50 P1–P4 items checked; 19 fully implemented, 4 partially, 2 already covered by
+and P2-001 through P2-009.
+50 P1–P4 items checked; 20 fully implemented, 4 partially, 2 already covered by
 MVP infrastructure.
 
 **P1 — Must-have for pilot:**
@@ -234,9 +234,8 @@ MVP infrastructure.
 - DONE (covered by MVP): exponential backoff (`calculate_retry_delay_seconds()`).
 
 **P2 — High business impact:**
-- NOT_IMPLEMENTED: combined-duration availability, waitlist model,
-  waitlist-on-cancellation offer, waitlist timeout/escalation, owner
-  metrics API, CSV export.
+- NOT_IMPLEMENTED: waitlist model, waitlist-on-cancellation offer, waitlist
+  timeout/escalation, owner metrics API, CSV export.
 - DONE: CRM clients table — `Client` model (name/email/phone/notes), optionally
   linked 1:1 to a `Customer` via `customer_id`; CRUD at
   `/businesses/{business_id}/clients` (P2-001), bookings linked to clients —
@@ -274,7 +273,15 @@ MVP infrastructure.
   sync) is completely unaffected; `add_booking_line_item()`/
   `list_booking_line_items()`/`get_booking_total_duration_minutes()` in
   `booking_service.py`; not yet wired into availability search or the IVR
-  — that's P2-009 (P2-008).
+  — that's P2-009 (P2-008), combined-duration availability — new
+  `get_available_slots_for_total_duration()` sibling of
+  `get_available_slots()` searches for a combined duration across
+  multiple services (built from P2-008's `BookingLineItem` rows) instead
+  of a single `service_id`'s `duration_minutes`; both share the same
+  private slot-generation core, parameterized by duration, so the existing
+  single-service function/signature/call sites (IVR, availability API) are
+  unchanged; not yet wired into `create_booking()` or the IVR flow itself
+  (P2-009).
 
 **P3 — Operational extensions:**
 - NOT_IMPLEMENTED: salon/staff hours intersection, recurring staff blocks,
