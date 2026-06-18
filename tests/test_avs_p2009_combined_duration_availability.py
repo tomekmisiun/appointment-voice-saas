@@ -48,8 +48,14 @@ def _setup(db):
 
 
 def _next_matching_weekday(weekday: int) -> date:
+    """Next future date matching weekday, never today -- the working-hours
+    window in these tests starts at 9:00, and `get_available_slots*()`
+    filters out any slot that has already started, so returning today's
+    date would make these tests flaky depending on what time they run."""
     today = date.today()
     offset = (weekday - today.weekday()) % 7
+    if offset == 0:
+        offset = 7
     return today + timedelta(days=offset)
 
 
