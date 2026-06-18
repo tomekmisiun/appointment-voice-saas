@@ -10,6 +10,7 @@ from app.core.ivr import IvrAction, IvrOption, IvrResponse
 from app.models.booking import BookingSource
 from app.models.business import BookingMode, TransferDestinationPolicy
 from app.models.voice_session import IvrStep, VoiceSession
+from app.models.working_hours import WorkingHours
 from app.services.availability_service import get_available_slots
 from app.services.booking_service import (
     cancel_booking,
@@ -26,7 +27,7 @@ from app.services.notification_service import (
     enqueue_send_notification_job,
 )
 from app.services.service_service import list_services, require_service
-from app.services.staff_service import get_eligible_transfer_staff
+from app.services.staff_service import get_eligible_transfer_staff, list_staff
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +137,8 @@ def handle_keypress(
         return _handle_incoming(db, session, key)
     if session.step == IvrStep.SERVICE_SELECTION:
         return _handle_service_selection(db, session, key)
+    if session.step == IvrStep.STAFF_SELECTION:
+        return _handle_staff_selection(db, session, key)
     if session.step == IvrStep.SLOT_SELECTION:
         return _handle_slot_selection(db, session, key)
     if session.step == IvrStep.TRANSFER_UNAVAILABLE:
@@ -235,6 +238,11 @@ def _reprompt_for_no_input(db: Session, session: VoiceSession) -> IvrResponse:
             f"press {o.key} for {o.label}" for o in options
         ) + "."
         return IvrResponse(prompt=prompt, options=options, session_id=session.id)
+
+    if session.step == IvrStep.STAFF_SELECTION:
+        service = require_service(db, session.selected_service_id, session.tenant_id)
+        staff_members = _schedulable_staff(db, session.business_id, session.tenant_id)
+        return _staff_selection_response(session.id, staff_members, service.name)
 
     if session.step == IvrStep.SLOT_SELECTION:
         candidates: list[dict] = json.loads(session.slot_candidates or "[]")
@@ -621,10 +629,60 @@ def _handle_service_selection(
         )
 
     selected_service = services[idx]
-    slots = _find_slots(db, session=session, service_id=selected_service.id)
+    session.selected_service_id = selected_service.id
+
+    staff_members = _schedulable_staff(db, session.business_id, session.tenant_id)
+    if len(staff_members) <= 1:
+        # Nothing meaningful to choose between: auto-select the lone staff
+        # member (if any) and skip straight to slot search.
+        session.selected_staff_id = staff_members[0].id if staff_members else None
+        return _proceed_to_slot_search(db, session, selected_service)
+
+    session.step = IvrStep.STAFF_SELECTION
+    db.commit()
+    return _staff_selection_response(session.id, staff_members, selected_service.name)
+
+
+def _handle_staff_selection(db: Session, session: VoiceSession, key: str) -> IvrResponse:
+    service = require_service(db, session.selected_service_id, session.tenant_id)
+    staff_members = _schedulable_staff(db, session.business_id, session.tenant_id)
+
+    if key == "0":
+        session.selected_staff_id = None
+        return _proceed_to_slot_search(db, session, service)
+
+    try:
+        idx = int(key) - 1
+        if idx < 0 or idx >= len(staff_members[:9]):
+            raise ValueError
+    except ValueError:
+        return _handle_invalid_key(
+            db, session, _staff_selection_response(session.id, staff_members, service.name)
+        )
+
+    session.selected_staff_id = staff_members[idx].id
+    return _proceed_to_slot_search(db, session, service)
+
+
+def _staff_selection_response(
+    session_id: int, staff_members: list, service_name: str
+) -> IvrResponse:
+    options = tuple(
+        IvrOption(key=str(i + 1), label=member.name)
+        for i, member in enumerate(staff_members[:9])
+    ) + (IvrOption(key="0", label="Any available staff member"),)
+    prompt = f"Who would you like to book your {service_name} with? " + ", ".join(
+        f"press {o.key} for {o.label}" for o in options
+    ) + "."
+    return IvrResponse(prompt=prompt, options=options, session_id=session_id)
+
+
+def _proceed_to_slot_search(db: Session, session: VoiceSession, selected_service) -> IvrResponse:
+    slots = _find_slots(
+        db, session=session, service_id=selected_service.id, staff_id=session.selected_staff_id
+    )
 
     if not slots:
-        session.selected_service_id = selected_service.id
         session.step = IvrStep.NO_SLOTS
         db.commit()
         return IvrResponse(
@@ -635,7 +693,6 @@ def _handle_service_selection(
             action=IvrAction.END,
         )
 
-    session.selected_service_id = selected_service.id
     session.slot_candidates = json.dumps([
         {"start": s.isoformat(), "end": e.isoformat()}
         for s, e in slots
@@ -758,11 +815,36 @@ def _main_menu_response(
     )
 
 
+def _schedulable_staff(db: Session, business_id: int, tenant_id: int) -> list:
+    """Active staff who have at least one staff-specific working-hours row.
+
+    get_available_slots() matches a given staff_id only against that staff
+    member's own WorkingHours rows, with no fallback to business-level
+    hours. Offering a staff member with no configured schedule in the IVR
+    menu would therefore always dead-end in "no slots available", so they
+    are excluded here rather than surfaced as a selectable option.
+    """
+    staff_members = list_staff(db, business_id, tenant_id)
+    scheduled_ids = {
+        row[0]
+        for row in db.query(WorkingHours.staff_id)
+        .filter(
+            WorkingHours.business_id == business_id,
+            WorkingHours.tenant_id == tenant_id,
+            WorkingHours.staff_id.isnot(None),
+        )
+        .distinct()
+        .all()
+    }
+    return [s for s in staff_members if s.id in scheduled_ids]
+
+
 def _find_slots(
     db: Session,
     *,
     session: VoiceSession,
     service_id: int,
+    staff_id: int | None = None,
 ) -> list[tuple[datetime, datetime]]:
     today = date.today()
     collected: list[tuple[datetime, datetime]] = []
@@ -773,7 +855,7 @@ def _find_slots(
             tenant_id=session.tenant_id,
             business_id=session.business_id,
             service_id=service_id,
-            staff_id=None,
+            staff_id=staff_id,
             query_date=day,
         )
         collected.extend(day_slots)

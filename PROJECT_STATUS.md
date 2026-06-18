@@ -191,9 +191,9 @@ Two independent dimensions added to `Business`:
 
 ## Not Implemented (Expansion Backlog)
 
-Audited 2026-06-17, updated 2026-06-17 after P1-001 through P1-013 (see below)
-and P2-001 through P2-005.
-50 P1–P4 items checked; 16 fully implemented, 4 partially, 2 already covered by
+Audited 2026-06-17, updated 2026-06-18 after P1-001 through P1-013 (see below)
+and P2-001 through P2-006.
+50 P1–P4 items checked; 17 fully implemented, 4 partially, 2 already covered by
 MVP infrastructure.
 
 **P1 — Must-have for pilot:**
@@ -234,10 +234,9 @@ MVP infrastructure.
 - DONE (covered by MVP): exponential backoff (`calculate_retry_delay_seconds()`).
 
 **P2 — High business impact:**
-- NOT_IMPLEMENTED: preferred staff selection, last-staff suggestion,
-  multi-service appointments, combined-duration availability, waitlist
-  model, waitlist-on-cancellation offer, waitlist timeout/escalation, owner
-  metrics API, CSV export.
+- NOT_IMPLEMENTED: last-staff suggestion, multi-service appointments,
+  combined-duration availability, waitlist model, waitlist-on-cancellation
+  offer, waitlist timeout/escalation, owner metrics API, CSV export.
 - DONE: CRM clients table — `Client` model (name/email/phone/notes), optionally
   linked 1:1 to a `Customer` via `customer_id`; CRUD at
   `/businesses/{business_id}/clients` (P2-001), bookings linked to clients —
@@ -251,7 +250,16 @@ MVP infrastructure.
   — anonymizes PII on the `Customer` and any linked `Client` rather than
   hard-deleting (no `ON DELETE` clause on `Booking.customer_id`, and a hard
   delete would break the booking/audit trail); applies regardless of
-  booking status (P2-005).
+  booking status (P2-005), preferred staff selection in the IVR — new
+  `STAFF_SELECTION` step between service and slot selection, offered only
+  when 2+ active staff have a configured staff-specific working-hours
+  schedule (`get_available_slots()` matches `staff_id` strictly against
+  that staff member's own hours with no business-level fallback, so an
+  unscheduled staff member would always dead-end in "no slots"); 0 or 1
+  schedulable staff auto-skips the step; caller can press 0 for "any
+  available staff"; the pre-existing `VoiceSession.selected_staff_id`
+  column is now actually populated and threaded through to slot search and
+  `create_booking()` (P2-006).
 
 **P3 — Operational extensions:**
 - NOT_IMPLEMENTED: salon/staff hours intersection, recurring staff blocks,
