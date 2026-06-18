@@ -2,6 +2,7 @@ from app.models.audit_log import AuditLog
 from app.models.owner_lead import OwnerLead
 from app.models.availability_exception import AvailabilityException
 from app.models.booking import Booking
+from app.models.booking_line_item import BookingLineItem
 from app.models.business import Business
 from app.models.calendar_event import CalendarEvent
 from app.models.calendar_integration import CalendarIntegration
@@ -26,6 +27,7 @@ __all__ = [
     "BusinessTransferHours",
     "AvailabilityException",
     "Booking",
+    "BookingLineItem",
     "Business",
     "CalendarEvent",
     "CalendarIntegration",
