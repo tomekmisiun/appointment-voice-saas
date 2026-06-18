@@ -192,8 +192,8 @@ Two independent dimensions added to `Business`:
 ## Not Implemented (Expansion Backlog)
 
 Audited 2026-06-17, updated 2026-06-18 after P1-001 through P1-013 (see below)
-and P2-001 through P2-009.
-50 P1–P4 items checked; 20 fully implemented, 4 partially, 2 already covered by
+and P2-001 through P2-010.
+50 P1–P4 items checked; 21 fully implemented, 4 partially, 2 already covered by
 MVP infrastructure.
 
 **P1 — Must-have for pilot:**
@@ -234,7 +234,7 @@ MVP infrastructure.
 - DONE (covered by MVP): exponential backoff (`calculate_retry_delay_seconds()`).
 
 **P2 — High business impact:**
-- NOT_IMPLEMENTED: waitlist model, waitlist-on-cancellation offer, waitlist
+- NOT_IMPLEMENTED: waitlist-on-cancellation offer, waitlist
   timeout/escalation, owner metrics API, CSV export.
 - DONE: CRM clients table — `Client` model (name/email/phone/notes), optionally
   linked 1:1 to a `Customer` via `customer_id`; CRUD at
@@ -281,7 +281,13 @@ MVP infrastructure.
   private slot-generation core, parameterized by duration, so the existing
   single-service function/signature/call sites (IVR, availability API) are
   unchanged; not yet wired into `create_booking()` or the IVR flow itself
-  (P2-009).
+  (P2-009), waitlist model — new `WaitlistEntry` model/table
+  (`customer_id`, `service_id`, optional `staff_id` for a preferred staff
+  member, `desired_date`, `status`: WAITING/OFFERED/CONFIRMED/EXPIRED/
+  CANCELLED on a plain `String` column); `create_waitlist_entry()`/
+  `list_waitlist_entries()`/`update_waitlist_entry_status()` in new
+  `waitlist_service.py`; not yet wired into the cancellation flow
+  (P2-011) or offer timeout/escalation (P2-012) (P2-010).
 
 **P3 — Operational extensions:**
 - NOT_IMPLEMENTED: salon/staff hours intersection, recurring staff blocks,
