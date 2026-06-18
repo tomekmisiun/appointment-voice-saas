@@ -7,6 +7,7 @@ from app.core.domain_errors import ConflictError, NotFoundError
 from app.models.audit_log import AuditAction
 from app.models.booking import Booking, BookingSource, BookingStatus
 from app.models.booking_line_item import BookingLineItem
+from app.models.waitlist_entry import WaitlistEntryStatus
 from app.services.audit_log_service import create_audit_log
 from app.services.business_service import require_business
 from app.services.customer_service import require_customer
@@ -20,9 +21,11 @@ from app.services.notification_service import (
     enqueue_booking_cancellation,
     enqueue_booking_confirmation,
     enqueue_send_notification_job,
+    enqueue_waitlist_offer,
 )
 from app.services.service_service import require_service
 from app.services.staff_service import require_staff
+from app.services.waitlist_service import find_matching_waitlist_entries
 
 
 def _check_double_booking(
@@ -283,10 +286,30 @@ def cancel_booking(
         service=service,
     )
     cancellation_intent_ids = [intent.id for intent in cancellation_intents]
+
+    matching_entries = find_matching_waitlist_entries(
+        db,
+        business_id=booking.business_id,
+        tenant_id=tenant_id,
+        service_id=booking.service_id,
+        desired_date=booking.starts_at.date(),
+        staff_id=booking.staff_id,
+    )
+    waitlist_notification_ids = []
+    for entry in matching_entries:
+        entry.status = WaitlistEntryStatus.OFFERED
+        waitlist_customer = require_customer(db, entry.customer_id, tenant_id)
+        offer_intent = enqueue_waitlist_offer(
+            db, entry=entry, business=business, customer=waitlist_customer, service=service,
+        )
+        waitlist_notification_ids.append(offer_intent.id)
+
     cal_event = get_calendar_event_for_booking(db, booking.id, tenant_id)
     db.commit()
     db.refresh(booking)
     for notification_id in cancellation_intent_ids:
+        enqueue_send_notification_job(notification_id)
+    for notification_id in waitlist_notification_ids:
         enqueue_send_notification_job(notification_id)
     if cal_event is not None:
         enqueue_cancel_calendar_event_job(cal_event.id)

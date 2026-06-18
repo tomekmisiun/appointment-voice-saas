@@ -192,8 +192,8 @@ Two independent dimensions added to `Business`:
 ## Not Implemented (Expansion Backlog)
 
 Audited 2026-06-17, updated 2026-06-18 after P1-001 through P1-013 (see below)
-and P2-001 through P2-010.
-50 P1–P4 items checked; 21 fully implemented, 4 partially, 2 already covered by
+and P2-001 through P2-011.
+50 P1–P4 items checked; 22 fully implemented, 4 partially, 2 already covered by
 MVP infrastructure.
 
 **P1 — Must-have for pilot:**
@@ -234,8 +234,8 @@ MVP infrastructure.
 - DONE (covered by MVP): exponential backoff (`calculate_retry_delay_seconds()`).
 
 **P2 — High business impact:**
-- NOT_IMPLEMENTED: waitlist-on-cancellation offer, waitlist
-  timeout/escalation, owner metrics API, CSV export.
+- NOT_IMPLEMENTED: waitlist timeout/escalation, owner metrics API, CSV
+  export.
 - DONE: CRM clients table — `Client` model (name/email/phone/notes), optionally
   linked 1:1 to a `Customer` via `customer_id`; CRUD at
   `/businesses/{business_id}/clients` (P2-001), bookings linked to clients —
@@ -287,7 +287,17 @@ MVP infrastructure.
   CANCELLED on a plain `String` column); `create_waitlist_entry()`/
   `list_waitlist_entries()`/`update_waitlist_entry_status()` in new
   `waitlist_service.py`; not yet wired into the cancellation flow
-  (P2-011) or offer timeout/escalation (P2-012) (P2-010).
+  (P2-011) or offer timeout/escalation (P2-012) (P2-010), offer waitlist
+  after cancellation — `cancel_booking()` now calls new
+  `find_matching_waitlist_entries()` (business/service/desired_date, plus
+  staff: entries with no staff preference always match, entries wanting a
+  specific staff member only match if that's the staff member who just
+  freed up) and transitions every matching WAITING entry to OFFERED,
+  enqueuing a new `WAITLIST_OFFER` SMS notification (`NotificationPurpose`
+  value on the existing `String` `purpose` column, no DDL change) via
+  `enqueue_waitlist_offer()`; notifies all eligible entries, not just
+  one — picking a single winner and expiring the rest is P2-012's job
+  (P2-011).
 
 **P3 — Operational extensions:**
 - NOT_IMPLEMENTED: salon/staff hours intersection, recurring staff blocks,

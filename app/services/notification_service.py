@@ -17,6 +17,7 @@ from app.models.notification_outbox import (
     NotificationStatus,
 )
 from app.models.service import Service
+from app.models.waitlist_entry import WaitlistEntry
 from app.services.business_service import require_business
 from app.services.customer_service import require_customer
 from app.services.service_service import require_service
@@ -117,6 +118,32 @@ def enqueue_booking_cancellation(
         db.add(intent)
     db.flush()
     return intents
+
+
+def enqueue_waitlist_offer(
+    db: Session,
+    *,
+    entry: WaitlistEntry,
+    business: Business,
+    customer: Customer,
+    service: Service,
+) -> NotificationOutbox:
+    when = entry.desired_date.strftime("%Y-%m-%d")
+    intent = NotificationOutbox(
+        tenant_id=entry.tenant_id,
+        business_id=entry.business_id,
+        booking_id=None,
+        channel=NotificationChannel.SMS,
+        purpose=NotificationPurpose.WAITLIST_OFFER,
+        recipient_phone=customer.phone,
+        body=(
+            f"Good news! A {service.name} slot opened up at {business.name} "
+            f"on {when}. Call us to book it."
+        ),
+    )
+    db.add(intent)
+    db.flush()
+    return intent
 
 
 def enqueue_external_booking_link_sms(
