@@ -286,18 +286,26 @@ MVP infrastructure.
   member, `desired_date`, `status`: WAITING/OFFERED/CONFIRMED/EXPIRED/
   CANCELLED on a plain `String` column); `create_waitlist_entry()`/
   `list_waitlist_entries()`/`update_waitlist_entry_status()` in new
-  `waitlist_service.py`; not yet wired into the cancellation flow
-  (P2-011) or offer timeout/escalation (P2-012) (P2-010), offer waitlist
+  `waitlist_service.py` (P2-010), offer waitlist
   after cancellation — `cancel_booking()` now calls new
   `find_matching_waitlist_entries()` (business/service/desired_date, plus
   staff: entries with no staff preference always match, entries wanting a
   specific staff member only match if that's the staff member who just
-  freed up) and transitions every matching WAITING entry to OFFERED,
-  enqueuing a new `WAITLIST_OFFER` SMS notification (`NotificationPurpose`
-  value on the existing `String` `purpose` column, no DDL change) via
-  `enqueue_waitlist_offer()`; notifies all eligible entries, not just
-  one — picking a single winner and expiring the rest is P2-012's job
-  (P2-011).
+  freed up) and transitions only the oldest matching WAITING entry to
+  OFFERED, recording the freed slot's staff on new `offered_for_staff_id`
+  column (migration `p2012a2b3c4d5e`) and enqueuing a new `WAITLIST_OFFER`
+  SMS notification (`NotificationPurpose` value on the existing `String`
+  `purpose` column, no DDL change) via `enqueue_waitlist_offer()`; the rest
+  stay WAITING (P2-011), waitlist timeout/escalation — new
+  `expire_stale_waitlist_offers()` runs from `run_scheduled_maintenance()`,
+  expires OFFERED entries idle longer than
+  `settings.waitlist_offer_timeout_minutes` (default 60) and offers the
+  next-oldest eligible WAITING entry in their place, matched against the
+  expired entry's `offered_for_staff_id` (not its own `staff_id`
+  preference, which can be NULL even when the freed slot belonged to a
+  specific staff member) via the same
+  `find_matching_waitlist_entries()`/`enqueue_waitlist_offer()` path
+  (P2-012).
 
 **P3 — Operational extensions:**
 - NOT_IMPLEMENTED: salon/staff hours intersection, recurring staff blocks,

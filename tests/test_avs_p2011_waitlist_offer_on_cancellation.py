@@ -2,9 +2,10 @@
 
 cancel_booking() now looks up WAITING WaitlistEntry rows matching the
 cancelled booking's business/service/date (and staff, if the entry asked
-for a specific one), transitions each match to OFFERED, and enqueues a
-WAITLIST_OFFER SMS notification. Picking a single winner and expiring the
-rest is P2-012's job -- this only triggers the notification.
+for a specific one), transitions the oldest match to OFFERED, and enqueues
+a WAITLIST_OFFER SMS notification. Only the oldest match is offered -- the
+rest stay WAITING; if the offered customer doesn't respond in time,
+P2-012's expire_stale_waitlist_offers() escalates to the next one.
 """
 from datetime import date, datetime, time, timedelta, timezone
 
@@ -164,7 +165,7 @@ def test_entry_with_no_staff_preference_is_offered_regardless_of_cancelled_staff
     assert entry.status == WaitlistEntryStatus.OFFERED
 
 
-def test_multiple_eligible_entries_are_all_offered(db):
+def test_multiple_eligible_entries_only_oldest_is_offered(db):
     tenant_id, biz, svc = _setup(db)
     desired = _future_date()
     starts_at = datetime.combine(desired, time(10, 0), tzinfo=timezone.utc)
@@ -190,7 +191,7 @@ def test_multiple_eligible_entries_are_all_offered(db):
     db.refresh(entry1)
     db.refresh(entry2)
     assert entry1.status == WaitlistEntryStatus.OFFERED
-    assert entry2.status == WaitlistEntryStatus.OFFERED
+    assert entry2.status == WaitlistEntryStatus.WAITING
 
 
 def test_already_offered_entry_is_not_re_offered(db):

@@ -296,8 +296,10 @@ def cancel_booking(
         staff_id=booking.staff_id,
     )
     waitlist_notification_ids = []
-    for entry in matching_entries:
+    if matching_entries:
+        entry = matching_entries[0]
         entry.status = WaitlistEntryStatus.OFFERED
+        entry.offered_for_staff_id = booking.staff_id
         waitlist_customer = require_customer(db, entry.customer_id, tenant_id)
         offer_intent = enqueue_waitlist_offer(
             db, entry=entry, business=business, customer=waitlist_customer, service=service,
