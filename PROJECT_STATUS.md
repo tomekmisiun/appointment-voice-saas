@@ -192,8 +192,8 @@ Two independent dimensions added to `Business`:
 ## Not Implemented (Expansion Backlog)
 
 Audited 2026-06-17, updated 2026-06-18 after P1-001 through P1-013 (see below)
-and P2-001 through P2-006.
-50 P1–P4 items checked; 17 fully implemented, 4 partially, 2 already covered by
+and P2-001 through P2-007.
+50 P1–P4 items checked; 18 fully implemented, 4 partially, 2 already covered by
 MVP infrastructure.
 
 **P1 — Must-have for pilot:**
@@ -234,9 +234,9 @@ MVP infrastructure.
 - DONE (covered by MVP): exponential backoff (`calculate_retry_delay_seconds()`).
 
 **P2 — High business impact:**
-- NOT_IMPLEMENTED: last-staff suggestion, multi-service appointments,
-  combined-duration availability, waitlist model, waitlist-on-cancellation
-  offer, waitlist timeout/escalation, owner metrics API, CSV export.
+- NOT_IMPLEMENTED: multi-service appointments, combined-duration
+  availability, waitlist model, waitlist-on-cancellation offer, waitlist
+  timeout/escalation, owner metrics API, CSV export.
 - DONE: CRM clients table — `Client` model (name/email/phone/notes), optionally
   linked 1:1 to a `Customer` via `customer_id`; CRUD at
   `/businesses/{business_id}/clients` (P2-001), bookings linked to clients —
@@ -259,7 +259,13 @@ MVP infrastructure.
   schedulable staff auto-skips the step; caller can press 0 for "any
   available staff"; the pre-existing `VoiceSession.selected_staff_id`
   column is now actually populated and threaded through to slot search and
-  `create_booking()` (P2-006).
+  `create_booking()` (P2-006), suggest last staff member — new
+  `get_last_staff_booking()` looks up the caller's most recent past booking
+  (matched by phone, same scoping as the P2-003 returning-caller greeting)
+  with a `staff_id` set; if still active/schedulable, that staff member is
+  reordered to the front of the staff-selection menu (always option "1")
+  and called out by name; no history, or a no-longer-eligible last staff
+  member, leaves the P2-006 menu unaffected (P2-007).
 
 **P3 — Operational extensions:**
 - NOT_IMPLEMENTED: salon/staff hours intersection, recurring staff blocks,

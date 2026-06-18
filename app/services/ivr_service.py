@@ -15,6 +15,7 @@ from app.services.availability_service import get_available_slots
 from app.services.booking_service import (
     cancel_booking,
     create_booking,
+    get_last_staff_booking,
     get_next_confirmed_booking,
     require_booking,
     reschedule_booking,
@@ -242,7 +243,10 @@ def _reprompt_for_no_input(db: Session, session: VoiceSession) -> IvrResponse:
     if session.step == IvrStep.STAFF_SELECTION:
         service = require_service(db, session.selected_service_id, session.tenant_id)
         staff_members = _schedulable_staff(db, session.business_id, session.tenant_id)
-        return _staff_selection_response(session.id, staff_members, service.name)
+        staff_members, preferred_staff_id = _reorder_preferred_staff(db, session, staff_members)
+        return _staff_selection_response(
+            session.id, staff_members, service.name, preferred_staff_id=preferred_staff_id
+        )
 
     if session.step == IvrStep.SLOT_SELECTION:
         candidates: list[dict] = json.loads(session.slot_candidates or "[]")
@@ -638,14 +642,18 @@ def _handle_service_selection(
         session.selected_staff_id = staff_members[0].id if staff_members else None
         return _proceed_to_slot_search(db, session, selected_service)
 
+    staff_members, preferred_staff_id = _reorder_preferred_staff(db, session, staff_members)
     session.step = IvrStep.STAFF_SELECTION
     db.commit()
-    return _staff_selection_response(session.id, staff_members, selected_service.name)
+    return _staff_selection_response(
+        session.id, staff_members, selected_service.name, preferred_staff_id=preferred_staff_id
+    )
 
 
 def _handle_staff_selection(db: Session, session: VoiceSession, key: str) -> IvrResponse:
     service = require_service(db, session.selected_service_id, session.tenant_id)
     staff_members = _schedulable_staff(db, session.business_id, session.tenant_id)
+    staff_members, preferred_staff_id = _reorder_preferred_staff(db, session, staff_members)
 
     if key == "0":
         session.selected_staff_id = None
@@ -657,23 +665,76 @@ def _handle_staff_selection(db: Session, session: VoiceSession, key: str) -> Ivr
             raise ValueError
     except ValueError:
         return _handle_invalid_key(
-            db, session, _staff_selection_response(session.id, staff_members, service.name)
+            db,
+            session,
+            _staff_selection_response(
+                session.id, staff_members, service.name, preferred_staff_id=preferred_staff_id
+            ),
         )
 
     session.selected_staff_id = staff_members[idx].id
     return _proceed_to_slot_search(db, session, service)
 
 
+def _last_used_staff_id(db: Session, session: VoiceSession) -> int | None:
+    """staff_id from the caller's most recent past booking with this
+    business, used to fast-path the staff-selection menu (P2-007). Matches
+    the caller phone to a Customer the same way the returning-caller
+    greeting does (P2-003), so it never crosses business/tenant boundaries."""
+    customer = get_customer_by_phone(
+        db,
+        business_id=session.business_id,
+        tenant_id=session.tenant_id,
+        phone=session.caller_phone,
+    )
+    if customer is None:
+        return None
+    last_booking = get_last_staff_booking(
+        db,
+        business_id=session.business_id,
+        tenant_id=session.tenant_id,
+        customer_id=customer.id,
+    )
+    return last_booking.staff_id if last_booking is not None else None
+
+
+def _reorder_preferred_staff(
+    db: Session, session: VoiceSession, staff_members: list
+) -> tuple[list, int | None]:
+    """Move the caller's last-used staff member (if still active and
+    schedulable) to the front of the menu so it's offered as option 1."""
+    preferred_id = _last_used_staff_id(db, session)
+    if preferred_id is None:
+        return staff_members, None
+    preferred = [s for s in staff_members if s.id == preferred_id]
+    if not preferred:
+        return staff_members, None
+    others = [s for s in staff_members if s.id != preferred_id]
+    return preferred + others, preferred_id
+
+
 def _staff_selection_response(
-    session_id: int, staff_members: list, service_name: str
+    session_id: int,
+    staff_members: list,
+    service_name: str,
+    *,
+    preferred_staff_id: int | None = None,
 ) -> IvrResponse:
     options = tuple(
         IvrOption(key=str(i + 1), label=member.name)
         for i, member in enumerate(staff_members[:9])
     ) + (IvrOption(key="0", label="Any available staff member"),)
-    prompt = f"Who would you like to book your {service_name} with? " + ", ".join(
-        f"press {o.key} for {o.label}" for o in options
-    ) + "."
+
+    parts = []
+    for i, member in enumerate(staff_members[:9]):
+        key = str(i + 1)
+        if preferred_staff_id is not None and member.id == preferred_staff_id:
+            parts.append(f"press {key} for {member.name}, who you saw last time")
+        else:
+            parts.append(f"press {key} for {member.name}")
+    parts.append("press 0 for any available staff member")
+
+    prompt = f"Who would you like to book your {service_name} with? " + ", ".join(parts) + "."
     return IvrResponse(prompt=prompt, options=options, session_id=session_id)
 
 
