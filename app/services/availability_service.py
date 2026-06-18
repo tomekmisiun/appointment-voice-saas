@@ -50,6 +50,56 @@ def get_available_slots(
         staff = require_staff(db, staff_id, tenant_id)
         if staff.business_id != business_id:
             raise NotFoundError("Staff member not found")
+    return _get_available_slots_for_duration(
+        db,
+        business=business,
+        business_id=business_id,
+        tenant_id=tenant_id,
+        staff_id=staff_id,
+        duration_minutes=svc.duration_minutes,
+        query_date=query_date,
+    )
+
+
+def get_available_slots_for_total_duration(
+    db: Session,
+    *,
+    tenant_id: int,
+    business_id: int,
+    total_duration_minutes: int,
+    staff_id: int | None,
+    query_date: date,
+) -> list[tuple[datetime, datetime]]:
+    """Like get_available_slots(), but for a combined duration across
+    multiple services (P2-008/P2-009) rather than a single service_id's
+    duration_minutes. Used to search availability for a multi-service
+    appointment built from BookingLineItem rows."""
+    business = require_business(db, business_id, tenant_id)
+    if staff_id is not None:
+        staff = require_staff(db, staff_id, tenant_id)
+        if staff.business_id != business_id:
+            raise NotFoundError("Staff member not found")
+    return _get_available_slots_for_duration(
+        db,
+        business=business,
+        business_id=business_id,
+        tenant_id=tenant_id,
+        staff_id=staff_id,
+        duration_minutes=total_duration_minutes,
+        query_date=query_date,
+    )
+
+
+def _get_available_slots_for_duration(
+    db: Session,
+    *,
+    business,
+    business_id: int,
+    tenant_id: int,
+    staff_id: int | None,
+    duration_minutes: int,
+    query_date: date,
+) -> list[tuple[datetime, datetime]]:
     tz = ZoneInfo(business.timezone)
     day_of_week = query_date.weekday()  # 0=Monday, 6=Sunday
 
@@ -95,14 +145,14 @@ def get_available_slots(
         for exc in special_hours:
             candidate_starts.extend(
                 _slots_in_window(
-                    query_date, exc.start_time, exc.end_time, svc.duration_minutes, tz
+                    query_date, exc.start_time, exc.end_time, duration_minutes, tz
                 )
             )
     else:
         for wh in working_hours:
             candidate_starts.extend(
                 _slots_in_window(
-                    query_date, wh.start_time, wh.end_time, svc.duration_minutes, tz
+                    query_date, wh.start_time, wh.end_time, duration_minutes, tz
                 )
             )
 
@@ -125,7 +175,7 @@ def get_available_slots(
         booking_query = booking_query.filter(Booking.staff_id == staff_id)
     bookings = booking_query.all()
 
-    duration = timedelta(minutes=svc.duration_minutes)
+    duration = timedelta(minutes=duration_minutes)
     now_utc = datetime.now(tz=timezone.utc)
 
     free: list[tuple[datetime, datetime]] = []
