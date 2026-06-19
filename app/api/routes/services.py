@@ -9,7 +9,7 @@ from app.services.service_service import (
     create_service,
     delete_service,
     list_services,
-    require_service,
+    require_service_in_business,
     update_service,
 )
 
@@ -61,7 +61,7 @@ def get_service_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return require_service(db, service_id, current_user.tenant_id)
+    return require_service_in_business(db, service_id, business_id, current_user.tenant_id)
 
 
 @router.delete("/{service_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -85,6 +85,7 @@ def update_service_endpoint(
     return update_service(
         db,
         service_id,
+        business_id,
         current_user.tenant_id,
         name=body.name,
         duration_minutes=body.duration_minutes,

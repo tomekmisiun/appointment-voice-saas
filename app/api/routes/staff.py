@@ -8,7 +8,7 @@ from app.schemas.staff import StaffCreate, StaffRead, StaffUpdate
 from app.services.staff_service import (
     create_staff,
     list_staff,
-    require_staff,
+    require_staff_in_business,
     update_staff,
 )
 
@@ -58,7 +58,7 @@ def get_staff_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return require_staff(db, staff_id, current_user.tenant_id)
+    return require_staff_in_business(db, staff_id, business_id, current_user.tenant_id)
 
 
 @router.patch("/{staff_id}", response_model=StaffRead)
@@ -72,6 +72,7 @@ def update_staff_endpoint(
     return update_staff(
         db,
         staff_id,
+        business_id,
         current_user.tenant_id,
         name=body.name,
         phone=body.phone,

@@ -4,7 +4,7 @@ from app.core.domain_errors import ConflictError, NotFoundError
 from app.models.booking import Booking
 from app.models.client import Client
 from app.services.business_service import require_business
-from app.services.customer_service import require_customer
+from app.services.customer_service import require_customer_in_business
 
 
 def create_client(
@@ -20,7 +20,7 @@ def create_client(
 ) -> Client:
     require_business(db, business_id, tenant_id)
     if customer_id is not None:
-        require_customer(db, customer_id, tenant_id)
+        require_customer_in_business(db, customer_id, business_id, tenant_id)
         existing = (
             db.query(Client)
             .filter(Client.business_id == business_id, Client.customer_id == customer_id)
@@ -55,6 +55,17 @@ def get_client(db: Session, client_id: int, tenant_id: int) -> Client | None:
 def require_client(db: Session, client_id: int, tenant_id: int) -> Client:
     client = get_client(db, client_id, tenant_id)
     if client is None:
+        raise NotFoundError("Client not found")
+    return client
+
+
+def require_client_in_business(
+    db: Session, client_id: int, business_id: int, tenant_id: int
+) -> Client:
+    """Like require_client(), but also rejects a client that belongs to a
+    different business within the same tenant."""
+    client = require_client(db, client_id, tenant_id)
+    if client.business_id != business_id:
         raise NotFoundError("Client not found")
     return client
 
@@ -94,6 +105,7 @@ def list_clients(
 def get_bookings_for_client(
     db: Session,
     client_id: int,
+    business_id: int,
     tenant_id: int,
     *,
     skip: int = 0,
@@ -104,12 +116,16 @@ def get_bookings_for_client(
     unique per business (from P2-001), so Booking -> Customer -> Client is
     a complete, non-duplicated path. A client with no linked customer has
     no booking history by definition."""
-    client = require_client(db, client_id, tenant_id)
+    client = require_client_in_business(db, client_id, business_id, tenant_id)
     if client.customer_id is None:
         return []
     return (
         db.query(Booking)
-        .filter(Booking.customer_id == client.customer_id, Booking.tenant_id == tenant_id)
+        .filter(
+            Booking.customer_id == client.customer_id,
+            Booking.business_id == business_id,
+            Booking.tenant_id == tenant_id,
+        )
         .order_by(Booking.starts_at.desc())
         .offset(skip)
         .limit(limit)
@@ -120,6 +136,7 @@ def get_bookings_for_client(
 def update_client(
     db: Session,
     client_id: int,
+    business_id: int,
     tenant_id: int,
     *,
     name: str | None = None,
@@ -127,7 +144,7 @@ def update_client(
     phone: str | None = None,
     notes: str | None = None,
 ) -> Client:
-    client = require_client(db, client_id, tenant_id)
+    client = require_client_in_business(db, client_id, business_id, tenant_id)
     if name is not None:
         client.name = name
     if email is not None:

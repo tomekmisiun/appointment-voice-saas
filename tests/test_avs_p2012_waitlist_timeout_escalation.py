@@ -190,7 +190,7 @@ def test_escalation_after_cancellation_for_specific_staff_finds_staff_preferring
         service_id=svc.id, desired_date=desired, staff_id=staff_a.id,
     )
 
-    cancel_booking(db, booking.id, tenant_id, reason="customer_request")
+    cancel_booking(db, booking.id, biz.id, tenant_id, reason="customer_request")
 
     db.refresh(no_pref_entry)
     db.refresh(wants_a_entry)
@@ -245,7 +245,7 @@ def test_cancellation_then_timeout_escalates_to_next_waiting_entry(db):
         service_id=svc.id, desired_date=desired,
     )
 
-    cancel_booking(db, booking.id, tenant_id, reason="customer_request")
+    cancel_booking(db, booking.id, biz.id, tenant_id, reason="customer_request")
 
     db.refresh(first_entry)
     db.refresh(second_entry)

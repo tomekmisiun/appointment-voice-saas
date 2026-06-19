@@ -19,8 +19,8 @@ from app.models.notification_outbox import (
 from app.models.service import Service
 from app.models.waitlist_entry import WaitlistEntry
 from app.services.business_service import require_business
-from app.services.customer_service import require_customer
-from app.services.service_service import require_service
+from app.services.customer_service import require_customer_in_business
+from app.services.service_service import require_service_in_business
 from app.services.sms_provider import SmsProvider, get_sms_provider
 
 SEND_NOTIFICATION_JOB = "send_notification"
@@ -201,8 +201,10 @@ def enqueue_due_reminders(db: Session) -> int:
             continue
 
         business = require_business(db, booking.business_id, booking.tenant_id)
-        customer = require_customer(db, booking.customer_id, booking.tenant_id)
-        service = require_service(db, booking.service_id, booking.tenant_id)
+        customer = require_customer_in_business(
+            db, booking.customer_id, booking.business_id, booking.tenant_id
+        )
+        service = require_service_in_business(db, booking.service_id, booking.business_id, booking.tenant_id)
         when = _format_local_time(booking.starts_at, business)
 
         intent = NotificationOutbox(

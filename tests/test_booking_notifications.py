@@ -155,7 +155,7 @@ def test_cancel_booking_enqueues_customer_and_business_cancellation(db):
         starts_at=_STARTS_AT,
     )
 
-    cancel_booking(db, booking.id, tenant_id, reason="Client request")
+    cancel_booking(db, booking.id, biz.id, tenant_id, reason="Client request")
 
     intents = _outbox_for_booking(db, booking.id)
     cancellation_intents = [
@@ -187,7 +187,7 @@ def test_cancel_booking_skips_business_intent_without_business_phone(db):
         starts_at=_STARTS_AT,
     )
 
-    cancel_booking(db, booking.id, tenant_id, reason="Client request")
+    cancel_booking(db, booking.id, biz.id, tenant_id, reason="Client request")
 
     intents = _outbox_for_booking(db, booking.id)
     cancellation_intents = [

@@ -86,7 +86,9 @@ def test_cancel_booking(db, domain_setup):
         starts_at=_dt(2026, 7, 1, 10),
     )
 
-    cancelled = cancel_booking(db, booking.id, s["tenant_id"], reason="Customer request")
+    cancelled = cancel_booking(
+        db, booking.id, s["business_id"], s["tenant_id"], reason="Customer request"
+    )
 
     assert cancelled.status == BookingStatus.CANCELLED
     assert cancelled.cancel_reason == "Customer request"

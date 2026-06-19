@@ -59,7 +59,7 @@ def handle_sms_reply(
 
     if intent == SmsReplyIntent.CANCEL:
         try:
-            cancel_booking(db, booking.id, tenant_id, reason="customer_sms_reply")
+            cancel_booking(db, booking.id, business_id, tenant_id, reason="customer_sms_reply")
         except ConflictError:
             pass
     elif intent == SmsReplyIntent.CONFIRM:

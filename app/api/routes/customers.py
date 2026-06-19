@@ -20,6 +20,7 @@ def gdpr_delete_customer_endpoint(
     return gdpr_delete_customer(
         db,
         customer_id,
+        business_id,
         current_user.tenant_id,
         actor_id=current_user.id,
     )

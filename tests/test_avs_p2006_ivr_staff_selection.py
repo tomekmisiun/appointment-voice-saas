@@ -187,7 +187,7 @@ def test_no_input_reprompt_at_staff_selection(db):
 
 def test_inactive_staff_excluded_from_selection(db):
     tenant_id, biz, svc, staff = _setup(db, staff_count=2)
-    update_staff(db, staff[1].id, tenant_id, is_active=False)
+    update_staff(db, staff[1].id, biz.id, tenant_id, is_active=False)
     session, _ = start_session(db, business_id=biz.id, tenant_id=tenant_id, caller_phone="+48700000009")
     handle_keypress(db, session_id=session.id, tenant_id=tenant_id, key="1")
 

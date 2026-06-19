@@ -238,7 +238,7 @@ def test_cancel_booking_enqueues_cancel_calendar_event(db, monkeypatch):
     enqueued_ids = []
     monkeypatch.setattr(bk_svc, "enqueue_cancel_calendar_event_job", lambda eid: enqueued_ids.append(eid))
 
-    cancel_booking(db, booking.id, booking.tenant_id)
+    cancel_booking(db, booking.id, booking.business_id, booking.tenant_id)
 
     assert enqueued_ids == [event.id]
 
@@ -265,7 +265,7 @@ def test_cancel_booking_handles_missing_calendar_event(db, monkeypatch):
     enqueued_ids = []
     monkeypatch.setattr(bk_svc, "enqueue_cancel_calendar_event_job", lambda eid: enqueued_ids.append(eid))
 
-    cancel_booking(db, bare.id, bare.tenant_id)
+    cancel_booking(db, bare.id, bare.business_id, bare.tenant_id)
 
     assert enqueued_ids == []  # no CalendarEvent row → nothing enqueued
 

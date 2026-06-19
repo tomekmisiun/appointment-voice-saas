@@ -103,7 +103,7 @@ def test_cancel_booking_emits_audit_log(db, client):
         staff_id=staff_id,
         starts_at=_STARTS_AT,
     )
-    cancel_booking(db, booking.id, tenant_id, reason="No show", actor_id=actor.id)
+    cancel_booking(db, booking.id, biz_id, tenant_id, reason="No show", actor_id=actor.id)
 
     logs = get_audit_logs(db, tenant_id)
     entry = next(
@@ -140,6 +140,7 @@ def test_reschedule_booking_emits_audit_log_linked_to_old_booking(db, client):
     new_booking = reschedule_booking(
         db,
         old_booking.id,
+        biz_id,
         tenant_id,
         new_starts_at=datetime(2027, 9, 2, 10, 0, 0, tzinfo=timezone.utc),
         actor_id=actor.id,

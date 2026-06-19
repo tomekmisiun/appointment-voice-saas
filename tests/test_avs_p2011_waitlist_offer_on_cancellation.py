@@ -57,7 +57,7 @@ def test_cancellation_offers_waiting_entry_for_same_service_and_date(db):
         service_id=svc.id, desired_date=desired,
     )
 
-    cancel_booking(db, booking.id, tenant_id, reason="customer_request")
+    cancel_booking(db, booking.id, biz.id, tenant_id, reason="customer_request")
 
     db.refresh(entry)
     assert entry.status == WaitlistEntryStatus.OFFERED
@@ -89,7 +89,7 @@ def test_entry_for_different_date_is_not_offered(db):
         service_id=svc.id, desired_date=other_date,
     )
 
-    cancel_booking(db, booking.id, tenant_id, reason="customer_request")
+    cancel_booking(db, booking.id, biz.id, tenant_id, reason="customer_request")
 
     db.refresh(entry)
     assert entry.status == WaitlistEntryStatus.WAITING
@@ -112,7 +112,7 @@ def test_entry_for_different_service_is_not_offered(db):
         service_id=other_svc.id, desired_date=desired,
     )
 
-    cancel_booking(db, booking.id, tenant_id, reason="customer_request")
+    cancel_booking(db, booking.id, biz.id, tenant_id, reason="customer_request")
 
     db.refresh(entry)
     assert entry.status == WaitlistEntryStatus.WAITING
@@ -136,7 +136,7 @@ def test_entry_wanting_specific_staff_only_offered_when_that_staff_freed_up(db):
         service_id=svc.id, desired_date=desired, staff_id=staff_b.id,
     )
 
-    cancel_booking(db, booking.id, tenant_id, reason="customer_request")
+    cancel_booking(db, booking.id, biz.id, tenant_id, reason="customer_request")
 
     db.refresh(entry_wants_b)
     assert entry_wants_b.status == WaitlistEntryStatus.WAITING
@@ -159,7 +159,7 @@ def test_entry_with_no_staff_preference_is_offered_regardless_of_cancelled_staff
         service_id=svc.id, desired_date=desired,
     )
 
-    cancel_booking(db, booking.id, tenant_id, reason="customer_request")
+    cancel_booking(db, booking.id, biz.id, tenant_id, reason="customer_request")
 
     db.refresh(entry)
     assert entry.status == WaitlistEntryStatus.OFFERED
@@ -186,7 +186,7 @@ def test_multiple_eligible_entries_only_oldest_is_offered(db):
         service_id=svc.id, desired_date=desired,
     )
 
-    cancel_booking(db, booking.id, tenant_id, reason="customer_request")
+    cancel_booking(db, booking.id, biz.id, tenant_id, reason="customer_request")
 
     db.refresh(entry1)
     db.refresh(entry2)
@@ -209,7 +209,7 @@ def test_already_offered_entry_is_not_re_offered(db):
     )
     update_waitlist_entry_status(db, entry.id, tenant_id, status=WaitlistEntryStatus.OFFERED)
 
-    cancel_booking(db, booking.id, tenant_id, reason="customer_request")
+    cancel_booking(db, booking.id, biz.id, tenant_id, reason="customer_request")
 
     offers = (
         db.query(NotificationOutbox)
@@ -229,7 +229,7 @@ def test_cancellation_with_no_matching_waitlist_entries_does_not_error(db):
     starts_at = datetime.combine(desired, time(10, 0), tzinfo=timezone.utc)
     booking = _book(db, tenant_id, biz, svc, phone="+48750000016", starts_at=starts_at)
 
-    cancelled = cancel_booking(db, booking.id, tenant_id, reason="customer_request")
+    cancelled = cancel_booking(db, booking.id, biz.id, tenant_id, reason="customer_request")
 
     assert cancelled.status == "cancelled"
 
@@ -253,7 +253,7 @@ def test_waitlist_entry_from_another_business_is_not_offered(db):
         service_id=other_svc.id, desired_date=desired,
     )
 
-    cancel_booking(db, booking.id, tenant_id, reason="customer_request")
+    cancel_booking(db, booking.id, biz.id, tenant_id, reason="customer_request")
 
     db.refresh(entry)
     assert entry.status == WaitlistEntryStatus.WAITING

@@ -53,7 +53,7 @@ def test_staff_with_whitespace_phone_is_excluded(domain):
 def test_inactive_staff_with_phone_is_excluded(domain):
     db, tid, bid = domain["db"], domain["tenant_id"], domain["business_id"]
     s = create_staff(db, tenant_id=tid, business_id=bid, name="Dave", phone="+48999000111")
-    update_staff(db, s.id, tid, is_active=False)
+    update_staff(db, s.id, bid, tid, is_active=False)
     result = get_eligible_transfer_staff(db, bid, tid)
     assert result == []
 
@@ -101,7 +101,7 @@ def test_only_eligible_staff_returned_in_mixed_pool(domain):
     eligible = create_staff(db, tenant_id=tid, business_id=bid, name="Ivan", phone="+48400000001")
     create_staff(db, tenant_id=tid, business_id=bid, name="Judy", phone=None)
     inactive = create_staff(db, tenant_id=tid, business_id=bid, name="Karl", phone="+48400000002")
-    update_staff(db, inactive.id, tid, is_active=False)
+    update_staff(db, inactive.id, bid, tid, is_active=False)
 
     result = get_eligible_transfer_staff(db, bid, tid)
     assert len(result) == 1

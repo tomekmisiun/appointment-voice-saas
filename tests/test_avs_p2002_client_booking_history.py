@@ -43,7 +43,7 @@ def test_get_bookings_for_client_returns_linked_customer_bookings(db):
     booking1 = _book(db, tenant_id, biz, svc, customer, now)
     booking2 = _book(db, tenant_id, biz, svc, customer, now + timedelta(days=1))
 
-    history = get_bookings_for_client(db, client_row.id, tenant_id)
+    history = get_bookings_for_client(db, client_row.id, biz.id, tenant_id)
 
     booking_ids = {b.id for b in history}
     assert booking_ids == {booking1.id, booking2.id}
@@ -59,7 +59,7 @@ def test_get_bookings_for_client_orders_newest_first(db):
     earlier = _book(db, tenant_id, biz, svc, customer, now)
     later = _book(db, tenant_id, biz, svc, customer, now + timedelta(days=5))
 
-    history = get_bookings_for_client(db, client_row.id, tenant_id)
+    history = get_bookings_for_client(db, client_row.id, biz.id, tenant_id)
 
     assert [b.id for b in history] == [later.id, earlier.id]
 
@@ -68,7 +68,7 @@ def test_get_bookings_for_client_without_linked_customer_is_empty(db):
     tenant_id, biz, _svc = _setup(db)
     client_row = create_client(db, tenant_id=tenant_id, business_id=biz.id, name="No Customer Yet")
 
-    history = get_bookings_for_client(db, client_row.id, tenant_id)
+    history = get_bookings_for_client(db, client_row.id, biz.id, tenant_id)
 
     assert history == []
 
@@ -84,6 +84,6 @@ def test_get_bookings_for_client_excludes_other_customers(db):
     own_booking = _book(db, tenant_id, biz, svc, customer, now)
     _book(db, tenant_id, biz, svc, other_customer, now)
 
-    history = get_bookings_for_client(db, client_row.id, tenant_id)
+    history = get_bookings_for_client(db, client_row.id, biz.id, tenant_id)
 
     assert [b.id for b in history] == [own_booking.id]
