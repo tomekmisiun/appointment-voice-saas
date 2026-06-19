@@ -52,6 +52,13 @@ class WaitlistEntry(Base):
     staff_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("staff.id"), nullable=True
     )
+    # The staff member of the actual freed-up slot this entry was last
+    # offered for (P2-012) -- distinct from staff_id, the customer's own
+    # preference, which may be NULL ("any staff") even when the slot they
+    # were offered belonged to a specific staff member.
+    offered_for_staff_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("staff.id"), nullable=True
+    )
     desired_date: Mapped[date] = mapped_column(Date, nullable=False)
     status: Mapped[str] = mapped_column(
         String(32), nullable=False, default=WaitlistEntryStatus.WAITING

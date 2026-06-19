@@ -45,10 +45,10 @@ Historical inherited foundation debt is preserved in
 
 | ID | Issue | Impact | Recommendation | Priority | Related roadmap task | Effort | Status |
 |----|-------|--------|----------------|----------|----------------------|--------|--------|
-| AVS-TD-017 | No CRM clients table. | Returning-customer history and personalization are limited. | Add basic CRM clients and link bookings to clients. | Medium | P2-001, P2-002 | M | Open |
-| AVS-TD-018 | No preferred staff flow. | Customers cannot choose or reuse preferred staff. | Add preferred staff selection and last-staff suggestion. | Medium | P2-006, P2-007 | M | Open |
-| AVS-TD-019 | No multi-service appointment support. | Combined services cannot be booked as one appointment. | Add multi-service booking model and combined-duration availability. | Medium | P2-008, P2-009 | L | Open |
-| AVS-TD-020 | No waitlist. | Fully booked businesses cannot recover demand after cancellations. | Add waitlist model, offer flow, and timeout/escalation. | Medium | P2-010 to P2-012 | L | Open |
+| AVS-TD-017 | No CRM clients table. | Returning-customer history and personalization are limited. | Add basic CRM clients and link bookings to clients. | Medium | P2-001, P2-002 | M | Done |
+| AVS-TD-018 | No preferred staff flow. | Customers cannot choose or reuse preferred staff. | Add preferred staff selection and last-staff suggestion. | Medium | P2-006, P2-007 | M | Done |
+| AVS-TD-019 | No multi-service appointment support. | Combined services cannot be booked as one appointment. | Add multi-service booking model and combined-duration availability. | Medium | P2-008, P2-009 | L | Done |
+| AVS-TD-020 | No waitlist. | Fully booked businesses cannot recover demand after cancellations. | Add waitlist model, offer flow, and timeout/escalation. | Medium | P2-010 to P2-012 | L | Done |
 | AVS-TD-021 | No dashboard metrics. | Business owners cannot see booking volume or missed-call conversion. | Add tenant-safe owner metrics API. | Medium | P2-013 | M | Open |
 | AVS-TD-022 | No salon hours versus staff hours intersection. | Availability cannot distinguish business closures from staff schedules. | Add salon hours, closure exceptions, staff blocks, and intersection logic. | Medium | P3-001 to P3-005 | M | Open |
 
