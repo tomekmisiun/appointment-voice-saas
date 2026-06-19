@@ -178,6 +178,8 @@ Two independent dimensions added to `Business`:
 | GAP-008 | CalendarIntegration staff_id not FK-validated at DB level | LOW | Open — AVS-TD-028 |
 | GAP-009 | Phone numbers not masked in structured logs | MEDIUM | Open — Privacy risk |
 | GAP-010 | ~~No DLQ alerting or metrics for failed async jobs~~ | MEDIUM | **Fixed — P1-011/P1-012** |
+| GAP-011 | `get_client`/`require_client`/`update_client`/`get_customer`/`require_customer`/`gdpr_delete_customer` (and pre-existing `get_staff`/`get_booking`) filter by `tenant_id` only, not `business_id`, despite routes accepting `business_id` in the URL — a tenant with multiple businesses can read/mutate/anonymize another business's client or customer data. | CRITICAL | Open — AVS-TD-029, see `docs/audits/pre-p3-readiness-audit.md` |
+| GAP-012 | Waitlist offer matching (`find_matching_waitlist_entries()`) has no row locking or idempotency guard; concurrent cancellations or an overlapping maintenance tick can double-offer the same waitlist entry. | HIGH | Open — AVS-TD-030, see `docs/audits/pre-p3-readiness-audit.md` |
 
 ## Readiness Assessment
 
@@ -186,7 +188,7 @@ Two independent dimensions added to `Business`:
 | NOT_READY | ✅ Exceeds | All core flows demonstrable |
 | PORTFOLIO_READY | ✅ Yes | Clean domain, tests, CI, real providers, honest limitations |
 | MVP_DEMO_READY | ✅ Yes | Full local simulated call-to-booking-to-SMS-to-calendar works |
-| PILOT_READY | ✅ Yes | Providers wired; BUG-001 fixed; IVR timeout/invalid-input/repeat/reschedule handled, admin reschedule API added, IVR degrades gracefully on DB/Redis outage instead of exposing raw errors, per-job-type queues, DLQ depth/failure-rate alerting, provider-level failure metrics, create/cancel/reschedule/SMS-confirm audit trail wired (P1-001 through P1-009, P1-011 through P1-013); only the admin-override portion of audit logging (blocked on P3-012, which doesn't exist yet) remains open |
+| PILOT_READY | ⚠️ Conditional | Providers wired; BUG-001 fixed; IVR timeout/invalid-input/repeat/reschedule handled, admin reschedule API added, IVR degrades gracefully on DB/Redis outage instead of exposing raw errors, per-job-type queues, DLQ depth/failure-rate alerting, provider-level failure metrics, create/cancel/reschedule/SMS-confirm audit trail wired (P1-001 through P1-009, P1-011 through P1-013); only the admin-override portion of audit logging (blocked on P3-012, which doesn't exist yet) remains open. **Blocked on GAP-011** (CRITICAL cross-business data exposure via Client/Customer/GDPR-delete endpoints) for any tenant with more than one business — fix before onboarding such a tenant. GAP-012 (waitlist double-offer race) should also be fixed before relying on the waitlist under real concurrent traffic. See `docs/audits/pre-p3-readiness-audit.md`. |
 | PRODUCTION_READY | ❌ No | Missing: admin override audit trail (needs P3-012 first), owner metrics/CSV export (P2-013/P2-014), billing, monitoring dashboards |
 
 ## Not Implemented (Expansion Backlog)
