@@ -95,6 +95,19 @@ def require_customer(db: Session, customer_id: int, tenant_id: int) -> Customer:
     return customer
 
 
+def require_customer_in_business(
+    db: Session, customer_id: int, business_id: int, tenant_id: int
+) -> Customer:
+    """Like require_customer(), but also rejects a customer that belongs to
+    a different business within the same tenant. Use this whenever
+    business_id is the caller-supplied scope (routes, cross-business
+    lookups) rather than the tenant-only require_customer()."""
+    customer = require_customer(db, customer_id, tenant_id)
+    if customer.business_id != business_id:
+        raise NotFoundError("Customer not found")
+    return customer
+
+
 def list_customers(
     db: Session,
     business_id: int,
@@ -119,11 +132,12 @@ def list_customers(
 def update_customer(
     db: Session,
     customer_id: int,
+    business_id: int,
     tenant_id: int,
     *,
     name: str | None = None,
 ) -> Customer:
-    customer = require_customer(db, customer_id, tenant_id)
+    customer = require_customer_in_business(db, customer_id, business_id, tenant_id)
     if name is not None:
         customer.name = name
     db.commit()
@@ -134,6 +148,7 @@ def update_customer(
 def gdpr_delete_customer(
     db: Session,
     customer_id: int,
+    business_id: int,
     tenant_id: int,
     *,
     actor_id: int | None = None,
@@ -147,14 +162,18 @@ def gdpr_delete_customer(
     that references them, intact. Applies regardless of booking status —
     GDPR erasure requests aren't conditional on having no upcoming
     appointment."""
-    customer = require_customer(db, customer_id, tenant_id)
+    customer = require_customer_in_business(db, customer_id, business_id, tenant_id)
     customer.name = None
     customer.phone = "deleted"
     customer.phone_normalized = f"deleted-{customer.id}"
 
     client = (
         db.query(Client)
-        .filter(Client.tenant_id == tenant_id, Client.customer_id == customer.id)
+        .filter(
+            Client.tenant_id == tenant_id,
+            Client.business_id == business_id,
+            Client.customer_id == customer.id,
+        )
         .first()
     )
     if client is not None:

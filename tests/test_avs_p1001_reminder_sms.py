@@ -95,7 +95,7 @@ def test_cancelled_booking_is_not_reminded(db):
     tenant_id, biz, svc, customer = _setup(db)
     starts_at = datetime.now(timezone.utc) + timedelta(minutes=30)
     booking = _book_at(db, tenant_id, biz, svc, customer, starts_at)
-    cancel_booking(db, booking.id, tenant_id)
+    cancel_booking(db, booking.id, biz.id, tenant_id)
 
     enqueue_due_reminders(db)
 

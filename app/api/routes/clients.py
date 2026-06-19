@@ -10,7 +10,7 @@ from app.services.client_service import (
     create_client,
     get_bookings_for_client,
     list_clients,
-    require_client,
+    require_client_in_business,
     update_client,
 )
 
@@ -61,7 +61,7 @@ def get_client_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return require_client(db, client_id, current_user.tenant_id)
+    return require_client_in_business(db, client_id, business_id, current_user.tenant_id)
 
 
 @router.get("/{client_id}/bookings", response_model=list[BookingRead])
@@ -77,6 +77,7 @@ def get_client_bookings_endpoint(
     return get_bookings_for_client(
         db,
         client_id,
+        business_id,
         current_user.tenant_id,
         skip=skip,
         limit=size,
@@ -94,6 +95,7 @@ def update_client_endpoint(
     return update_client(
         db,
         client_id,
+        business_id,
         current_user.tenant_id,
         name=body.name,
         email=body.email,

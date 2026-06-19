@@ -107,7 +107,7 @@ def test_update_client_changes_fields(db):
     tenant_id, biz = _setup(db)
     client_row = create_client(db, tenant_id=tenant_id, business_id=biz.id, name="Jane")
 
-    updated = update_client(db, client_row.id, tenant_id, notes="VIP customer")
+    updated = update_client(db, client_row.id, biz.id, tenant_id, notes="VIP customer")
 
     assert updated.notes == "VIP customer"
     assert updated.name == "Jane"

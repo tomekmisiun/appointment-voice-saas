@@ -7,9 +7,9 @@ from app.core.config import settings
 from app.core.domain_errors import NotFoundError
 from app.models.waitlist_entry import WaitlistEntry, WaitlistEntryStatus
 from app.services.business_service import require_business
-from app.services.customer_service import require_customer
+from app.services.customer_service import require_customer, require_customer_in_business
 from app.services.notification_service import enqueue_send_notification_job, enqueue_waitlist_offer
-from app.services.service_service import require_service
+from app.services.service_service import require_service, require_service_in_business
 from app.services.staff_service import require_staff
 
 
@@ -188,8 +188,12 @@ def _escalate_to_next_waiting_entry(db: Session, expired_entry: WaitlistEntry) -
     next_entry.status = WaitlistEntryStatus.OFFERED
     next_entry.offered_for_staff_id = expired_entry.offered_for_staff_id
     business = require_business(db, next_entry.business_id, next_entry.tenant_id)
-    customer = require_customer(db, next_entry.customer_id, next_entry.tenant_id)
-    service = require_service(db, next_entry.service_id, next_entry.tenant_id)
+    customer = require_customer_in_business(
+        db, next_entry.customer_id, next_entry.business_id, next_entry.tenant_id
+    )
+    service = require_service_in_business(
+        db, next_entry.service_id, next_entry.business_id, next_entry.tenant_id
+    )
     intent = enqueue_waitlist_offer(
         db, entry=next_entry, business=business, customer=customer, service=service
     )

@@ -15,7 +15,7 @@ from app.services.booking_service import (
     cancel_booking,
     create_booking,
     list_bookings,
-    require_booking,
+    require_booking_in_business,
     reschedule_booking,
 )
 
@@ -71,7 +71,7 @@ def get_booking_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return require_booking(db, booking_id, current_user.tenant_id)
+    return require_booking_in_business(db, booking_id, business_id, current_user.tenant_id)
 
 
 @router.post("/{booking_id}/cancel", response_model=BookingRead)
@@ -85,6 +85,7 @@ def cancel_booking_endpoint(
     return cancel_booking(
         db,
         booking_id,
+        business_id,
         current_user.tenant_id,
         reason=body.reason,
         actor_id=current_user.id,
@@ -102,6 +103,7 @@ def reschedule_booking_endpoint(
     return reschedule_booking(
         db,
         booking_id,
+        business_id,
         current_user.tenant_id,
         new_starts_at=body.new_starts_at,
         reason=body.reason,

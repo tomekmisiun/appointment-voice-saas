@@ -46,6 +46,17 @@ def require_service(db: Session, service_id: int, tenant_id: int) -> Service:
     return svc
 
 
+def require_service_in_business(
+    db: Session, service_id: int, business_id: int, tenant_id: int
+) -> Service:
+    """Like require_service(), but also rejects a service that belongs to
+    a different business within the same tenant."""
+    svc = require_service(db, service_id, tenant_id)
+    if svc.business_id != business_id:
+        raise NotFoundError("Service not found")
+    return svc
+
+
 def list_services(
     db: Session,
     business_id: int,
@@ -68,9 +79,7 @@ def delete_service(
 ) -> None:
     from app.models.booking import Booking, BookingStatus
 
-    svc = require_service(db, service_id, tenant_id)
-    if svc.business_id != business_id:
-        raise NotFoundError("Service not found")
+    svc = require_service_in_business(db, service_id, business_id, tenant_id)
     has_bookings = (
         db.query(Booking)
         .filter(
@@ -88,6 +97,7 @@ def delete_service(
 def update_service(
     db: Session,
     service_id: int,
+    business_id: int,
     tenant_id: int,
     *,
     name: str | None = None,
@@ -96,7 +106,7 @@ def update_service(
     currency: str | None = None,
     is_active: bool | None = None,
 ) -> Service:
-    svc = require_service(db, service_id, tenant_id)
+    svc = require_service_in_business(db, service_id, business_id, tenant_id)
     if name is not None:
         svc.name = name
     if duration_minutes is not None:

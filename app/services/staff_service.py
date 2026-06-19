@@ -43,6 +43,17 @@ def require_staff(db: Session, staff_id: int, tenant_id: int) -> Staff:
     return member
 
 
+def require_staff_in_business(
+    db: Session, staff_id: int, business_id: int, tenant_id: int
+) -> Staff:
+    """Like require_staff(), but also rejects a staff member that belongs
+    to a different business within the same tenant."""
+    member = require_staff(db, staff_id, tenant_id)
+    if member.business_id != business_id:
+        raise NotFoundError("Staff member not found")
+    return member
+
+
 def list_staff(
     db: Session,
     business_id: int,
@@ -63,13 +74,14 @@ def list_staff(
 def update_staff(
     db: Session,
     staff_id: int,
+    business_id: int,
     tenant_id: int,
     *,
     name: str | None = None,
     phone: str | None = None,
     is_active: bool | None = None,
 ) -> Staff:
-    member = require_staff(db, staff_id, tenant_id)
+    member = require_staff_in_business(db, staff_id, business_id, tenant_id)
     if name is not None:
         member.name = name
     if phone is not None:

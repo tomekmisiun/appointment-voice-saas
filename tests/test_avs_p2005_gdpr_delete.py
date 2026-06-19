@@ -32,7 +32,7 @@ def test_gdpr_delete_scrubs_customer_pii(db):
         db, tenant_id=tenant_id, business_id=biz.id, phone="+48740000001", name="Real Name"
     )
 
-    anonymized = gdpr_delete_customer(db, customer.id, tenant_id)
+    anonymized = gdpr_delete_customer(db, customer.id, biz.id, tenant_id)
 
     assert anonymized.name is None
     assert anonymized.phone == "deleted"
@@ -47,7 +47,7 @@ def test_gdpr_delete_scrubs_linked_client(db):
         customer_id=customer.id, email="real@example.com", phone="+48740000002", notes="VIP",
     )
 
-    gdpr_delete_customer(db, customer.id, tenant_id)
+    gdpr_delete_customer(db, customer.id, biz.id, tenant_id)
 
     db.refresh(client_row)
     assert client_row.name == "Deleted client"
@@ -70,7 +70,7 @@ def test_gdpr_delete_preserves_booking_and_does_not_break_fk(db):
         starts_at=datetime.now(timezone.utc) + timedelta(days=3),
     )
 
-    gdpr_delete_customer(db, customer.id, tenant_id)
+    gdpr_delete_customer(db, customer.id, biz.id, tenant_id)
 
     db.refresh(booking)
     assert booking.customer_id == customer.id
@@ -92,7 +92,7 @@ def test_gdpr_delete_works_with_future_booking(db):
         starts_at=datetime.now(timezone.utc) + timedelta(days=30),
     )
 
-    anonymized = gdpr_delete_customer(db, customer.id, tenant_id)
+    anonymized = gdpr_delete_customer(db, customer.id, biz.id, tenant_id)
 
     assert anonymized.phone == "deleted"
 
@@ -101,7 +101,7 @@ def test_gdpr_delete_emits_audit_log(db):
     tenant_id, biz = _setup(db)
     customer = get_or_create_customer(db, tenant_id=tenant_id, business_id=biz.id, phone="+48740000005")
 
-    gdpr_delete_customer(db, customer.id, tenant_id, actor_id=None)
+    gdpr_delete_customer(db, customer.id, biz.id, tenant_id, actor_id=None)
 
     logs = get_audit_logs(db, tenant_id, action=AuditAction.CUSTOMER_ANONYMIZED)
     entry = next((log for log in logs if log.source == f"customer_id={customer.id}"), None)

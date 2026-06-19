@@ -17,7 +17,7 @@ from app.services.booking_service import (
     create_booking,
     get_last_staff_booking,
     get_next_confirmed_booking,
-    require_booking,
+    require_booking_in_business,
     reschedule_booking,
 )
 from app.services.business_service import require_business
@@ -27,7 +27,7 @@ from app.services.notification_service import (
     enqueue_external_booking_link_sms,
     enqueue_send_notification_job,
 )
-from app.services.service_service import list_services, require_service
+from app.services.service_service import list_services, require_service_in_business
 from app.services.staff_service import get_eligible_transfer_staff, list_staff
 
 logger = logging.getLogger(__name__)
@@ -241,7 +241,9 @@ def _reprompt_for_no_input(db: Session, session: VoiceSession) -> IvrResponse:
         return IvrResponse(prompt=prompt, options=options, session_id=session.id)
 
     if session.step == IvrStep.STAFF_SELECTION:
-        service = require_service(db, session.selected_service_id, session.tenant_id)
+        service = require_service_in_business(
+            db, session.selected_service_id, session.business_id, session.tenant_id
+        )
         staff_members = _schedulable_staff(db, session.business_id, session.tenant_id)
         staff_members, preferred_staff_id = _reorder_preferred_staff(db, session, staff_members)
         return _staff_selection_response(
@@ -280,7 +282,9 @@ def _reprompt_for_no_input(db: Session, session: VoiceSession) -> IvrResponse:
         )
 
     if session.step == IvrStep.MANAGE_BOOKING:
-        booking = require_booking(db, session.managed_booking_id, session.tenant_id)
+        booking = require_booking_in_business(
+            db, session.managed_booking_id, session.business_id, session.tenant_id
+        )
         return _manage_booking_response(db, session, booking)
 
     if session.step == IvrStep.RESCHEDULE_SLOT_SELECTION:
@@ -466,7 +470,9 @@ def _handle_manage_booking_request(db: Session, session: VoiceSession) -> IvrRes
 
 
 def _manage_booking_response(db: Session, session: VoiceSession, booking) -> IvrResponse:
-    service = require_service(db, booking.service_id, session.tenant_id)
+    service = require_service_in_business(
+        db, booking.service_id, session.business_id, session.tenant_id
+    )
     when = _format_slot(booking.starts_at, booking.ends_at)
     prompt = (
         f"We found your {service.name} appointment for {when}. "
@@ -484,10 +490,14 @@ def _manage_booking_response(db: Session, session: VoiceSession, booking) -> Ivr
 
 
 def _handle_manage_booking(db: Session, session: VoiceSession, key: str) -> IvrResponse:
-    booking = require_booking(db, session.managed_booking_id, session.tenant_id)
+    booking = require_booking_in_business(
+        db, session.managed_booking_id, session.business_id, session.tenant_id
+    )
 
     if key == "1":
-        cancel_booking(db, booking.id, session.tenant_id, reason="customer_ivr_cancel")
+        cancel_booking(
+            db, booking.id, session.business_id, session.tenant_id, reason="customer_ivr_cancel"
+        )
         session.step = IvrStep.BOOKING_CANCELLED
         db.commit()
         return IvrResponse(
@@ -569,6 +579,7 @@ def _handle_reschedule_slot_selection(db: Session, session: VoiceSession, key: s
     new_booking = reschedule_booking(
         db,
         session.managed_booking_id,
+        session.business_id,
         session.tenant_id,
         new_starts_at=starts_at,
         reason="customer_rescheduled_via_ivr",
@@ -651,7 +662,9 @@ def _handle_service_selection(
 
 
 def _handle_staff_selection(db: Session, session: VoiceSession, key: str) -> IvrResponse:
-    service = require_service(db, session.selected_service_id, session.tenant_id)
+    service = require_service_in_business(
+        db, session.selected_service_id, session.business_id, session.tenant_id
+    )
     staff_members = _schedulable_staff(db, session.business_id, session.tenant_id)
     staff_members, preferred_staff_id = _reorder_preferred_staff(db, session, staff_members)
 

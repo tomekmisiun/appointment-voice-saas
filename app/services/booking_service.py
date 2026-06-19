@@ -10,7 +10,7 @@ from app.models.booking_line_item import BookingLineItem
 from app.models.waitlist_entry import WaitlistEntryStatus
 from app.services.audit_log_service import create_audit_log
 from app.services.business_service import require_business
-from app.services.customer_service import require_customer
+from app.services.customer_service import require_customer_in_business
 from app.services.calendar_service import (
     enqueue_calendar_event,
     enqueue_cancel_calendar_event_job,
@@ -23,8 +23,8 @@ from app.services.notification_service import (
     enqueue_send_notification_job,
     enqueue_waitlist_offer,
 )
-from app.services.service_service import require_service
-from app.services.staff_service import require_staff
+from app.services.service_service import require_service, require_service_in_business
+from app.services.staff_service import require_staff_in_business
 from app.services.waitlist_service import find_matching_waitlist_entries
 
 
@@ -69,10 +69,10 @@ def create_booking(
     actor_id: int | None = None,
 ) -> Booking:
     business = require_business(db, business_id, tenant_id)
-    customer = require_customer(db, customer_id, tenant_id)
-    svc = require_service(db, service_id, tenant_id)
+    customer = require_customer_in_business(db, customer_id, business_id, tenant_id)
+    svc = require_service_in_business(db, service_id, business_id, tenant_id)
     if staff_id is not None:
-        require_staff(db, staff_id, tenant_id)
+        require_staff_in_business(db, staff_id, business_id, tenant_id)
 
     ends_at = starts_at + timedelta(minutes=svc.duration_minutes)
 
@@ -179,6 +179,17 @@ def require_booking(db: Session, booking_id: int, tenant_id: int) -> Booking:
     return booking
 
 
+def require_booking_in_business(
+    db: Session, booking_id: int, business_id: int, tenant_id: int
+) -> Booking:
+    """Like require_booking(), but also rejects a booking that belongs to
+    a different business within the same tenant."""
+    booking = require_booking(db, booking_id, tenant_id)
+    if booking.business_id != business_id:
+        raise NotFoundError("Booking not found")
+    return booking
+
+
 def add_booking_line_item(
     db: Session, *, booking_id: int, tenant_id: int, service_id: int
 ) -> BookingLineItem:
@@ -256,12 +267,13 @@ def list_bookings(
 def cancel_booking(
     db: Session,
     booking_id: int,
+    business_id: int,
     tenant_id: int,
     *,
     reason: str | None = None,
     actor_id: int | None = None,
 ) -> Booking:
-    booking = require_booking(db, booking_id, tenant_id)
+    booking = require_booking_in_business(db, booking_id, business_id, tenant_id)
     if booking.status == BookingStatus.CANCELLED:
         raise ConflictError("Booking is already cancelled")
     booking.status = BookingStatus.CANCELLED
@@ -276,8 +288,8 @@ def cancel_booking(
         commit=False,
     )
     business = require_business(db, booking.business_id, tenant_id)
-    customer = require_customer(db, booking.customer_id, tenant_id)
-    service = require_service(db, booking.service_id, tenant_id)
+    customer = require_customer_in_business(db, booking.customer_id, booking.business_id, tenant_id)
+    service = require_service_in_business(db, booking.service_id, booking.business_id, tenant_id)
     cancellation_intents = enqueue_booking_cancellation(
         db,
         booking=booking,
@@ -300,7 +312,9 @@ def cancel_booking(
         entry = matching_entries[0]
         entry.status = WaitlistEntryStatus.OFFERED
         entry.offered_for_staff_id = booking.staff_id
-        waitlist_customer = require_customer(db, entry.customer_id, tenant_id)
+        waitlist_customer = require_customer_in_business(
+            db, entry.customer_id, entry.business_id, tenant_id
+        )
         offer_intent = enqueue_waitlist_offer(
             db, entry=entry, business=business, customer=waitlist_customer, service=service,
         )
@@ -321,6 +335,7 @@ def cancel_booking(
 def reschedule_booking(
     db: Session,
     booking_id: int,
+    business_id: int,
     tenant_id: int,
     *,
     new_starts_at: datetime,
@@ -340,8 +355,8 @@ def reschedule_booking(
     already log, this also logs a single BOOKING_RESCHEDULED entry on the
     new booking (source records the old booking id) so the pair reads as a
     reschedule rather than two unrelated events."""
-    old_booking = require_booking(db, booking_id, tenant_id)
-    cancel_booking(db, old_booking.id, tenant_id, reason=reason, actor_id=actor_id)
+    old_booking = require_booking_in_business(db, booking_id, business_id, tenant_id)
+    cancel_booking(db, old_booking.id, business_id, tenant_id, reason=reason, actor_id=actor_id)
     new_booking = create_booking(
         db,
         tenant_id=tenant_id,

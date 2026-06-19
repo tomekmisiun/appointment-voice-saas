@@ -124,7 +124,7 @@ def test_inactive_last_staff_member_is_not_suggested(db):
     _give_past_booking_with_staff(
         db, tenant_id=tenant_id, biz=biz, svc=svc, staff_member=staff[1], caller_phone=caller
     )
-    update_staff(db, staff[1].id, tenant_id, is_active=False)
+    update_staff(db, staff[1].id, biz.id, tenant_id, is_active=False)
     session, _ = start_session(db, business_id=biz.id, tenant_id=tenant_id, caller_phone=caller)
     handle_keypress(db, session_id=session.id, tenant_id=tenant_id, key="1")
 

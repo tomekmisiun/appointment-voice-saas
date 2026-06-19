@@ -238,7 +238,7 @@ def test_cancelled_booking_does_not_block_slot(db, domain):
         staff_id=domain["staff_id"],
         starts_at=datetime(2027, 7, 7, 7, 0, 0, tzinfo=timezone.utc),
     )
-    cancel_booking(db, booking.id, domain["tenant_id"], reason="test")
+    cancel_booking(db, booking.id, domain["business_id"], domain["tenant_id"], reason="test")
 
     slots = get_available_slots(
         db,

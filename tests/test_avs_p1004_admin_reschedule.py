@@ -43,7 +43,7 @@ def test_reschedule_booking_cancels_old_and_creates_new(db):
     )
 
     new = reschedule_booking(
-        db, old.id, tenant_id, new_starts_at=_dt(2027, 1, 6, 14), reason="staff request"
+        db, old.id, biz.id, tenant_id, new_starts_at=_dt(2027, 1, 6, 14), reason="staff request"
     )
 
     db.refresh(old)
@@ -72,7 +72,7 @@ def test_reschedule_booking_uses_given_source(db):
     )
 
     new = reschedule_booking(
-        db, old.id, tenant_id, new_starts_at=_dt(2027, 1, 7, 10), source=BookingSource.API
+        db, old.id, biz.id, tenant_id, new_starts_at=_dt(2027, 1, 7, 10), source=BookingSource.API
     )
 
     assert new.source == BookingSource.API
@@ -92,10 +92,10 @@ def test_reschedule_already_cancelled_booking_raises(db):
         staff_id=None,
         starts_at=_dt(2027, 1, 8, 9),
     )
-    cancel_booking(db, booking.id, tenant_id)
+    cancel_booking(db, booking.id, biz.id, tenant_id)
 
     try:
-        reschedule_booking(db, booking.id, tenant_id, new_starts_at=_dt(2027, 1, 8, 10))
+        reschedule_booking(db, booking.id, biz.id, tenant_id, new_starts_at=_dt(2027, 1, 8, 10))
         raise AssertionError("expected ConflictError")
     except ConflictError:
         pass
