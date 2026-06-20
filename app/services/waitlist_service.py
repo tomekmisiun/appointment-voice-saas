@@ -99,6 +99,7 @@ def find_matching_waitlist_entries(
     service_id: int,
     desired_date: date,
     staff_id: int | None = None,
+    for_update: bool = False,
 ) -> list[WaitlistEntry]:
     """WAITING entries for this business/service/date that a newly freed
     slot would satisfy. Entries with no staff preference (staff_id IS NULL)
@@ -106,7 +107,22 @@ def find_matching_waitlist_entries(
     if that's the staff member whose slot just opened up. Returns all
     matches, oldest first -- callers (cancel_booking()'s P2-011 offer,
     expire_stale_waitlist_offers()'s P2-012 escalation) each offer only the
-    first/oldest match, leaving the rest WAITING for the next round."""
+    first/oldest match, leaving the rest WAITING for the next round.
+
+    for_update=True locks only the single oldest match (SKIP LOCKED) for
+    the duration of the caller's transaction -- both callers only ever
+    offer matching_entries[0] and discard the rest, so locking the whole
+    list would be wrong: it would hold every other genuinely-available
+    waiter hostage to a transaction that was never going to claim them,
+    making a second concurrent freed slot see "no one waiting" even though
+    a different waiter was actually free. Without locking at all, two
+    concurrent cancellations (or a cancellation racing a maintenance-tick
+    escalation) could both read the same WAITING entry before either
+    commits, and both flip it to OFFERED -- sending the same customer two
+    offers for slots that no longer both exist. With LIMIT 1 + SKIP LOCKED,
+    a concurrent caller that finds the oldest match already locked simply
+    moves on to the next-oldest available one instead of blocking on it or
+    incorrectly seeing no match at all."""
     query = db.query(WaitlistEntry).filter(
         WaitlistEntry.business_id == business_id,
         WaitlistEntry.tenant_id == tenant_id,
@@ -120,7 +136,10 @@ def find_matching_waitlist_entries(
         )
     else:
         query = query.filter(WaitlistEntry.staff_id.is_(None))
-    return query.order_by(WaitlistEntry.created_at.asc()).all()
+    query = query.order_by(WaitlistEntry.created_at.asc())
+    if for_update:
+        query = query.limit(1).with_for_update(skip_locked=True)
+    return query.all()
 
 
 def update_waitlist_entry_status(
@@ -131,6 +150,23 @@ def update_waitlist_entry_status(
     db.commit()
     db.refresh(entry)
     return entry
+
+
+def _lock_stale_offered_entries(db: Session, threshold: datetime) -> list[WaitlistEntry]:
+    """OFFERED entries whose offer is older than threshold, locked (SKIP
+    LOCKED) for the duration of the caller's transaction. If a concurrent
+    cancel_booking() call is mid-offer on one of these, or an overlapping/
+    retried maintenance tick already locked it, this skips it rather than
+    blocking or re-expiring the same row twice."""
+    return (
+        db.query(WaitlistEntry)
+        .filter(
+            WaitlistEntry.status == WaitlistEntryStatus.OFFERED,
+            WaitlistEntry.updated_at <= threshold,
+        )
+        .with_for_update(skip_locked=True)
+        .all()
+    )
 
 
 def expire_stale_waitlist_offers(db: Session) -> int:
@@ -144,14 +180,7 @@ def expire_stale_waitlist_offers(db: Session) -> int:
     threshold = datetime.now(timezone.utc) - timedelta(
         minutes=settings.waitlist_offer_timeout_minutes
     )
-    stale_entries = (
-        db.query(WaitlistEntry)
-        .filter(
-            WaitlistEntry.status == WaitlistEntryStatus.OFFERED,
-            WaitlistEntry.updated_at <= threshold,
-        )
-        .all()
-    )
+    stale_entries = _lock_stale_offered_entries(db, threshold)
 
     if not stale_entries:
         return 0
@@ -180,6 +209,7 @@ def _escalate_to_next_waiting_entry(db: Session, expired_entry: WaitlistEntry) -
         service_id=expired_entry.service_id,
         desired_date=expired_entry.desired_date,
         staff_id=expired_entry.offered_for_staff_id,
+        for_update=True,
     )
     if not candidates:
         return []
