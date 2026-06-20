@@ -29,7 +29,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install PostgreSQL client
         if: (vars.BACKUP_MODE == 'direct') && (github.event_name == 'schedule' || inputs.dry_run == false)
