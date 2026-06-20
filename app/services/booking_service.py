@@ -306,6 +306,7 @@ def cancel_booking(
         service_id=booking.service_id,
         desired_date=booking.starts_at.date(),
         staff_id=booking.staff_id,
+        for_update=True,
     )
     waitlist_notification_ids = []
     if matching_entries:
