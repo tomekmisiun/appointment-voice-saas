@@ -11,6 +11,7 @@ from app.models.idempotency_record import IdempotencyRecord
 from app.models.notification_outbox import NotificationOutbox
 from app.models.password_reset_job_completion import PasswordResetJobCompletion
 from app.models.password_reset_token import PasswordResetToken
+from app.models.recurring_staff_block import RecurringStaffBlock
 from app.models.service import Service
 from app.models.staff import Staff
 from app.models.tenant import Tenant
@@ -37,6 +38,7 @@ __all__ = [
     "NotificationOutbox",
     "PasswordResetJobCompletion",
     "PasswordResetToken",
+    "RecurringStaffBlock",
     "Service",
     "Staff",
     "Tenant",

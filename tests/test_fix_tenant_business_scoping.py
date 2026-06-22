@@ -22,6 +22,7 @@ from app.services.availability_exception_service import create_availability_exce
 from app.services.business_service import create_business
 from app.services.client_service import create_client
 from app.services.customer_service import get_or_create_customer
+from app.services.recurring_staff_block_service import create_recurring_staff_block
 from app.services.service_service import create_service
 from app.services.staff_service import create_staff
 from app.services.working_hours_service import create_working_hours
@@ -431,3 +432,39 @@ def test_delete_availability_exception_rejects_cross_business_access(db, client)
     assert resp.status_code == 404
     db.refresh(exc_a)
     assert exc_a.id is not None
+
+
+def test_get_recurring_staff_block_rejects_cross_business_access(db, client):
+    tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
+    token = _admin(db, client, "scope-block-get@example.com")
+    biz_a, biz_b = _two_businesses(db, tenant.id)
+    block_a = create_recurring_staff_block(
+        db, tenant_id=tenant.id, business_id=biz_a.id, staff_id=None,
+        day_of_week=0, start_time=time(12, 0), end_time=time(13, 0), reason="Lunch",
+    )
+
+    resp = client.get(
+        f"/api/v1/businesses/{biz_b.id}/recurring-staff-blocks/{block_a.id}",
+        headers=auth_headers(token),
+    )
+
+    assert resp.status_code == 404
+
+
+def test_delete_recurring_staff_block_rejects_cross_business_access(db, client):
+    tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
+    token = _admin(db, client, "scope-block-delete@example.com")
+    biz_a, biz_b = _two_businesses(db, tenant.id)
+    block_a = create_recurring_staff_block(
+        db, tenant_id=tenant.id, business_id=biz_a.id, staff_id=None,
+        day_of_week=0, start_time=time(12, 0), end_time=time(13, 0), reason="Lunch",
+    )
+
+    resp = client.delete(
+        f"/api/v1/businesses/{biz_b.id}/recurring-staff-blocks/{block_a.id}",
+        headers=auth_headers(token),
+    )
+
+    assert resp.status_code == 404
+    db.refresh(block_a)
+    assert block_a.id is not None
