@@ -7,6 +7,12 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.domain_errors import NotFoundError
 from app.core.ivr import IvrAction, IvrOption, IvrResponse
+from app.core.ivr_prompts import (
+    IVR_DEFAULT_LOCALE,
+    PromptKey,
+    format_option_list,
+    resolve_prompt,
+)
 from app.models.booking import BookingSource
 from app.models.business import BookingMode, TransferDestinationPolicy
 from app.models.voice_session import IvrStep, VoiceSession
@@ -31,6 +37,14 @@ from app.services.service_service import list_services, require_service_in_busin
 from app.services.staff_service import get_eligible_transfer_staff, list_staff
 
 logger = logging.getLogger(__name__)
+
+
+def _session_locale(session: VoiceSession) -> str:
+    """Single extension point for P3-009: every prompt call site resolves
+    its locale through here rather than hardcoding IVR_DEFAULT_LOCALE, so
+    wiring up a real per-session/per-business locale later (e.g. a
+    VoiceSession.locale column) only means changing this one function."""
+    return IVR_DEFAULT_LOCALE
 
 
 def start_session(
@@ -58,7 +72,10 @@ def start_session(
         db, business_id=business_id, tenant_id=tenant_id, caller_phone=caller_phone
     )
     return session, _main_menu_response(
-        session.id, business.booking_mode, greeting_name=greeting_name
+        session.id,
+        business.booking_mode,
+        greeting_name=greeting_name,
+        locale=_session_locale(session),
     )
 
 
@@ -112,13 +129,15 @@ def handle_keypress(
             session.step = IvrStep.EXPIRED
             db.commit()
         return IvrResponse(
-            prompt="Your session has expired. Please call again to book an appointment.",
+            prompt=resolve_prompt(PromptKey.SESSION_EXPIRED, locale=_session_locale(session)),
             action=IvrAction.END,
         )
 
     if session.step in _TERMINAL_STEPS:
         return IvrResponse(
-            prompt="This session is already complete. Please call again.",
+            prompt=resolve_prompt(
+                PromptKey.SESSION_ALREADY_COMPLETE, locale=_session_locale(session)
+            ),
             action=IvrAction.END,
         )
 
@@ -149,7 +168,10 @@ def handle_keypress(
     if session.step == IvrStep.RESCHEDULE_SLOT_SELECTION:
         return _handle_reschedule_slot_selection(db, session, key)
 
-    return IvrResponse(prompt="Unexpected session state.", action=IvrAction.END)
+    return IvrResponse(
+        prompt=resolve_prompt(PromptKey.UNEXPECTED_STATE, locale=_session_locale(session)),
+        action=IvrAction.END,
+    )
 
 
 def expire_stale_sessions(db: Session) -> int:
@@ -191,9 +213,8 @@ def _handle_invalid_key(db: Session, session: VoiceSession, reprompt: IvrRespons
         session.step = IvrStep.EXPIRED
         db.commit()
         return IvrResponse(
-            prompt=(
-                "Too many invalid inputs. Your session has ended. "
-                "Please call again to book an appointment."
+            prompt=resolve_prompt(
+                PromptKey.TOO_MANY_INVALID_KEYS, locale=_session_locale(session)
             ),
             action=IvrAction.END,
         )
@@ -207,16 +228,14 @@ def _handle_no_input(db: Session, session: VoiceSession) -> IvrResponse:
         session.step = IvrStep.EXPIRED
         db.commit()
         return IvrResponse(
-            prompt=(
-                "We didn't receive any input. Your session has ended. "
-                "Please call again to book an appointment."
-            ),
+            prompt=resolve_prompt(PromptKey.TOO_MANY_NO_INPUT, locale=_session_locale(session)),
             action=IvrAction.END,
         )
     db.commit()
     reprompt = _reprompt_for_no_input(db, session)
     return IvrResponse(
-        prompt="We didn't hear a response. " + reprompt.prompt,
+        prompt=resolve_prompt(PromptKey.NO_INPUT_PREFIX, locale=_session_locale(session))
+        + reprompt.prompt,
         options=reprompt.options,
         action=reprompt.action,
         session_id=reprompt.session_id,
@@ -227,7 +246,7 @@ def _handle_no_input(db: Session, session: VoiceSession) -> IvrResponse:
 def _reprompt_for_no_input(db: Session, session: VoiceSession) -> IvrResponse:
     if session.step == IvrStep.INCOMING:
         business = require_business(db, session.business_id, session.tenant_id)
-        return _main_menu_response(session.id, business.booking_mode)
+        return _main_menu_response(session.id, business.booking_mode, locale=_session_locale(session))
 
     if session.step == IvrStep.SERVICE_SELECTION:
         services = list_services(db, session.business_id, session.tenant_id)
@@ -235,9 +254,10 @@ def _reprompt_for_no_input(db: Session, session: VoiceSession) -> IvrResponse:
             IvrOption(key=str(i + 1), label=svc.name)
             for i, svc in enumerate(services[:9])
         )
-        prompt = "Please select a service: " + ", ".join(
-            f"press {o.key} for {o.label}" for o in options
-        ) + "."
+        loc = _session_locale(session)
+        prompt = resolve_prompt(
+            PromptKey.SELECT_SERVICE, locale=loc, options=format_option_list(options, locale=loc)
+        )
         return IvrResponse(prompt=prompt, options=options, session_id=session.id)
 
     if session.step == IvrStep.STAFF_SELECTION:
@@ -247,14 +267,19 @@ def _reprompt_for_no_input(db: Session, session: VoiceSession) -> IvrResponse:
         staff_members = _schedulable_staff(db, session.business_id, session.tenant_id)
         staff_members, preferred_staff_id = _reorder_preferred_staff(db, session, staff_members)
         return _staff_selection_response(
-            session.id, staff_members, service.name, preferred_staff_id=preferred_staff_id
+            session.id,
+            staff_members,
+            service.name,
+            preferred_staff_id=preferred_staff_id,
+            locale=_session_locale(session),
         )
 
     if session.step == IvrStep.SLOT_SELECTION:
         candidates: list[dict] = json.loads(session.slot_candidates or "[]")
+        loc = _session_locale(session)
         if not candidates:
             return IvrResponse(
-                prompt="No slots are available. Please call back later.",
+                prompt=resolve_prompt(PromptKey.NO_SLOTS, locale=loc),
                 action=IvrAction.END,
                 session_id=session.id,
             )
@@ -268,15 +293,16 @@ def _reprompt_for_no_input(db: Session, session: VoiceSession) -> IvrResponse:
             )
             for i, c in enumerate(candidates)
         )
-        prompt = "Please select a slot: " + ", ".join(
-            f"press {o.key} for {o.label}" for o in options
-        ) + "."
+        prompt = resolve_prompt(
+            PromptKey.SELECT_SLOT, locale=loc, options=format_option_list(options, locale=loc)
+        )
         return IvrResponse(prompt=prompt, options=options, session_id=session.id)
 
     if session.step == IvrStep.TRANSFER_UNAVAILABLE:
+        loc = _session_locale(session)
         return IvrResponse(
-            prompt="Press 1 to go back to the main menu.",
-            options=(IvrOption(key="1", label="Main menu"),),
+            prompt=resolve_prompt(PromptKey.PRESS_1_MAIN_MENU, locale=loc),
+            options=(IvrOption(key="1", label=resolve_prompt(PromptKey.LABEL_MAIN_MENU, locale=loc)),),
             action=IvrAction.CONTINUE,
             session_id=session.id,
         )
@@ -289,9 +315,10 @@ def _reprompt_for_no_input(db: Session, session: VoiceSession) -> IvrResponse:
 
     if session.step == IvrStep.RESCHEDULE_SLOT_SELECTION:
         candidates: list[dict] = json.loads(session.slot_candidates or "[]")
+        loc = _session_locale(session)
         if not candidates:
             return IvrResponse(
-                prompt="No slots are available. Please call back later.",
+                prompt=resolve_prompt(PromptKey.NO_SLOTS, locale=loc),
                 action=IvrAction.END,
                 session_id=session.id,
             )
@@ -305,13 +332,13 @@ def _reprompt_for_no_input(db: Session, session: VoiceSession) -> IvrResponse:
             )
             for i, c in enumerate(candidates)
         )
-        prompt = "Please select a new time: " + ", ".join(
-            f"press {o.key} for {o.label}" for o in options
-        ) + "."
+        prompt = resolve_prompt(
+            PromptKey.SELECT_NEW_TIME, locale=loc, options=format_option_list(options, locale=loc)
+        )
         return IvrResponse(prompt=prompt, options=options, session_id=session.id)
 
     return IvrResponse(
-        prompt="Please make a selection.",
+        prompt=resolve_prompt(PromptKey.PLEASE_MAKE_A_SELECTION, locale=_session_locale(session)),
         action=IvrAction.CONTINUE,
         session_id=session.id,
     )
@@ -333,16 +360,17 @@ def _handle_incoming(db: Session, session: VoiceSession, key: str) -> IvrRespons
         return _handle_manage_booking_request(db, session)
 
     business = require_business(db, session.business_id, session.tenant_id)
-    return _handle_invalid_key(db, session, _main_menu_response(session.id, business.booking_mode))
+    return _handle_invalid_key(db, session, _main_menu_response(session.id, business.booking_mode, locale=_session_locale(session)))
 
 
 def _handle_press1_internal(db: Session, session: VoiceSession) -> IvrResponse:
     services = list_services(db, session.business_id, session.tenant_id)
+    loc = _session_locale(session)
     if not services:
         session.step = IvrStep.NO_SLOTS
         db.commit()
         return IvrResponse(
-            prompt="Sorry, no services are currently available. Please call back later.",
+            prompt=resolve_prompt(PromptKey.NO_SERVICES, locale=loc),
             action=IvrAction.END,
         )
     session.step = IvrStep.SERVICE_SELECTION
@@ -351,9 +379,9 @@ def _handle_press1_internal(db: Session, session: VoiceSession) -> IvrResponse:
         IvrOption(key=str(i + 1), label=svc.name)
         for i, svc in enumerate(services[:9])
     )
-    prompt = "Please select a service: " + ", ".join(
-        f"press {o.key} for {o.label}" for o in options
-    ) + "."
+    prompt = resolve_prompt(
+        PromptKey.SELECT_SERVICE, locale=loc, options=format_option_list(options, locale=loc)
+    )
     return IvrResponse(prompt=prompt, options=options, session_id=session.id)
 
 
@@ -371,10 +399,7 @@ def _handle_press1_external(db: Session, session: VoiceSession, business) -> Ivr
     db.commit()
     enqueue_send_notification_job(intent.id)
     return IvrResponse(
-        prompt=(
-            "We have sent you an SMS with a link to book your appointment online. "
-            "Thank you, goodbye!"
-        ),
+        prompt=resolve_prompt(PromptKey.EXTERNAL_LINK_SENT, locale=_session_locale(session)),
         action=IvrAction.END,
         session_id=session.id,
     )
@@ -382,14 +407,15 @@ def _handle_press1_external(db: Session, session: VoiceSession, business) -> Ivr
 
 def _handle_transfer_request(db: Session, session: VoiceSession) -> IvrResponse:
     business = require_business(db, session.business_id, session.tenant_id)
+    loc = _session_locale(session)
 
     if not business.transfer_enabled:
         session.step = IvrStep.TRANSFER_UNAVAILABLE
         db.commit()
         return IvrResponse(
-            prompt="Transfer to staff is not available for this business. Press 1 to book an appointment.",
+            prompt=resolve_prompt(PromptKey.TRANSFER_DISABLED, locale=loc),
             action=IvrAction.CONTINUE,
-            options=(IvrOption(key="1", label="Book an appointment"),),
+            options=(IvrOption(key="1", label=resolve_prompt(PromptKey.LABEL_BOOK_APPOINTMENT, locale=loc)),),
             session_id=session.id,
         )
 
@@ -399,9 +425,9 @@ def _handle_transfer_request(db: Session, session: VoiceSession) -> IvrResponse:
         session.step = IvrStep.TRANSFER_UNAVAILABLE
         db.commit()
         return IvrResponse(
-            prompt="Sorry, no staff members are available to take your call right now. Press 1 to book an appointment.",
+            prompt=resolve_prompt(PromptKey.TRANSFER_NO_STAFF, locale=loc),
             action=IvrAction.CONTINUE,
-            options=(IvrOption(key="1", label="Book an appointment"),),
+            options=(IvrOption(key="1", label=resolve_prompt(PromptKey.LABEL_BOOK_APPOINTMENT, locale=loc)),),
             session_id=session.id,
         )
 
@@ -410,7 +436,7 @@ def _handle_transfer_request(db: Session, session: VoiceSession) -> IvrResponse:
     db.commit()
 
     return IvrResponse(
-        prompt="Transferring you to a staff member. Please hold.",
+        prompt=resolve_prompt(PromptKey.TRANSFERRING, locale=loc),
         action=IvrAction.TRANSFER,
         session_id=session.id,
         transfer_destination=destination,
@@ -422,11 +448,12 @@ def _handle_transfer_unavailable(db: Session, session: VoiceSession, key: str) -
         business = require_business(db, session.business_id, session.tenant_id)
         session.step = IvrStep.INCOMING
         db.commit()
-        return _main_menu_response(session.id, business.booking_mode)
+        return _main_menu_response(session.id, business.booking_mode, locale=_session_locale(session))
+    loc = _session_locale(session)
     reprompt = IvrResponse(
-        prompt="Press 1 to go back to the main menu.",
+        prompt=resolve_prompt(PromptKey.PRESS_1_MAIN_MENU, locale=loc),
         action=IvrAction.CONTINUE,
-        options=(IvrOption(key="1", label="Main menu"),),
+        options=(IvrOption(key="1", label=resolve_prompt(PromptKey.LABEL_MAIN_MENU, locale=loc)),),
         session_id=session.id,
     )
     return _handle_invalid_key(db, session, reprompt)
@@ -452,12 +479,12 @@ def _handle_manage_booking_request(db: Session, session: VoiceSession) -> IvrRes
 
     if booking is None:
         business = require_business(db, session.business_id, session.tenant_id)
-        reprompt = _main_menu_response(session.id, business.booking_mode)
+        reprompt = _main_menu_response(session.id, business.booking_mode, locale=_session_locale(session))
         return IvrResponse(
-            prompt=(
-                "We couldn't find an upcoming appointment for this number. "
-                + reprompt.prompt
-            ),
+            prompt=resolve_prompt(
+                PromptKey.NO_UPCOMING_BOOKING_PREFIX, locale=_session_locale(session)
+            )
+            + reprompt.prompt,
             options=reprompt.options,
             action=reprompt.action,
             session_id=reprompt.session_id,
@@ -473,17 +500,17 @@ def _manage_booking_response(db: Session, session: VoiceSession, booking) -> Ivr
     service = require_service_in_business(
         db, booking.service_id, session.business_id, session.tenant_id
     )
+    loc = _session_locale(session)
     when = _format_slot(booking.starts_at, booking.ends_at)
-    prompt = (
-        f"We found your {service.name} appointment for {when}. "
-        "Press 1 to cancel it, press 2 to reschedule it, or press 3 to go back to the main menu."
+    prompt = resolve_prompt(
+        PromptKey.MANAGE_BOOKING_FOUND, locale=loc, service_name=service.name, when=when
     )
     return IvrResponse(
         prompt=prompt,
         options=(
-            IvrOption(key="1", label="Cancel appointment"),
-            IvrOption(key="2", label="Reschedule appointment"),
-            IvrOption(key="3", label="Main menu"),
+            IvrOption(key="1", label=resolve_prompt(PromptKey.LABEL_CANCEL_APPOINTMENT, locale=loc)),
+            IvrOption(key="2", label=resolve_prompt(PromptKey.LABEL_RESCHEDULE_APPOINTMENT, locale=loc)),
+            IvrOption(key="3", label=resolve_prompt(PromptKey.LABEL_MAIN_MENU, locale=loc)),
         ),
         session_id=session.id,
     )
@@ -494,6 +521,8 @@ def _handle_manage_booking(db: Session, session: VoiceSession, key: str) -> IvrR
         db, session.managed_booking_id, session.business_id, session.tenant_id
     )
 
+    loc = _session_locale(session)
+
     if key == "1":
         cancel_booking(
             db, booking.id, session.business_id, session.tenant_id, reason="customer_ivr_cancel"
@@ -501,7 +530,7 @@ def _handle_manage_booking(db: Session, session: VoiceSession, key: str) -> IvrR
         session.step = IvrStep.BOOKING_CANCELLED
         db.commit()
         return IvrResponse(
-            prompt="Your appointment has been cancelled. Thank you, goodbye!",
+            prompt=resolve_prompt(PromptKey.BOOKING_CANCELLED, locale=loc),
             action=IvrAction.END,
             session_id=session.id,
         )
@@ -512,7 +541,7 @@ def _handle_manage_booking(db: Session, session: VoiceSession, key: str) -> IvrR
             session.step = IvrStep.NO_SLOTS
             db.commit()
             return IvrResponse(
-                prompt="Sorry, there are no available slots to reschedule into right now. Please call back later.",
+                prompt=resolve_prompt(PromptKey.NO_SLOTS_TO_RESCHEDULE, locale=loc),
                 action=IvrAction.END,
             )
         session.slot_candidates = json.dumps([
@@ -525,27 +554,28 @@ def _handle_manage_booking(db: Session, session: VoiceSession, key: str) -> IvrR
             IvrOption(key=str(i + 1), label=_format_slot(s, e))
             for i, (s, e) in enumerate(slots)
         )
-        prompt = "Please select a new time: " + ", ".join(
-            f"press {o.key} for {o.label}" for o in options
-        ) + "."
+        prompt = resolve_prompt(
+            PromptKey.SELECT_NEW_TIME, locale=loc, options=format_option_list(options, locale=loc)
+        )
         return IvrResponse(prompt=prompt, options=options, session_id=session.id)
 
     if key == "3":
         business = require_business(db, session.business_id, session.tenant_id)
         session.step = IvrStep.INCOMING
         db.commit()
-        return _main_menu_response(session.id, business.booking_mode)
+        return _main_menu_response(session.id, business.booking_mode, locale=_session_locale(session))
 
     return _handle_invalid_key(db, session, _manage_booking_response(db, session, booking))
 
 
 def _handle_reschedule_slot_selection(db: Session, session: VoiceSession, key: str) -> IvrResponse:
     raw = session.slot_candidates
+    loc = _session_locale(session)
     if not raw:
         session.step = IvrStep.NO_SLOTS
         db.commit()
         return IvrResponse(
-            prompt="No slots are available. Please call back later.",
+            prompt=resolve_prompt(PromptKey.NO_SLOTS, locale=loc),
             action=IvrAction.END,
         )
 
@@ -566,9 +596,11 @@ def _handle_reschedule_slot_selection(db: Session, session: VoiceSession, key: s
             )
             for i, c in enumerate(candidates)
         )
-        prompt = "Invalid choice. Please select a new time: " + ", ".join(
-            f"press {o.key} for {o.label}" for o in options
-        ) + "."
+        prompt = resolve_prompt(
+            PromptKey.INVALID_SELECT_NEW_TIME,
+            locale=loc,
+            options=format_option_list(options, locale=loc),
+        )
         return _handle_invalid_key(
             db, session, IvrResponse(prompt=prompt, options=options, session_id=session.id)
         )
@@ -593,9 +625,10 @@ def _handle_reschedule_slot_selection(db: Session, session: VoiceSession, key: s
     db.commit()
 
     return IvrResponse(
-        prompt=(
-            f"Your appointment has been rescheduled to {_format_slot(starts_at, session.selected_slot_end)}. "
-            "You will receive an SMS confirmation. Thank you, goodbye!"
+        prompt=resolve_prompt(
+            PromptKey.BOOKING_RESCHEDULED,
+            locale=_session_locale(session),
+            when=_format_slot(starts_at, session.selected_slot_end),
         ),
         action=IvrAction.END,
         session_id=session.id,
@@ -619,11 +652,12 @@ def _handle_service_selection(
     db: Session, session: VoiceSession, key: str
 ) -> IvrResponse:
     services = list_services(db, session.business_id, session.tenant_id)
+    loc = _session_locale(session)
     if not services:
         session.step = IvrStep.NO_SLOTS
         db.commit()
         return IvrResponse(
-            prompt="Sorry, no services are currently available. Please call back later.",
+            prompt=resolve_prompt(PromptKey.NO_SERVICES, locale=loc),
             action=IvrAction.END,
         )
 
@@ -636,9 +670,11 @@ def _handle_service_selection(
             IvrOption(key=str(i + 1), label=svc.name)
             for i, svc in enumerate(services[:9])
         )
-        prompt = "Invalid choice. Please select a service: " + ", ".join(
-            f"press {o.key} for {o.label}" for o in options
-        ) + "."
+        prompt = resolve_prompt(
+            PromptKey.INVALID_SELECT_SERVICE,
+            locale=loc,
+            options=format_option_list(options, locale=loc),
+        )
         return _handle_invalid_key(
             db, session, IvrResponse(prompt=prompt, options=options, session_id=session.id)
         )
@@ -657,7 +693,11 @@ def _handle_service_selection(
     session.step = IvrStep.STAFF_SELECTION
     db.commit()
     return _staff_selection_response(
-        session.id, staff_members, selected_service.name, preferred_staff_id=preferred_staff_id
+        session.id,
+        staff_members,
+        selected_service.name,
+        preferred_staff_id=preferred_staff_id,
+        locale=_session_locale(session),
     )
 
 
@@ -681,7 +721,11 @@ def _handle_staff_selection(db: Session, session: VoiceSession, key: str) -> Ivr
             db,
             session,
             _staff_selection_response(
-                session.id, staff_members, service.name, preferred_staff_id=preferred_staff_id
+                session.id,
+                staff_members,
+                service.name,
+                preferred_staff_id=preferred_staff_id,
+                locale=_session_locale(session),
             ),
         )
 
@@ -732,22 +776,34 @@ def _staff_selection_response(
     service_name: str,
     *,
     preferred_staff_id: int | None = None,
+    locale: str = IVR_DEFAULT_LOCALE,
 ) -> IvrResponse:
     options = tuple(
         IvrOption(key=str(i + 1), label=member.name)
         for i, member in enumerate(staff_members[:9])
-    ) + (IvrOption(key="0", label="Any available staff member"),)
+    ) + (IvrOption(key="0", label=resolve_prompt(PromptKey.LABEL_ANY_AVAILABLE_STAFF, locale=locale)),)
 
     parts = []
     for i, member in enumerate(staff_members[:9]):
         key = str(i + 1)
         if preferred_staff_id is not None and member.id == preferred_staff_id:
-            parts.append(f"press {key} for {member.name}, who you saw last time")
+            parts.append(
+                resolve_prompt(
+                    PromptKey.STAFF_OPTION_PREFERRED, locale=locale, key=key, label=member.name
+                )
+            )
         else:
-            parts.append(f"press {key} for {member.name}")
-    parts.append("press 0 for any available staff member")
+            parts.append(
+                resolve_prompt(PromptKey.OPTION_ITEM, locale=locale, key=key, label=member.name)
+            )
+    parts.append(resolve_prompt(PromptKey.STAFF_OPTION_ANY, locale=locale))
 
-    prompt = f"Who would you like to book your {service_name} with? " + ", ".join(parts) + "."
+    prompt = resolve_prompt(
+        PromptKey.STAFF_SELECTION_PROMPT,
+        locale=locale,
+        service_name=service_name,
+        options=", ".join(parts),
+    )
     return IvrResponse(prompt=prompt, options=options, session_id=session_id)
 
 
@@ -755,14 +811,14 @@ def _proceed_to_slot_search(db: Session, session: VoiceSession, selected_service
     slots = _find_slots(
         db, session=session, service_id=selected_service.id, staff_id=session.selected_staff_id
     )
+    loc = _session_locale(session)
 
     if not slots:
         session.step = IvrStep.NO_SLOTS
         db.commit()
         return IvrResponse(
-            prompt=(
-                f"Sorry, there are no available slots for {selected_service.name} "
-                "in the next week. Please call back later."
+            prompt=resolve_prompt(
+                PromptKey.NO_SLOTS_FOR_SERVICE, locale=loc, service_name=selected_service.name
             ),
             action=IvrAction.END,
         )
@@ -778,9 +834,12 @@ def _proceed_to_slot_search(db: Session, session: VoiceSession, selected_service
         IvrOption(key=str(i + 1), label=_format_slot(s, e))
         for i, (s, e) in enumerate(slots)
     )
-    prompt = f"Available slots for {selected_service.name}: " + ", ".join(
-        f"press {o.key} for {o.label}" for o in options
-    ) + ". Press your choice."
+    prompt = resolve_prompt(
+        PromptKey.AVAILABLE_SLOTS_FOR_SERVICE,
+        locale=loc,
+        service_name=selected_service.name,
+        options=format_option_list(options, locale=loc),
+    )
     return IvrResponse(prompt=prompt, options=options, session_id=session.id)
 
 
@@ -792,7 +851,7 @@ def _handle_slot_selection(
         session.step = IvrStep.NO_SLOTS
         db.commit()
         return IvrResponse(
-            prompt="No slots are available. Please call back later.",
+            prompt=resolve_prompt(PromptKey.NO_SLOTS, locale=_session_locale(session)),
             action=IvrAction.END,
         )
 
@@ -813,9 +872,10 @@ def _handle_slot_selection(
             )
             for i, c in enumerate(candidates)
         )
-        prompt = "Invalid choice. Please select a slot: " + ", ".join(
-            f"press {o.key} for {o.label}" for o in options
-        ) + "."
+        loc = _session_locale(session)
+        prompt = resolve_prompt(
+            PromptKey.INVALID_SELECT_SLOT, locale=loc, options=format_option_list(options, locale=loc)
+        )
         return _handle_invalid_key(
             db, session, IvrResponse(prompt=prompt, options=options, session_id=session.id)
         )
@@ -845,9 +905,10 @@ def _handle_slot_selection(
     db.commit()
 
     return IvrResponse(
-        prompt=(
-            f"Your appointment has been booked for {_format_slot(starts_at, session.selected_slot_end)}. "
-            "You will receive an SMS confirmation. Thank you, goodbye!"
+        prompt=resolve_prompt(
+            PromptKey.BOOKING_CONFIRMED,
+            locale=_session_locale(session),
+            when=_format_slot(starts_at, session.selected_slot_end),
         ),
         action=IvrAction.END,
         session_id=session.id,
@@ -861,29 +922,24 @@ def _main_menu_response(
     booking_mode: str = BookingMode.INTERNAL_BOOKING,
     *,
     greeting_name: str | None = None,
+    locale: str = IVR_DEFAULT_LOCALE,
 ) -> IvrResponse:
     if booking_mode == BookingMode.EXTERNAL_BOOKING_LINK:
-        press1_label = "Receive a booking link by SMS"
-        prompt = (
-            "Welcome! Press 1 to receive a booking link by SMS, "
-            "press 2 to speak with a staff member, "
-            "or press 3 to manage an existing appointment."
-        )
+        press1_label = resolve_prompt(PromptKey.LABEL_BOOKING_LINK_SMS, locale=locale)
+        prompt = resolve_prompt(PromptKey.MAIN_MENU_EXTERNAL, locale=locale)
     else:
-        press1_label = "Book an appointment"
-        prompt = (
-            "Welcome! Press 1 to book an appointment, "
-            "press 2 to speak with a staff member, "
-            "or press 3 to manage an existing appointment."
-        )
+        press1_label = resolve_prompt(PromptKey.LABEL_BOOK_APPOINTMENT, locale=locale)
+        prompt = resolve_prompt(PromptKey.MAIN_MENU_INTERNAL, locale=locale)
     if greeting_name:
-        prompt = f"Welcome back, {greeting_name}! " + prompt
+        prompt = (
+            resolve_prompt(PromptKey.GREETING_PREFIX, locale=locale, name=greeting_name) + prompt
+        )
     return IvrResponse(
         prompt=prompt,
         options=(
             IvrOption(key="1", label=press1_label),
-            IvrOption(key="2", label="Speak with staff"),
-            IvrOption(key="3", label="Manage an existing appointment"),
+            IvrOption(key="2", label=resolve_prompt(PromptKey.LABEL_SPEAK_WITH_STAFF, locale=locale)),
+            IvrOption(key="3", label=resolve_prompt(PromptKey.LABEL_MANAGE_BOOKING, locale=locale)),
         ),
         session_id=session_id,
     )

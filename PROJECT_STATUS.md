@@ -4,7 +4,7 @@ Verified as of 2026-06-22.
 
 ## Current Status
 
-All MVP foundation epics (A–K) and full Epic L (L001–L004, owner acquisition + onboarding) implemented. Production expansion backlog P1-001 through P1-013 and P2-001 through P2-012 (CRM, preferred staff, multi-service bookings, waitlist with offer/timeout/escalation) done. Both pilot-blocking gaps found in the pre-P3 audit (cross-business tenant isolation, waitlist offer concurrency) are fixed. P3-012 (manual admin override) is done — the first P3 operational-extension item. 902 tests collected, 901 pass (1 pre-existing flaky test, order-dependent on shared Redis state, unrelated to any of the above — see `tests/test_worker.py::test_notification_job_is_not_blocked_by_calendar_backlog`). CI green.
+All MVP foundation epics (A–K) and full Epic L (L001–L004, owner acquisition + onboarding) implemented. Production expansion backlog P1-001 through P1-013 and P2-001 through P2-012 (CRM, preferred staff, multi-service bookings, waitlist with offer/timeout/escalation) done. Both pilot-blocking gaps found in the pre-P3 audit (cross-business tenant isolation, waitlist offer concurrency) are fixed. P3-012 (manual admin override) and P3-009 (multilingual IVR prompt architecture) are done — the first two P3 operational-extension items. 910 tests collected and passing (the one previously-flaky, order-dependent worker test passed cleanly on this run too). CI green.
 
 The product can be fully demonstrated locally using fake SMS and fake calendar
 providers. Real Twilio voice and SMS providers are wired and configured via env
@@ -195,8 +195,8 @@ Two independent dimensions added to `Business`:
 ## Not Implemented (Expansion Backlog)
 
 Audited 2026-06-17, updated 2026-06-22 after P1-001 through P1-013, P2-001
-through P2-012, and P3-012.
-52 P1–P4 items tracked; 25 fully implemented, 6 partially, 21 not yet started.
+through P2-012, and P3-009/P3-012.
+52 P1–P4 items tracked; 26 fully implemented, 6 partially, 20 not yet started.
 
 **P1 — Must-have for pilot:**
 - NOT_IMPLEMENTED: none.
@@ -312,7 +312,7 @@ through P2-012, and P3-012.
 **P3 — Operational extensions:**
 - NOT_IMPLEMENTED: salon/staff hours intersection, recurring staff blocks,
   deposits ADR, Stripe payment links, pending-payment booking state,
-  multilingual IVR, calendar privacy rules, calendar conflict import ADR,
+  calendar privacy rules, calendar conflict import ADR,
   integration reconciliation job, two-way calendar ADR.
 - PARTIAL: salon opening hours (`WorkingHours` nullable staff_id exists;
   availability intersection missing), salon closures/staff time blocks
@@ -324,7 +324,13 @@ through P2-012, and P3-012.
   (queryable separately from regular create/cancel); override-create does
   **not** bypass the DB-level `no_overlapping_staff_bookings` exclusion
   constraint for a genuine same-staff conflict — that remains a 409, a
-  deliberate scope decision (P3-012).
+  deliberate scope decision (P3-012); multilingual IVR prompt architecture —
+  new `app/core/ivr_prompts.py` (`PromptKey` enum, locale-keyed `_PROMPTS`
+  dict, `resolve_prompt()`/`format_option_list()`); every prompt/label in
+  `ivr_service.py` now resolves through a single `_session_locale(session)`
+  extension point; only `en` is populated (translation content is out of
+  scope), but adding a real locale later requires zero step-handler changes
+  (P3-009).
 
 **P4 — SaaS model and scale:**
 - NOT_IMPLEMENTED: self-service onboarding, onboarding wizard, phone provisioning,
