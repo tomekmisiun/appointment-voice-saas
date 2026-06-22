@@ -3,3 +3,4 @@ Added AuditAction.BOOKING_RESCHEDULED and BOOKING_CONFIRMED to an existing Strin
 Added AuditAction.CUSTOMER_ANONYMIZED to an existing String `action` column (no native DB enum); no DDL change needed (P2-005).
 Added IvrStep.STAFF_SELECTION to an existing String(32) `step` column (no native DB enum); no DDL change needed (P2-006).
 Added NotificationPurpose.WAITLIST_OFFER to an existing String(64) `purpose` column (no native DB enum); no DDL change needed (P2-011).
+Added AuditAction.BOOKING_OVERRIDE_CREATED and BOOKING_OVERRIDE_CANCELLED to an existing String `action` column (no native DB enum); no DDL change needed (P3-012).
