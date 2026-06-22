@@ -199,7 +199,12 @@ def test_inactive_staff_excluded_from_selection(db):
     assert session.selected_staff_id == staff[0].id
 
 
-def test_staff_without_working_hours_excluded_and_skips_to_any_available(db):
+def test_staff_without_own_hours_are_offered_via_business_wide_fallback(db):
+    """P3-002: a staff member with no staff-specific WorkingHours row is no
+    longer a guaranteed dead-end -- they fall back to the business's hours,
+    so they *are* offered in the menu (previously they were excluded, since
+    get_available_slots() had no such fallback and would always return no
+    slots for them)."""
     tenant_id, biz, svc, staff = _setup_without_staff_hours(db, staff_count=3)
     session, _ = start_session(db, business_id=biz.id, tenant_id=tenant_id, caller_phone="+48700000010")
     handle_keypress(db, session_id=session.id, tenant_id=tenant_id, key="1")
@@ -207,8 +212,25 @@ def test_staff_without_working_hours_excluded_and_skips_to_any_available(db):
     response = handle_keypress(db, session_id=session.id, tenant_id=tenant_id, key="1")  # pick service
 
     db.refresh(session)
-    # No staff has a configured schedule -> none are offered, step is skipped
-    # entirely, and slot search falls back to business-level hours.
-    assert session.step == IvrStep.SLOT_SELECTION
-    assert session.selected_staff_id is None
-    assert response.action.value == "continue"
+    assert session.step == IvrStep.STAFF_SELECTION
+    assert {o.key for o in response.options} == {"1", "2", "3", "0"}
+
+
+def test_staff_excluded_only_when_neither_they_nor_business_has_hours(db):
+    """The narrower exclusion that remains after P3-002: a staff member is
+    only ever a guaranteed dead-end if *neither* they nor the business has
+    any working hours configured at all."""
+    tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
+    biz = create_business(db, tenant_id=tenant.id, name="No Hours At All Salon", timezone="UTC")
+    create_service(db, tenant_id=tenant.id, business_id=biz.id, name="Haircut", duration_minutes=30)
+    for i in range(3):
+        create_staff(db, tenant_id=tenant.id, business_id=biz.id, name=f"Stylist {i + 1}")
+    # No working hours at all -- neither business-wide nor staff-specific.
+
+    session, _ = start_session(db, business_id=biz.id, tenant_id=tenant.id, caller_phone="+48700000011")
+    handle_keypress(db, session_id=session.id, tenant_id=tenant.id, key="1")
+    response = handle_keypress(db, session_id=session.id, tenant_id=tenant.id, key="1")  # pick service
+
+    db.refresh(session)
+    assert session.step == IvrStep.NO_SLOTS
+    assert response.action.value == "end"

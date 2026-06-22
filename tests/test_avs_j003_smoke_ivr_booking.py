@@ -1,12 +1,16 @@
 """AVS-J003: Smoke — IVR simulated call-to-booking with fake SMS and fake calendar.
 
 Proves the full voice path works locally using seeded demo data:
-  simulate call → press 1 (book) → press 1 (service) → press 1 (slot) → press 1 (confirm)
-  → booking in DB, SMS enqueued.
+  simulate call → press 1 (book) → press 1 (service) → press 0 (any available
+  staff) → press 1 (slot) → press 1 (confirm) → booking in DB, SMS enqueued.
 
-The demo business seeds 3 staff members but only business-level working
-hours (no staff-specific schedule), so none of them are "schedulable"
-(P2-006) and the staff-selection step is auto-skipped, preserving this flow.
+The demo business seeds 3 staff members and only business-level working
+hours (no staff-specific schedule). Since P3-002, staff with no
+staff-specific override fall back to the business's hours, so all 3 are
+"schedulable" (P2-006) and the staff-selection step is offered -- this
+smoke test presses "0" (any available staff) to keep the overall flow
+simple; dedicated staff-selection behavior is covered by
+`tests/test_avs_p2006_ivr_staff_selection.py`.
 """
 import pytest
 
@@ -64,21 +68,28 @@ def test_ivr_smoke_full_booking_flow(ivr_smoke):
     assert data["action"] == IvrAction.CONTINUE
     assert any(o["key"] == "1" for o in data["options"])
 
-    # Press 1 → service selection
+    # Press 1 (book) → service selection
     resp = _press(client, headers, session_id, "1")
     assert resp.status_code == 200
     data = resp.json()
     assert data["action"] == IvrAction.CONTINUE
     assert len(data["options"]) >= 1
 
-    # Press 1 → slot selection
+    # Press 1 (pick service) → staff selection
     resp = _press(client, headers, session_id, "1")
     assert resp.status_code == 200
     data = resp.json()
     assert data["action"] == IvrAction.CONTINUE
     assert len(data["options"]) >= 1
 
-    # Press 1 → booking confirmed
+    # Press 0 (any available staff) → slot selection
+    resp = _press(client, headers, session_id, "0")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["action"] == IvrAction.CONTINUE
+    assert len(data["options"]) >= 1
+
+    # Press 1 (pick slot) → booking confirmed
     resp = _press(client, headers, session_id, "1")
     assert resp.status_code == 200
     data = resp.json()
@@ -104,9 +115,10 @@ def test_ivr_smoke_enqueues_sms_after_booking(ivr_smoke):
     )
     session_id = resp.json()["session_id"]
 
-    _press(client, headers, session_id, "1")
-    _press(client, headers, session_id, "1")
-    _press(client, headers, session_id, "1")
+    _press(client, headers, session_id, "1")  # book
+    _press(client, headers, session_id, "1")  # pick service
+    _press(client, headers, session_id, "0")  # any available staff
+    _press(client, headers, session_id, "1")  # pick slot -> booking confirmed
 
     outbox = db.query(NotificationOutbox).filter(
         NotificationOutbox.tenant_id == ivr_smoke["tenant_id"],

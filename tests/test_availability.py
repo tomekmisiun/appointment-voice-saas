@@ -386,6 +386,238 @@ def test_business_wide_closed_exception_blocks_staff_slots(db, domain):
     assert slots == []
 
 
+# ── P3-002: salon/staff hours intersection ──────────────────────────────────
+
+def test_staff_without_own_hours_falls_back_to_salon_hours(db, domain):
+    """A staff member with no staff-specific WorkingHours override follows
+    the salon's business-wide hours, not an empty schedule."""
+    create_working_hours(
+        db,
+        tenant_id=domain["tenant_id"],
+        business_id=domain["business_id"],
+        staff_id=None,
+        day_of_week=2,
+        start_time=time(9, 0),
+        end_time=time(17, 0),
+    )
+    slots = get_available_slots(
+        db,
+        tenant_id=domain["tenant_id"],
+        business_id=domain["business_id"],
+        service_id=domain["service_id"],
+        staff_id=domain["staff_id"],
+        query_date=FUTURE_DATE,
+    )
+    assert len(slots) == 16  # 8 hours / 30 min
+
+
+def test_staff_specific_hours_narrower_than_salon_get_intersected(db, domain):
+    create_working_hours(
+        db,
+        tenant_id=domain["tenant_id"],
+        business_id=domain["business_id"],
+        staff_id=None,
+        day_of_week=2,
+        start_time=time(9, 0),
+        end_time=time(17, 0),
+    )
+    create_working_hours(
+        db,
+        tenant_id=domain["tenant_id"],
+        business_id=domain["business_id"],
+        staff_id=domain["staff_id"],
+        day_of_week=2,
+        start_time=time(13, 0),
+        end_time=time(15, 0),
+    )
+    slots = get_available_slots(
+        db,
+        tenant_id=domain["tenant_id"],
+        business_id=domain["business_id"],
+        service_id=domain["service_id"],
+        staff_id=domain["staff_id"],
+        query_date=FUTURE_DATE,
+    )
+    assert len(slots) == 4  # 2 hours / 30 min, not the salon's full 8 hours
+    starts_at, _ = slots[0]
+    assert starts_at.astimezone(timezone(timedelta(hours=2))).time() == time(13, 0)
+
+
+def test_staff_specific_hours_wider_than_salon_get_clipped(db, domain):
+    """A staff member can't take bookings outside the salon's own hours,
+    even if their personal schedule would otherwise allow it."""
+    create_working_hours(
+        db,
+        tenant_id=domain["tenant_id"],
+        business_id=domain["business_id"],
+        staff_id=None,
+        day_of_week=2,
+        start_time=time(9, 0),
+        end_time=time(12, 0),
+    )
+    create_working_hours(
+        db,
+        tenant_id=domain["tenant_id"],
+        business_id=domain["business_id"],
+        staff_id=domain["staff_id"],
+        day_of_week=2,
+        start_time=time(6, 0),
+        end_time=time(20, 0),
+    )
+    slots = get_available_slots(
+        db,
+        tenant_id=domain["tenant_id"],
+        business_id=domain["business_id"],
+        service_id=domain["service_id"],
+        staff_id=domain["staff_id"],
+        query_date=FUTURE_DATE,
+    )
+    assert len(slots) == 6  # clipped to the salon's 9:00-12:00, not 6:00-20:00
+
+
+def test_staff_hours_used_as_is_when_salon_has_no_business_wide_hours(db, domain):
+    """Preserves pre-P3-002 behavior for a business that only ever
+    configures per-staff hours and never sets up business-wide ones."""
+    create_working_hours(
+        db,
+        tenant_id=domain["tenant_id"],
+        business_id=domain["business_id"],
+        staff_id=domain["staff_id"],
+        day_of_week=2,
+        start_time=time(9, 0),
+        end_time=time(17, 0),
+    )
+    slots = get_available_slots(
+        db,
+        tenant_id=domain["tenant_id"],
+        business_id=domain["business_id"],
+        service_id=domain["service_id"],
+        staff_id=domain["staff_id"],
+        query_date=FUTURE_DATE,
+    )
+    assert len(slots) == 16  # the staff's own 8-hour window, unmodified
+
+
+def test_no_salon_and_no_staff_hours_returns_empty(db, domain):
+    slots = get_available_slots(
+        db,
+        tenant_id=domain["tenant_id"],
+        business_id=domain["business_id"],
+        service_id=domain["service_id"],
+        staff_id=domain["staff_id"],
+        query_date=FUTURE_DATE,
+    )
+    assert slots == []
+
+
+def test_split_shift_intersection_handles_multiple_windows_per_side(db, domain):
+    """Either side of the intersection may have more than one window (e.g.
+    a split shift) -- every pairwise overlap must be considered, not just
+    a 1:1 zip of the two lists."""
+    for start, end in [(time(9, 0), time(12, 0)), (time(15, 0), time(18, 0))]:
+        create_working_hours(
+            db,
+            tenant_id=domain["tenant_id"],
+            business_id=domain["business_id"],
+            staff_id=None,
+            day_of_week=2,
+            start_time=start,
+            end_time=end,
+        )
+    create_working_hours(
+        db,
+        tenant_id=domain["tenant_id"],
+        business_id=domain["business_id"],
+        staff_id=domain["staff_id"],
+        day_of_week=2,
+        start_time=time(11, 0),
+        end_time=time(16, 0),
+    )
+    slots = get_available_slots(
+        db,
+        tenant_id=domain["tenant_id"],
+        business_id=domain["business_id"],
+        service_id=domain["service_id"],
+        staff_id=domain["staff_id"],
+        query_date=FUTURE_DATE,
+    )
+    # Intersected windows: 11:00-12:00 (1h) and 15:00-16:00 (1h) -> 4 slots of 30 min
+    assert len(slots) == 4
+
+
+def test_staff_with_managed_schedule_is_closed_on_an_unconfigured_day(db, domain):
+    """A staff member with their own hours on some days (e.g. Mon-Fri) must
+    NOT fall back to the salon's hours on a day they have no row for --
+    that fallback is only for a staff member with zero rows of their own,
+    not a day-by-day gap in an otherwise-managed schedule."""
+    create_working_hours(
+        db,
+        tenant_id=domain["tenant_id"],
+        business_id=domain["business_id"],
+        staff_id=None,
+        day_of_week=2,  # salon is open Wednesday (FUTURE_DATE)
+        start_time=time(9, 0),
+        end_time=time(17, 0),
+    )
+    create_working_hours(
+        db,
+        tenant_id=domain["tenant_id"],
+        business_id=domain["business_id"],
+        staff_id=domain["staff_id"],
+        day_of_week=1,  # this staff member only works Tuesdays
+        start_time=time(9, 0),
+        end_time=time(17, 0),
+    )
+
+    slots = get_available_slots(
+        db,
+        tenant_id=domain["tenant_id"],
+        business_id=domain["business_id"],
+        service_id=domain["service_id"],
+        staff_id=domain["staff_id"],
+        query_date=FUTURE_DATE,  # Wednesday -- not one of this staff's days
+    )
+
+    assert slots == []
+
+
+def test_salon_with_managed_schedule_is_closed_on_an_unconfigured_day_even_if_staff_has_hours(db, domain):
+    """The same bug, mirrored on the salon side: a business with its own
+    managed schedule on some days (e.g. Mon-Fri) must NOT let a staff
+    member's hours on a day the salon has no row for stand in for "salon
+    open" -- the salon is implicitly closed that day, same as a staff
+    member would be."""
+    create_working_hours(
+        db,
+        tenant_id=domain["tenant_id"],
+        business_id=domain["business_id"],
+        staff_id=None,
+        day_of_week=1,  # salon only opens Tuesdays
+        start_time=time(9, 0),
+        end_time=time(17, 0),
+    )
+    create_working_hours(
+        db,
+        tenant_id=domain["tenant_id"],
+        business_id=domain["business_id"],
+        staff_id=domain["staff_id"],
+        day_of_week=2,  # this staff member works Wednesdays (FUTURE_DATE)
+        start_time=time(9, 0),
+        end_time=time(17, 0),
+    )
+
+    slots = get_available_slots(
+        db,
+        tenant_id=domain["tenant_id"],
+        business_id=domain["business_id"],
+        service_id=domain["service_id"],
+        staff_id=domain["staff_id"],
+        query_date=FUTURE_DATE,  # Wednesday -- not one of the salon's days
+    )
+
+    assert slots == []
+
+
 # ── AVS-C005: Availability API ───────────────────────────────────────────────
 
 def test_api_availability_requires_auth(client, db, domain):
