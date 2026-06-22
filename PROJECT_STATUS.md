@@ -4,7 +4,7 @@ Verified as of 2026-06-22.
 
 ## Current Status
 
-All MVP foundation epics (A–K) and full Epic L (L001–L004, owner acquisition + onboarding) implemented. Production expansion backlog P1-001 through P1-013 and P2-001 through P2-012 (CRM, preferred staff, multi-service bookings, waitlist with offer/timeout/escalation) done. Both pilot-blocking gaps found in the pre-P3 audit (cross-business tenant isolation, waitlist offer concurrency) are fixed, plus a related cross-business gap found independently in working-hours/availability-exceptions (GAP-014/AVS-TD-032) — also fixed. P3-012 (manual admin override) and P3-009 (multilingual IVR prompt architecture) are done — the first two P3 operational-extension items. ADR 0003 accepted for P3-005's model decision (implementation still pending). 915 tests collected and passing. CI green.
+All MVP foundation epics (A–K) and full Epic L (L001–L004, owner acquisition + onboarding) implemented. Production expansion backlog P1-001 through P1-013 and P2-001 through P2-012 (CRM, preferred staff, multi-service bookings, waitlist with offer/timeout/escalation) done. Both pilot-blocking gaps found in the pre-P3 audit (cross-business tenant isolation, waitlist offer concurrency) are fixed, plus a related cross-business gap found independently in working-hours/availability-exceptions (GAP-014/AVS-TD-032) — also fixed. P3-012 (manual admin override), P3-009 (multilingual IVR prompt architecture), and P3-004 (staff time block overlap validation) are done. ADR 0003 accepted for P3-005's model decision (implementation still pending). 926 tests collected and passing. CI green.
 
 The product can be fully demonstrated locally using fake SMS and fake calendar
 providers. Real Twilio voice and SMS providers are wired and configured via env
@@ -196,8 +196,8 @@ Two independent dimensions added to `Business`:
 ## Not Implemented (Expansion Backlog)
 
 Audited 2026-06-17, updated 2026-06-22 after P1-001 through P1-013, P2-001
-through P2-012, and P3-009/P3-012.
-52 P1–P4 items tracked; 26 fully implemented, 6 partially, 20 not yet started.
+through P2-012, and P3-004/P3-009/P3-012.
+52 P1–P4 items tracked; 27 fully implemented, 5 partially, 20 not yet started.
 
 **P1 — Must-have for pilot:**
 - NOT_IMPLEMENTED: none.
@@ -311,14 +311,24 @@ through P2-012, and P3-009/P3-012.
   (P2-012).
 
 **P3 — Operational extensions:**
-- NOT_IMPLEMENTED: salon/staff hours intersection, recurring staff blocks,
-  deposits ADR, Stripe payment links, pending-payment booking state,
-  calendar privacy rules, calendar conflict import ADR,
-  integration reconciliation job, two-way calendar ADR.
+- NOT_IMPLEMENTED: salon/staff hours intersection, recurring staff blocks
+  implementation (model decision made in ADR 0003), deposits ADR, Stripe
+  payment links, pending-payment booking state, calendar privacy rules,
+  calendar conflict import ADR, integration reconciliation job, two-way
+  calendar ADR.
 - PARTIAL: salon opening hours (`WorkingHours` nullable staff_id exists;
-  availability intersection missing), salon closures/staff time blocks
-  (`AvailabilityException` nullable staff_id exists; API validation and tests missing).
-- DONE: manual admin override workflow — `POST /businesses/{business_id}/bookings/override`
+  availability intersection missing), salon closures (`AvailabilityException`
+  business-wide closure already works; API docs/tests for that scope still
+  missing — distinct from staff-specific blocks, which are now done below).
+- DONE: one-off staff/business time blocks — `create_availability_exception()`
+  now validates `staff_id` belongs to the business (404 otherwise) and
+  rejects a new exception that conflicts with an existing one for the same
+  (business_id, staff_id, date) scope: a full-day closure can't coexist with
+  any other row for that scope/date, and two "special hours" rows can't have
+  overlapping time windows (non-overlapping windows remain allowed — the
+  existing lunch-block pattern); deliberately does not cross-check a
+  staff-specific row against a business-wide row, since that precedence
+  question belongs to P3-002/003 (P3-004); manual admin override workflow — `POST /businesses/{business_id}/bookings/override`
   and `POST /businesses/{business_id}/bookings/{booking_id}/override-cancel`,
   both admin-only with a required, non-blank `reason`, logging the new
   `AuditAction.BOOKING_OVERRIDE_CREATED`/`BOOKING_OVERRIDE_CANCELLED`
