@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.domain_errors import ConflictError, NotFoundError
+from app.core.domain_errors import BadRequestError, ConflictError, NotFoundError
 from app.models.audit_log import AuditAction
 from app.models.booking import Booking, BookingSource, BookingStatus
 from app.models.booking_line_item import BookingLineItem
@@ -67,7 +67,11 @@ def create_booking(
     starts_at: datetime,
     source: str = BookingSource.API,
     actor_id: int | None = None,
+    override: bool = False,
+    reason: str | None = None,
 ) -> Booking:
+    if override and not (reason or "").strip():
+        raise BadRequestError("reason is required for an admin override booking")
     business = require_business(db, business_id, tenant_id)
     customer = require_customer_in_business(db, customer_id, business_id, tenant_id)
     svc = require_service_in_business(db, service_id, business_id, tenant_id)
@@ -101,9 +105,9 @@ def create_booking(
         db,
         tenant_id=tenant_id,
         admin_id=actor_id,
-        action=AuditAction.BOOKING_CREATED,
+        action=AuditAction.BOOKING_OVERRIDE_CREATED if override else AuditAction.BOOKING_CREATED,
         target_booking_id=booking.id,
-        source=source,
+        source=reason if override else source,
         commit=False,
     )
     confirmation_intents = enqueue_booking_confirmation(
@@ -272,7 +276,10 @@ def cancel_booking(
     *,
     reason: str | None = None,
     actor_id: int | None = None,
+    override: bool = False,
 ) -> Booking:
+    if override and not (reason or "").strip():
+        raise BadRequestError("reason is required for an admin override cancellation")
     booking = require_booking_in_business(db, booking_id, business_id, tenant_id)
     if booking.status == BookingStatus.CANCELLED:
         raise ConflictError("Booking is already cancelled")
@@ -282,9 +289,9 @@ def cancel_booking(
         db,
         tenant_id=tenant_id,
         admin_id=actor_id,
-        action=AuditAction.BOOKING_CANCELLED,
+        action=AuditAction.BOOKING_OVERRIDE_CANCELLED if override else AuditAction.BOOKING_CANCELLED,
         target_booking_id=booking.id,
-        source=booking.source,
+        source=reason if override else booking.source,
         commit=False,
     )
     business = require_business(db, booking.business_id, tenant_id)

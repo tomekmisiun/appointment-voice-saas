@@ -20,6 +20,8 @@ class AuditAction(StrEnum):
     BOOKING_CANCELLED = "booking.cancelled"
     BOOKING_RESCHEDULED = "booking.rescheduled"
     BOOKING_CONFIRMED = "booking.confirmed"
+    BOOKING_OVERRIDE_CREATED = "booking.override_created"
+    BOOKING_OVERRIDE_CANCELLED = "booking.override_cancelled"
     CUSTOMER_ANONYMIZED = "customer.anonymized"
 
 
