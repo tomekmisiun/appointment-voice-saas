@@ -40,6 +40,37 @@ class BookingCancelRequest(BaseModel):
     reason: str | None = Field(default=None, max_length=255)
 
 
+class BookingOverrideCreateRequest(BaseModel):
+    customer_id: int
+    service_id: int
+    staff_id: int | None = None
+    starts_at: datetime
+    source: BookingSource = BookingSource.API
+    reason: str = Field(min_length=1, max_length=255)
+
+    @model_validator(mode="after")
+    def starts_at_must_be_aware(self) -> "BookingOverrideCreateRequest":
+        if self.starts_at.tzinfo is None:
+            raise ValueError("starts_at must be timezone-aware")
+        return self
+
+    @model_validator(mode="after")
+    def reason_must_not_be_blank(self) -> "BookingOverrideCreateRequest":
+        if not self.reason.strip():
+            raise ValueError("reason must not be blank")
+        return self
+
+
+class BookingOverrideCancelRequest(BaseModel):
+    reason: str = Field(min_length=1, max_length=255)
+
+    @model_validator(mode="after")
+    def reason_must_not_be_blank(self) -> "BookingOverrideCancelRequest":
+        if not self.reason.strip():
+            raise ValueError("reason must not be blank")
+        return self
+
+
 class BookingRescheduleRequest(BaseModel):
     new_starts_at: datetime
     reason: str | None = Field(default=None, max_length=255)
@@ -54,6 +85,8 @@ class BookingRescheduleRequest(BaseModel):
 __all__ = [
     "BookingCancelRequest",
     "BookingCreate",
+    "BookingOverrideCancelRequest",
+    "BookingOverrideCreateRequest",
     "BookingRead",
     "BookingRescheduleRequest",
     "BookingSource",

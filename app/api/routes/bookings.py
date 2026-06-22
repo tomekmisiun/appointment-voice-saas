@@ -8,6 +8,8 @@ from app.models.booking import BookingStatus
 from app.schemas.booking import (
     BookingCancelRequest,
     BookingCreate,
+    BookingOverrideCancelRequest,
+    BookingOverrideCreateRequest,
     BookingRead,
     BookingRescheduleRequest,
 )
@@ -39,6 +41,33 @@ def create_booking_endpoint(
         starts_at=body.starts_at,
         source=body.source,
         actor_id=current_user.id,
+    )
+
+
+@router.post("/override", response_model=BookingRead, status_code=status.HTTP_201_CREATED)
+def override_create_booking_endpoint(
+    business_id: int,
+    body: BookingOverrideCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin")),
+):
+    """Admin override booking creation (P3-012): same conflict rules as a
+    normal create (the DB-level no-overlap constraint still applies for a
+    staff_id with a real conflict — this does not bypass it), but requires
+    an explicit reason and is logged under a distinct audit action so
+    overrides are queryable separately from regular bookings."""
+    return create_booking(
+        db,
+        tenant_id=current_user.tenant_id,
+        business_id=business_id,
+        customer_id=body.customer_id,
+        service_id=body.service_id,
+        staff_id=body.staff_id,
+        starts_at=body.starts_at,
+        source=body.source,
+        actor_id=current_user.id,
+        override=True,
+        reason=body.reason,
     )
 
 
@@ -89,6 +118,28 @@ def cancel_booking_endpoint(
         current_user.tenant_id,
         reason=body.reason,
         actor_id=current_user.id,
+    )
+
+
+@router.post("/{booking_id}/override-cancel", response_model=BookingRead)
+def override_cancel_booking_endpoint(
+    business_id: int,
+    booking_id: int,
+    body: BookingOverrideCancelRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin")),
+):
+    """Admin override cancellation (P3-012): mechanically identical to a
+    normal cancel (frees the slot, offers the waitlist) but requires an
+    explicit reason and is logged under a distinct audit action."""
+    return cancel_booking(
+        db,
+        booking_id,
+        business_id,
+        current_user.tenant_id,
+        reason=body.reason,
+        actor_id=current_user.id,
+        override=True,
     )
 
 

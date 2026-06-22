@@ -1,10 +1,10 @@
 # Project Status — Appointment Voice SaaS
 
-Verified as of 2026-06-18.
+Verified as of 2026-06-22.
 
 ## Current Status
 
-All MVP foundation epics (A–K) and full Epic L (L001–L004, owner acquisition + onboarding) implemented. Production expansion backlog P2-001 through P2-012 (CRM, preferred staff, multi-service bookings, waitlist with offer/timeout/escalation) also done. 871 tests pass. CI green.
+All MVP foundation epics (A–K) and full Epic L (L001–L004, owner acquisition + onboarding) implemented. Production expansion backlog P1-001 through P1-013 and P2-001 through P2-012 (CRM, preferred staff, multi-service bookings, waitlist with offer/timeout/escalation) done. Both pilot-blocking gaps found in the pre-P3 audit (cross-business tenant isolation, waitlist offer concurrency) are fixed. P3-012 (manual admin override) is done — the first P3 operational-extension item. 902 tests collected, 901 pass (1 pre-existing flaky test, order-dependent on shared Redis state, unrelated to any of the above — see `tests/test_worker.py::test_notification_job_is_not_blocked_by_calendar_backlog`). CI green.
 
 The product can be fully demonstrated locally using fake SMS and fake calendar
 providers. Real Twilio voice and SMS providers are wired and configured via env
@@ -178,8 +178,9 @@ Two independent dimensions added to `Business`:
 | GAP-008 | CalendarIntegration staff_id not FK-validated at DB level | LOW | Open — AVS-TD-028 |
 | GAP-009 | Phone numbers not masked in structured logs | MEDIUM | Open — Privacy risk |
 | GAP-010 | ~~No DLQ alerting or metrics for failed async jobs~~ | MEDIUM | **Fixed — P1-011/P1-012** |
-| GAP-011 | `get_client`/`require_client`/`update_client`/`get_customer`/`require_customer`/`gdpr_delete_customer` (and pre-existing `get_staff`/`get_booking`) filter by `tenant_id` only, not `business_id`, despite routes accepting `business_id` in the URL — a tenant with multiple businesses can read/mutate/anonymize another business's client or customer data. | CRITICAL | Open — AVS-TD-029, see `docs/audits/pre-p3-readiness-audit.md` |
-| GAP-012 | Waitlist offer matching (`find_matching_waitlist_entries()`) has no row locking or idempotency guard; concurrent cancellations or an overlapping maintenance tick can double-offer the same waitlist entry. | HIGH | Open — AVS-TD-030, see `docs/audits/pre-p3-readiness-audit.md` |
+| GAP-011 | ~~`get_client`/`require_client`/`update_client`/`get_customer`/`require_customer`/`gdpr_delete_customer` (and pre-existing `get_staff`/`get_booking`) filter by `tenant_id` only, not `business_id`, despite routes accepting `business_id` in the URL — a tenant with multiple businesses can read/mutate/anonymize another business's client or customer data.~~ | CRITICAL | **Fixed — AVS-TD-029, PR #42** |
+| GAP-012 | ~~Waitlist offer matching (`find_matching_waitlist_entries()`) has no row locking or idempotency guard; concurrent cancellations or an overlapping maintenance tick can double-offer the same waitlist entry.~~ | HIGH | **Fixed — AVS-TD-030, PR #45** |
+| GAP-013 | `app/api/routes/twilio_voice.py:150`'s `VoiceSession` lookup doesn't validate `business_id`, only `session_id`; mitigated by mandatory Twilio signature validation. | LOW | Open — AVS-TD-031, see `docs/audits/pre-p3-readiness-audit.md` |
 
 ## Readiness Assessment
 
@@ -188,19 +189,19 @@ Two independent dimensions added to `Business`:
 | NOT_READY | ✅ Exceeds | All core flows demonstrable |
 | PORTFOLIO_READY | ✅ Yes | Clean domain, tests, CI, real providers, honest limitations |
 | MVP_DEMO_READY | ✅ Yes | Full local simulated call-to-booking-to-SMS-to-calendar works |
-| PILOT_READY | ⚠️ Conditional | Providers wired; BUG-001 fixed; IVR timeout/invalid-input/repeat/reschedule handled, admin reschedule API added, IVR degrades gracefully on DB/Redis outage instead of exposing raw errors, per-job-type queues, DLQ depth/failure-rate alerting, provider-level failure metrics, create/cancel/reschedule/SMS-confirm audit trail wired (P1-001 through P1-009, P1-011 through P1-013); only the admin-override portion of audit logging (blocked on P3-012, which doesn't exist yet) remains open. **Blocked on GAP-011** (CRITICAL cross-business data exposure via Client/Customer/GDPR-delete endpoints) for any tenant with more than one business — fix before onboarding such a tenant. GAP-012 (waitlist double-offer race) should also be fixed before relying on the waitlist under real concurrent traffic. See `docs/audits/pre-p3-readiness-audit.md`. |
-| PRODUCTION_READY | ❌ No | Missing: admin override audit trail (needs P3-012 first), owner metrics/CSV export (P2-013/P2-014), billing, monitoring dashboards |
+| PILOT_READY | ✅ Yes | Providers wired; BUG-001 fixed; IVR timeout/invalid-input/repeat/reschedule handled, admin reschedule API added, IVR degrades gracefully on DB/Redis outage instead of exposing raw errors, per-job-type queues, DLQ depth/failure-rate alerting, provider-level failure metrics, full lifecycle audit trail incl. admin override wired (P1-001 through P1-013 all done). GAP-011 (cross-business data exposure) and GAP-012 (waitlist double-offer race) — the two former pilot blockers — are both fixed. GAP-013 (low severity, mitigated by signature validation) remains open but does not block pilot traffic. See `docs/audits/pre-p3-readiness-audit.md`. |
+| PRODUCTION_READY | ❌ No | Missing: owner metrics/CSV export (P2-013/P2-014), billing, monitoring dashboards, P3 operational extensions beyond admin override |
 
 ## Not Implemented (Expansion Backlog)
 
-Audited 2026-06-17, updated 2026-06-18 after P1-001 through P1-013 (see below)
-and P2-001 through P2-012.
-52 P1–P4 items tracked; 24 fully implemented, 7 partially, 21 not yet started.
+Audited 2026-06-17, updated 2026-06-22 after P1-001 through P1-013, P2-001
+through P2-012, and P3-012.
+52 P1–P4 items tracked; 25 fully implemented, 6 partially, 21 not yet started.
 
 **P1 — Must-have for pilot:**
-- NOT_IMPLEMENTED: none (all remaining P1 items are partial — see below).
-- PARTIAL: audit log expansion (create/cancel/reschedule/SMS-confirm logged;
-  admin-override audit pending P3-012, which doesn't exist yet).
+- NOT_IMPLEMENTED: none.
+- PARTIAL: none — audit log expansion (P1-013) is now fully done, including
+  the admin-override portion (P3-012, see P3 section below).
 - DONE: reminder SMS queued once per booking within `reminder_lead_minutes`
   of the appointment via the worker maintenance tick (P1-001), inbound SMS
   reply confirm/cancel parsing via `/webhooks/twilio/sms/{business_id}/inbound`
@@ -229,9 +230,10 @@ and P2-001 through P2-012.
   `SmsProvider.send()`/calendar provider call sites — finer-grained than
   job-level since a job can retry against the provider multiple times
   (P1-012), `BOOKING_RESCHEDULED` audit entry on the new booking (`source`
-  links back to the old booking id) and `BOOKING_CONFIRMED` audit entry on
-  SMS reply CONFIRM, on top of the existing create/cancel audit trail
-  (P1-013).
+  links back to the old booking id), `BOOKING_CONFIRMED` audit entry on
+  SMS reply CONFIRM, and `BOOKING_OVERRIDE_CREATED`/`BOOKING_OVERRIDE_CANCELLED`
+  audit entries on admin override actions (P3-012), on top of the existing
+  create/cancel audit trail (P1-013).
 - DONE (covered by MVP): exponential backoff (`calculate_retry_delay_seconds()`).
 
 **P2 — High business impact:**
@@ -311,10 +313,18 @@ and P2-001 through P2-012.
 - NOT_IMPLEMENTED: salon/staff hours intersection, recurring staff blocks,
   deposits ADR, Stripe payment links, pending-payment booking state,
   multilingual IVR, calendar privacy rules, calendar conflict import ADR,
-  admin override workflow, integration reconciliation job, two-way calendar ADR.
+  integration reconciliation job, two-way calendar ADR.
 - PARTIAL: salon opening hours (`WorkingHours` nullable staff_id exists;
   availability intersection missing), salon closures/staff time blocks
   (`AvailabilityException` nullable staff_id exists; API validation and tests missing).
+- DONE: manual admin override workflow — `POST /businesses/{business_id}/bookings/override`
+  and `POST /businesses/{business_id}/bookings/{booking_id}/override-cancel`,
+  both admin-only with a required, non-blank `reason`, logging the new
+  `AuditAction.BOOKING_OVERRIDE_CREATED`/`BOOKING_OVERRIDE_CANCELLED`
+  (queryable separately from regular create/cancel); override-create does
+  **not** bypass the DB-level `no_overlapping_staff_bookings` exclusion
+  constraint for a genuine same-staff conflict — that remains a 409, a
+  deliberate scope decision (P3-012).
 
 **P4 — SaaS model and scale:**
 - NOT_IMPLEMENTED: self-service onboarding, onboarding wizard, phone provisioning,
