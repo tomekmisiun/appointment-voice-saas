@@ -4,7 +4,7 @@ Verified as of 2026-06-22.
 
 ## Current Status
 
-All MVP foundation epics (A–K) and full Epic L (L001–L004, owner acquisition + onboarding) implemented. Production expansion backlog P1-001 through P1-013 and P2-001 through P2-012 (CRM, preferred staff, multi-service bookings, waitlist with offer/timeout/escalation) done. Both pilot-blocking gaps found in the pre-P3 audit (cross-business tenant isolation, waitlist offer concurrency) are fixed, plus a related cross-business gap found independently in working-hours/availability-exceptions (GAP-014/AVS-TD-032) — also fixed. P3-012 (manual admin override), P3-009 (multilingual IVR prompt architecture), and P3-004 (staff time block overlap validation) are done. ADR 0003 accepted for P3-005's model decision (implementation still pending). 926 tests collected and passing. CI green.
+All MVP foundation epics (A–K) and full Epic L (L001–L004, owner acquisition + onboarding) implemented. Production expansion backlog P1-001 through P1-013 and P2-001 through P2-012 (CRM, preferred staff, multi-service bookings, waitlist with offer/timeout/escalation) done. Both pilot-blocking gaps found in the pre-P3 audit (cross-business tenant isolation, waitlist offer concurrency) are fixed, plus a related cross-business gap found independently in working-hours/availability-exceptions (GAP-014/AVS-TD-032) — also fixed. P3-012 (manual admin override), P3-009 (multilingual IVR prompt architecture), P3-004 (staff time block overlap validation), and P3-001 (salon opening hours API — found and closed a real gap: staff-specific working hours had no API path at all) are done. ADR 0003 accepted for P3-005's model decision (implementation still pending). 934 tests collected and passing. CI green.
 
 The product can be fully demonstrated locally using fake SMS and fake calendar
 providers. Real Twilio voice and SMS providers are wired and configured via env
@@ -196,8 +196,8 @@ Two independent dimensions added to `Business`:
 ## Not Implemented (Expansion Backlog)
 
 Audited 2026-06-17, updated 2026-06-22 after P1-001 through P1-013, P2-001
-through P2-012, and P3-004/P3-009/P3-012.
-52 P1–P4 items tracked; 27 fully implemented, 5 partially, 20 not yet started.
+through P2-012, and P3-001/P3-004/P3-009/P3-012.
+52 P1–P4 items tracked; 28 fully implemented, 4 partially, 20 not yet started.
 
 **P1 — Must-have for pilot:**
 - NOT_IMPLEMENTED: none.
@@ -316,11 +316,18 @@ through P2-012, and P3-004/P3-009/P3-012.
   payment links, pending-payment booking state, calendar privacy rules,
   calendar conflict import ADR, integration reconciliation job, two-way
   calendar ADR.
-- PARTIAL: salon opening hours (`WorkingHours` nullable staff_id exists;
-  availability intersection missing), salon closures (`AvailabilityException`
-  business-wide closure already works; API docs/tests for that scope still
-  missing — distinct from staff-specific blocks, which are now done below).
-- DONE: one-off staff/business time blocks — `create_availability_exception()`
+- PARTIAL: salon closures (`AvailabilityException` business-wide closure
+  already works; API docs/tests for that scope still missing — distinct
+  from staff-specific blocks, which are now done below).
+- DONE: salon opening hours API — `POST /businesses/{business_id}/working-hours`
+  previously hardcoded `staff_id=None`, so a real admin had no API path to
+  configure a staff-specific schedule at all (only business-wide "salon"
+  hours), even though `get_available_slots()` and P2-006's IVR
+  staff-selection menu both depend on staff having their own `WorkingHours`
+  rows; added an optional `staff_id` field, validated against the business
+  the same way as other `staff_id`-accepting endpoints; salon/staff hours
+  *intersection* for a single availability search is still P3-002, not this
+  (P3-001); one-off staff/business time blocks — `create_availability_exception()`
   now validates `staff_id` belongs to the business (404 otherwise) and
   rejects a new exception that conflicts with an existing one for the same
   (business_id, staff_id, date) scope: a full-day closure can't coexist with
