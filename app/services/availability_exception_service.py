@@ -58,6 +58,17 @@ def require_availability_exception(
     return exc
 
 
+def require_availability_exception_in_business(
+    db: Session, exception_id: int, business_id: int, tenant_id: int
+) -> AvailabilityException:
+    """Like require_availability_exception(), but also rejects an exception
+    that belongs to a different business within the same tenant."""
+    exc = require_availability_exception(db, exception_id, tenant_id)
+    if exc.business_id != business_id:
+        raise NotFoundError("Availability exception not found")
+    return exc
+
+
 def list_availability_exceptions(
     db: Session,
     business_id: int,
@@ -81,8 +92,8 @@ def list_availability_exceptions(
 
 
 def delete_availability_exception(
-    db: Session, exception_id: int, tenant_id: int
+    db: Session, exception_id: int, tenant_id: int, *, business_id: int
 ) -> None:
-    exc = require_availability_exception(db, exception_id, tenant_id)
+    exc = require_availability_exception_in_business(db, exception_id, business_id, tenant_id)
     db.delete(exc)
     db.commit()

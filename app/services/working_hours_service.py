@@ -47,6 +47,17 @@ def require_working_hours(db: Session, wh_id: int, tenant_id: int) -> WorkingHou
     return wh
 
 
+def require_working_hours_in_business(
+    db: Session, wh_id: int, business_id: int, tenant_id: int
+) -> WorkingHours:
+    """Like require_working_hours(), but also rejects a record that belongs
+    to a different business within the same tenant."""
+    wh = require_working_hours(db, wh_id, tenant_id)
+    if wh.business_id != business_id:
+        raise NotFoundError("Working hours record not found")
+    return wh
+
+
 def list_working_hours(
     db: Session,
     business_id: int,
@@ -72,9 +83,7 @@ def update_working_hours(
     start_time: "time | None" = None,
     end_time: "time | None" = None,
 ) -> WorkingHours:
-    wh = require_working_hours(db, wh_id, tenant_id)
-    if wh.business_id != business_id:
-        raise NotFoundError("Working hours record not found")
+    wh = require_working_hours_in_business(db, wh_id, business_id, tenant_id)
     if start_time is not None:
         wh.start_time = start_time
     if end_time is not None:
@@ -86,7 +95,7 @@ def update_working_hours(
     return wh
 
 
-def delete_working_hours(db: Session, wh_id: int, tenant_id: int) -> None:
-    wh = require_working_hours(db, wh_id, tenant_id)
+def delete_working_hours(db: Session, wh_id: int, tenant_id: int, *, business_id: int) -> None:
+    wh = require_working_hours_in_business(db, wh_id, business_id, tenant_id)
     db.delete(wh)
     db.commit()

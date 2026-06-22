@@ -8,15 +8,23 @@ Client/Customer/Staff/Booking rows -- including running GDPR anonymization
 on another business's customer -- by substituting `business_id` in the URL
 while keeping a valid resource id from a different business in the same
 tenant. See docs/audits/pre-p3-readiness-audit.md Finding 1 (AVS-TD-029).
+
+The same pattern was found, separately, in `require_working_hours` and
+`require_availability_exception` (not covered by the original AVS-TD-029
+fix, which only audited client/customer/staff/booking/service) and fixed
+the same way -- see the `test_*_working_hours_*`/`test_*_availability_exception_*`
+tests below.
 """
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 
 from app.models.tenant import Tenant
+from app.services.availability_exception_service import create_availability_exception
 from app.services.business_service import create_business
 from app.services.client_service import create_client
 from app.services.customer_service import get_or_create_customer
 from app.services.service_service import create_service
 from app.services.staff_service import create_staff
+from app.services.working_hours_service import create_working_hours
 from tests.database import auth_headers, login_user, promote_to_admin, register_user
 
 
@@ -302,3 +310,124 @@ def test_update_service_rejects_cross_business_access(db, client):
     assert resp.status_code == 404
     db.refresh(svc_a)
     assert svc_a.name == "Cut"
+
+
+def test_get_working_hours_rejects_cross_business_access(db, client):
+    tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
+    token = _admin(db, client, "scope-wh-get@example.com")
+    biz_a, biz_b = _two_businesses(db, tenant.id)
+    wh_a = create_working_hours(
+        db,
+        tenant_id=tenant.id,
+        business_id=biz_a.id,
+        staff_id=None,
+        day_of_week=2,
+        start_time=time(9, 0),
+        end_time=time(17, 0),
+    )
+
+    resp = client.get(
+        f"/api/v1/businesses/{biz_b.id}/working-hours/{wh_a.id}",
+        headers=auth_headers(token),
+    )
+
+    assert resp.status_code == 404
+
+
+def test_delete_working_hours_rejects_cross_business_access(db, client):
+    tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
+    token = _admin(db, client, "scope-wh-delete@example.com")
+    biz_a, biz_b = _two_businesses(db, tenant.id)
+    wh_a = create_working_hours(
+        db,
+        tenant_id=tenant.id,
+        business_id=biz_a.id,
+        staff_id=None,
+        day_of_week=2,
+        start_time=time(9, 0),
+        end_time=time(17, 0),
+    )
+
+    resp = client.delete(
+        f"/api/v1/businesses/{biz_b.id}/working-hours/{wh_a.id}",
+        headers=auth_headers(token),
+    )
+
+    assert resp.status_code == 404
+    db.refresh(wh_a)
+    assert wh_a.id is not None
+
+
+def test_update_working_hours_rejects_cross_business_access(db, client):
+    tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
+    token = _admin(db, client, "scope-wh-patch@example.com")
+    biz_a, biz_b = _two_businesses(db, tenant.id)
+    wh_a = create_working_hours(
+        db,
+        tenant_id=tenant.id,
+        business_id=biz_a.id,
+        staff_id=None,
+        day_of_week=2,
+        start_time=time(9, 0),
+        end_time=time(17, 0),
+    )
+
+    resp = client.patch(
+        f"/api/v1/businesses/{biz_b.id}/working-hours/{wh_a.id}",
+        json={"start_time": "10:00:00"},
+        headers=auth_headers(token),
+    )
+
+    assert resp.status_code == 404
+    db.refresh(wh_a)
+    assert wh_a.start_time == time(9, 0)
+
+
+def test_get_availability_exception_rejects_cross_business_access(db, client):
+    tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
+    token = _admin(db, client, "scope-exc-get@example.com")
+    biz_a, biz_b = _two_businesses(db, tenant.id)
+    exc_a = create_availability_exception(
+        db,
+        tenant_id=tenant.id,
+        business_id=biz_a.id,
+        staff_id=None,
+        exception_date=date(2027, 7, 7),
+        is_closed=True,
+        start_time=None,
+        end_time=None,
+        reason="Holiday",
+    )
+
+    resp = client.get(
+        f"/api/v1/businesses/{biz_b.id}/availability-exceptions/{exc_a.id}",
+        headers=auth_headers(token),
+    )
+
+    assert resp.status_code == 404
+
+
+def test_delete_availability_exception_rejects_cross_business_access(db, client):
+    tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
+    token = _admin(db, client, "scope-exc-delete@example.com")
+    biz_a, biz_b = _two_businesses(db, tenant.id)
+    exc_a = create_availability_exception(
+        db,
+        tenant_id=tenant.id,
+        business_id=biz_a.id,
+        staff_id=None,
+        exception_date=date(2027, 7, 7),
+        is_closed=True,
+        start_time=None,
+        end_time=None,
+        reason="Holiday",
+    )
+
+    resp = client.delete(
+        f"/api/v1/businesses/{biz_b.id}/availability-exceptions/{exc_a.id}",
+        headers=auth_headers(token),
+    )
+
+    assert resp.status_code == 404
+    db.refresh(exc_a)
+    assert exc_a.id is not None
