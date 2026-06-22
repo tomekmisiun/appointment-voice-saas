@@ -946,15 +946,34 @@ def _main_menu_response(
 
 
 def _schedulable_staff(db: Session, business_id: int, tenant_id: int) -> list:
-    """Active staff who have at least one staff-specific working-hours row.
+    """Active staff who can plausibly be offered a real availability
+    search.
 
-    get_available_slots() matches a given staff_id only against that staff
-    member's own WorkingHours rows, with no fallback to business-level
-    hours. Offering a staff member with no configured schedule in the IVR
-    menu would therefore always dead-end in "no slots available", so they
-    are excluded here rather than surfaced as a selectable option.
+    Since P3-002, `get_available_slots()` falls back to the business's
+    own (staff_id IS NULL) WorkingHours rows for any staff member with no
+    staff-specific override -- so a staff member is only ever a guaranteed,
+    permanent dead-end ("no slots available" on every date, not just a
+    fully-booked one) if *neither* they nor the business has any working
+    hours configured at all. If the business has any business-wide hours,
+    every active staff member is schedulable through that fallback; only
+    when the business has none does staff-specific hours become the sole
+    determinant, matching the pre-P3-002 behavior in that edge case.
     """
     staff_members = list_staff(db, business_id, tenant_id)
+
+    business_has_hours = (
+        db.query(WorkingHours.id)
+        .filter(
+            WorkingHours.business_id == business_id,
+            WorkingHours.tenant_id == tenant_id,
+            WorkingHours.staff_id.is_(None),
+        )
+        .first()
+        is not None
+    )
+    if business_has_hours:
+        return staff_members
+
     scheduled_ids = {
         row[0]
         for row in db.query(WorkingHours.staff_id)

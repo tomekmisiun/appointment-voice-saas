@@ -129,17 +129,45 @@ def test_combined_duration_returns_empty_when_no_working_hours(db):
     assert slots == []
 
 
-def test_combined_duration_filters_by_staff_working_hours(db):
+def test_combined_duration_staff_without_own_hours_falls_back_to_salon_hours(db):
+    """P3-002: a staff member with no staff-specific WorkingHours override
+    follows the salon's business-wide hours, not an empty schedule."""
     tenant_id, biz, haircut, color = _setup(db)
     staff = create_staff(db, tenant_id=tenant_id, business_id=biz.id, name="Stylist")
     query_date = _next_matching_weekday(2)
 
-    # staff has no working hours configured -> no slots for that staff
     slots = get_available_slots_for_total_duration(
         db, tenant_id=tenant_id, business_id=biz.id, total_duration_minutes=90,
         staff_id=staff.id, query_date=query_date,
     )
 
+    assert len(slots) == 1
+    start, end = slots[0]
+    assert (end - start).total_seconds() / 60 == 90
+
+
+def test_combined_duration_filters_by_staff_specific_narrower_hours(db):
+    """P3-002: when a staff member *does* have their own (narrower) hours,
+    a slot only counts if it fits both the salon's and the staff's window."""
+    tenant_id, biz, haircut, color = _setup(db)
+    staff = create_staff(db, tenant_id=tenant_id, business_id=biz.id, name="Stylist")
+    query_date = _next_matching_weekday(2)
+    create_working_hours(
+        db,
+        tenant_id=tenant_id,
+        business_id=biz.id,
+        staff_id=staff.id,
+        day_of_week=query_date.weekday(),
+        start_time=time(9, 0),
+        end_time=time(10, 0),  # narrower than the salon's 9:00-11:00
+    )
+
+    slots = get_available_slots_for_total_duration(
+        db, tenant_id=tenant_id, business_id=biz.id, total_duration_minutes=90,
+        staff_id=staff.id, query_date=query_date,
+    )
+
+    # 90 minutes doesn't fit inside the intersected 9:00-10:00 window.
     assert slots == []
 
 

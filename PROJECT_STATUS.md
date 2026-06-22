@@ -4,7 +4,7 @@ Verified as of 2026-06-22.
 
 ## Current Status
 
-All MVP foundation epics (A–K) and full Epic L (L001–L004, owner acquisition + onboarding) implemented. Production expansion backlog P1-001 through P1-013 and P2-001 through P2-012 (CRM, preferred staff, multi-service bookings, waitlist with offer/timeout/escalation) done. Both pilot-blocking gaps found in the pre-P3 audit (cross-business tenant isolation, waitlist offer concurrency) are fixed, plus a related cross-business gap found independently in working-hours/availability-exceptions (GAP-014/AVS-TD-032) — also fixed. P3-012 (manual admin override), P3-009 (multilingual IVR prompt architecture), P3-004 (staff time block overlap validation), and P3-001 (salon opening hours API — found and closed a real gap: staff-specific working hours had no API path at all) are done. ADR 0003 accepted for P3-005's model decision (implementation still pending). 934 tests collected and passing. CI green.
+All MVP foundation epics (A–K) and full Epic L (L001–L004, owner acquisition + onboarding) implemented. Production expansion backlog P1-001 through P1-013 and P2-001 through P2-012 (CRM, preferred staff, multi-service bookings, waitlist with offer/timeout/escalation) done. Both pilot-blocking gaps found in the pre-P3 audit (cross-business tenant isolation, waitlist offer concurrency) are fixed, plus a related cross-business gap found independently in working-hours/availability-exceptions (GAP-014/AVS-TD-032) — also fixed. P3-012 (manual admin override), P3-009 (multilingual IVR prompt architecture), P3-004 (staff time block overlap validation), P3-001 (salon opening hours API — found and closed a real gap: staff-specific working hours had no API path at all), and P3-002 (salon/staff hours intersection — found and fixed a related gap: staff with no individual schedule used to get zero availability instead of falling back to the salon's hours, which had silently neutered IVR per-staff selection in the demo data) are done. ADR 0003 accepted for P3-005's model decision (implementation still pending). 944 tests collected and passing. CI green.
 
 The product can be fully demonstrated locally using fake SMS and fake calendar
 providers. Real Twilio voice and SMS providers are wired and configured via env
@@ -196,8 +196,8 @@ Two independent dimensions added to `Business`:
 ## Not Implemented (Expansion Backlog)
 
 Audited 2026-06-17, updated 2026-06-22 after P1-001 through P1-013, P2-001
-through P2-012, and P3-001/P3-004/P3-009/P3-012.
-52 P1–P4 items tracked; 28 fully implemented, 4 partially, 20 not yet started.
+through P2-012, and P3-001/P3-002/P3-004/P3-009/P3-012.
+52 P1–P4 items tracked; 29 fully implemented, 3 partially, 20 not yet started.
 
 **P1 — Must-have for pilot:**
 - NOT_IMPLEMENTED: none.
@@ -311,11 +311,10 @@ through P2-012, and P3-001/P3-004/P3-009/P3-012.
   (P2-012).
 
 **P3 — Operational extensions:**
-- NOT_IMPLEMENTED: salon/staff hours intersection, recurring staff blocks
-  implementation (model decision made in ADR 0003), deposits ADR, Stripe
-  payment links, pending-payment booking state, calendar privacy rules,
-  calendar conflict import ADR, integration reconciliation job, two-way
-  calendar ADR.
+- NOT_IMPLEMENTED: recurring staff blocks implementation (model decision
+  made in ADR 0003), deposits ADR, Stripe payment links, pending-payment
+  booking state, calendar privacy rules, calendar conflict import ADR,
+  integration reconciliation job, two-way calendar ADR.
 - PARTIAL: salon closures (`AvailabilityException` business-wide closure
   already works; API docs/tests for that scope still missing — distinct
   from staff-specific blocks, which are now done below).
@@ -325,9 +324,22 @@ through P2-012, and P3-001/P3-004/P3-009/P3-012.
   hours), even though `get_available_slots()` and P2-006's IVR
   staff-selection menu both depend on staff having their own `WorkingHours`
   rows; added an optional `staff_id` field, validated against the business
-  the same way as other `staff_id`-accepting endpoints; salon/staff hours
-  *intersection* for a single availability search is still P3-002, not this
-  (P3-001); one-off staff/business time blocks — `create_availability_exception()`
+  the same way as other `staff_id`-accepting endpoints (P3-001); salon/staff
+  hours intersection — `_get_available_slots_for_duration()` now intersects
+  a staff member's specific hours against the salon's wide ones (a slot
+  only counts if both are open; a wider staff window gets clipped to the
+  salon's); the fallback (use the other side's hours when one side has
+  *zero* `WorkingHours` rows configured at all) is symmetric and based on
+  whether that side has any row on *any* day, not just the queried one —
+  a side with a managed-but-partial schedule (e.g. salon or staff open
+  Mon-Fri only) stays closed on an unconfigured day rather than silently
+  inheriting the other side's hours that day; two asymmetric variants of
+  this bug (staff-side, then salon-side) were each caught in cross-provider
+  review and fixed pre-merge with dedicated regression tests; this also fixed
+  `_schedulable_staff()` in the IVR (P2-006), which had wrongly excluded
+  every such staff member from the selection menu — the demo seed (staff
+  with no individual schedule) had silently made per-staff IVR selection
+  dead before this fix (P3-002); one-off staff/business time blocks — `create_availability_exception()`
   now validates `staff_id` belongs to the business (404 otherwise) and
   rejects a new exception that conflicts with an existing one for the same
   (business_id, staff_id, date) scope: a full-day closure can't coexist with

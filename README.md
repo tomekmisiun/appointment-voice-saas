@@ -156,7 +156,10 @@ curl -s -X POST http://localhost:8000/api/v1/ivr/simulate/call \
   -H "Content-Type: application/json" \
   -d '{"business_id": BUSINESS_ID, "caller_phone": "+48600000001"}' | python3 -m json.tool
 
-# 5. Press 1 to book, then 1 to select service, then 1 to pick slot, then 1 to confirm
+# 5. Press 1 to book, then 1 to select service, then 0 for any available
+#    staff (the demo's 3 staff have no individual schedule, so they follow
+#    the salon's hours and are all offered — press 1-3 to pick one by name
+#    instead if you'd rather), then 1 to pick a slot (creates the booking)
 curl -s -X POST http://localhost:8000/api/v1/ivr/simulate/press \
   -H "Authorization: Bearer TOKEN" \
   -H "Content-Type: application/json" \

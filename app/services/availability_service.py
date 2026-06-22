@@ -32,6 +32,23 @@ def _slots_in_window(
     return slots
 
 
+def _intersect_time_windows(
+    staff_windows: list[tuple[time, time]], salon_windows: list[tuple[time, time]]
+) -> list[tuple[time, time]]:
+    """Pairwise-intersect every staff window against every salon window,
+    keeping only the non-empty overlaps (P3-002). Either side may hold more
+    than one window (e.g. a split shift), so this is a full cross product,
+    not a 1:1 zip."""
+    overlaps = []
+    for staff_start, staff_end in staff_windows:
+        for salon_start, salon_end in salon_windows:
+            start = max(staff_start, salon_start)
+            end = min(staff_end, salon_end)
+            if start < end:
+                overlaps.append((start, end))
+    return overlaps
+
+
 def get_available_slots(
     db: Session,
     *,
@@ -103,16 +120,58 @@ def _get_available_slots_for_duration(
     tz = ZoneInfo(business.timezone)
     day_of_week = query_date.weekday()  # 0=Monday, 6=Sunday
 
-    wh_query = db.query(WorkingHours).filter(
-        WorkingHours.business_id == business_id,
-        WorkingHours.tenant_id == tenant_id,
-        WorkingHours.day_of_week == day_of_week,
-    )
-    if staff_id is not None:
-        wh_query = wh_query.filter(WorkingHours.staff_id == staff_id)
+    def _wh_windows(filter_staff_id: int | None) -> list[tuple[time, time]]:
+        query = db.query(WorkingHours).filter(
+            WorkingHours.business_id == business_id,
+            WorkingHours.tenant_id == tenant_id,
+            WorkingHours.day_of_week == day_of_week,
+        )
+        if filter_staff_id is not None:
+            query = query.filter(WorkingHours.staff_id == filter_staff_id)
+        else:
+            query = query.filter(WorkingHours.staff_id.is_(None))
+        return [(wh.start_time, wh.end_time) for wh in query.all()]
+
+    def _has_any_schedule(filter_staff_id: int | None) -> bool:
+        """Whether any WorkingHours row exists for this scope, on *any*
+        day -- not just query_date's weekday. Distinguishes "never
+        configured a schedule" (use the other side's hours as-is, even if
+        that's empty today) from "has a schedule but not for this specific
+        day" (closed today, not a fallback to the other side)."""
+        query = db.query(WorkingHours.id).filter(
+            WorkingHours.business_id == business_id,
+            WorkingHours.tenant_id == tenant_id,
+        )
+        if filter_staff_id is not None:
+            query = query.filter(WorkingHours.staff_id == filter_staff_id)
+        else:
+            query = query.filter(WorkingHours.staff_id.is_(None))
+        return query.first() is not None
+
+    salon_windows = _wh_windows(None)
+
+    if staff_id is None:
+        working_hours = salon_windows
     else:
-        wh_query = wh_query.filter(WorkingHours.staff_id.is_(None))
-    working_hours = wh_query.all()
+        staff_windows = _wh_windows(staff_id)
+
+        if not _has_any_schedule(staff_id):
+            # This staff member never configured their own hours -- follow
+            # the salon's hours as-is, today and every day (P3-002).
+            working_hours = salon_windows
+        elif not _has_any_schedule(None):
+            # The business never configured business-wide hours at all --
+            # nothing to intersect against; use the staff's own hours for
+            # today unmodified (preserves pre-P3-002 behavior for
+            # businesses that only ever configure per-staff hours).
+            working_hours = staff_windows
+        else:
+            # Both sides have a managed schedule (on at least one day
+            # each): a slot only counts if both are open *today*
+            # specifically (P3-002 acceptance). If either side has no row
+            # for today, the cross product is naturally empty -- closed,
+            # not a fallback to the other side.
+            working_hours = _intersect_time_windows(staff_windows, salon_windows)
 
     if not working_hours:
         return []
@@ -149,11 +208,9 @@ def _get_available_slots_for_duration(
                 )
             )
     else:
-        for wh in working_hours:
+        for window_start, window_end in working_hours:
             candidate_starts.extend(
-                _slots_in_window(
-                    query_date, wh.start_time, wh.end_time, duration_minutes, tz
-                )
+                _slots_in_window(query_date, window_start, window_end, duration_minutes, tz)
             )
 
     candidate_starts = sorted(set(candidate_starts))

@@ -235,8 +235,19 @@ No further interaction needed.
 
 ```
 POST /api/v1/ivr/simulate/press   { "session_id": "...", "key": "1" }  # select service 1
+```
+
+If the business has 2+ active staff, the next prompt is staff selection
+(every staff member is offered, even ones with no individual schedule —
+they follow the salon's hours per P3-002):
+
+```
+POST /api/v1/ivr/simulate/press   { "session_id": "...", "key": "0" }  # any available staff
 POST /api/v1/ivr/simulate/press   { "session_id": "...", "key": "1" }  # select slot 1
 ```
+
+With 0 or 1 active staff, that step is skipped automatically — go straight
+to selecting a slot instead.
 
 Expect `action: CONTINUE`, `step: BOOKING_CONFIRMED`. Verify:
 
