@@ -196,8 +196,13 @@ Two independent dimensions added to `Business`:
 ## Not Implemented (Expansion Backlog)
 
 Audited 2026-06-17, updated 2026-06-22 after P1-001 through P1-013, P2-001
-through P2-012, and P3-001/P3-002/P3-003/P3-004/P3-009/P3-012.
-52 P1–P4 items tracked; 30 fully implemented, 2 partially, 20 not yet started.
+through P2-012, and P3-001/P3-002/P3-003/P3-004/P3-005/P3-009/P3-012. See
+`docs/audits/p3-remaining-backlog-audit.md` for the full remaining-backlog
+verification and a documentation-accuracy review (corrected six stale
+`TECH_DEBT.md` rows that hadn't been flipped to Done when their underlying
+features shipped, plus one flipped to In Progress to reflect partial-only
+coverage).
+52 P1–P4 items tracked; 33 fully implemented or covered, 4 partially, 15 not yet started.
 
 **P1 — Must-have for pilot:**
 - NOT_IMPLEMENTED: none.
@@ -311,8 +316,7 @@ through P2-012, and P3-001/P3-002/P3-003/P3-004/P3-009/P3-012.
   (P2-012).
 
 **P3 — Operational extensions:**
-- NOT_IMPLEMENTED: recurring staff blocks implementation (model decision
-  made in ADR 0003), deposits ADR, Stripe payment links, pending-payment
+- NOT_IMPLEMENTED: deposits ADR, Stripe payment links, pending-payment
   booking state, calendar privacy rules, calendar conflict import ADR,
   integration reconciliation job, two-way calendar ADR.
 - DONE: salon closures/holidays — business-wide closure exclusion and overlap
@@ -363,13 +367,25 @@ through P2-012, and P3-001/P3-002/P3-003/P3-004/P3-009/P3-012.
   `ivr_service.py` now resolves through a single `_session_locale(session)`
   extension point; only `en` is populated (translation content is out of
   scope), but adding a real locale later requires zero step-handler changes
-  (P3-009).
+  (P3-009); recurring staff blocks — new `RecurringStaffBlock` model per
+  ADR 0003, business-scoped CRUD with same-scope overlap validation,
+  subtracted from generated slots as a third precedence step after
+  `WorkingHours`/`AvailabilityException` in `_get_available_slots_for_duration()`,
+  verified to stay correct when working hours change later instead of going
+  stale (P3-005).
 
 **P4 — SaaS model and scale:**
-- NOT_IMPLEMENTED: self-service onboarding, onboarding wizard, phone provisioning,
-  Stripe Billing model, plan limits enforcement, billing webhooks, plan-limit
-  blocking, backward-compatibility checklist.
-- PARTIAL: tenancy query audit (`test_product_tenant_isolation.py` exists; systematic
+- NOT_IMPLEMENTED: phone provisioning, Stripe Billing model, plan limits
+  enforcement, billing webhooks, plan-limit blocking, backward-compatibility
+  checklist (P4-006 through P4-011).
+- DONE: onboarding wizard API (P4-005) — duplicate/already covered by
+  AVS-L004's `POST /api/v1/onboarding` (business+staff+services+hours setup
+  in one call); the roadmap row was still listed `[ ]` until
+  `docs/audits/p3-remaining-backlog-audit.md` found the duplicate coverage.
+- PARTIAL: self-service salon onboarding (P4-004) — AVS-L004 covers the
+  "setup business profile" half; true self-serve "signup" (a new owner
+  provisioning their own tenant/admin account) is still manual, tenancy
+  query audit (`test_product_tenant_isolation.py` exists; systematic
   checklist missing), product tenant guards (`require_business()` pattern exists;
   standardized dependency not abstracted), cross-tenant leakage tests (per-feature
   tests exist; per-route CI requirement missing).

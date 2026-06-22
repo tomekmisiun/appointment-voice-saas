@@ -16,12 +16,16 @@ business cancellation/reschedule plus optional call transfer to staff.
 
 ## Current State
 
-- Product repository exists and inherits a production FastAPI foundation.
-- Product planning docs and backlog exist.
-- Appointment Voice SaaS runtime is not implemented yet.
-- No product database models, migrations, booking engine, availability engine,
-  IVR, SMS, calendar sync, transfer, billing, frontend, or product smoke tests
-  exist yet.
+See [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for the verified, evidence-backed
+current state and
+[`docs/audits/p3-remaining-backlog-audit.md`](docs/audits/p3-remaining-backlog-audit.md)
+for what's left. Summary: the full MVP foundation (phases 1–9 below), all of
+the P1 backlog, all of P2 except owner metrics/CSV export (P2-013/014), and
+7 of 14 P3 operational-extension items are implemented and tested. Remaining
+work is the rest of phase 11
+(deposits/billing, calendar privacy/two-way-sync ADRs, integration
+reconciliation, dashboard metrics/CSV export, self-service onboarding) — see
+phase 11 below and the backlog file for task-level detail.
 
 ## MVP Definition Of Done
 
@@ -116,20 +120,21 @@ The first working product is done when:
 
 ## Next Recommended Execution Order
 
-1. `AVS-A002` - Product architecture ADR.
-2. `AVS-A003` - Demo flow definition.
-3. `AVS-B001` - Business model.
-4. `AVS-B002` - Staff model.
-5. `AVS-B003` - Service model.
-6. `AVS-B004` - Working hours model.
-7. `AVS-B005` - Availability exceptions model.
-8. `AVS-B006` - Customer model.
-9. `AVS-B007` - Booking model.
-10. `AVS-B008` - Core domain migrations and indexes.
-11. `AVS-B009` - Tenant isolation tests for product tables.
+Phases 1–9 (foundation through call transfer) and most of phase 11 (product
+expansion) are done — see `PROJECT_STATUS.md`. Remaining work, per
+`docs/audits/p3-remaining-backlog-audit.md` §6:
 
-After EPIC B is complete, continue with availability (`AVS-C001`) before booking
-creation.
+1. `feat/p3-013-reconciliation-job` — no dependency on any other remaining
+   item; can land in parallel with the deposits track.
+2. `docs/adr-deposits-architecture` (P3-006) — ADR only, unblocks P3-007/008.
+3. `docs/adr-calendar-import-spike` (P3-011) — ADR/spike only.
+4. `docs/adr-two-way-calendar-sync` (P3-014) — depends on #3.
+5. `feat/p3-010-calendar-visibility` — depends on #3.
+6. `feat/p3-007-stripe-payment-links` — depends on #2.
+7. `feat/p3-008-pending-payment-state` — depends on #6.
+8. P2-013/014 (owner metrics, CSV export) and P4-001 through P4-011
+   (tenancy hardening, onboarding, billing) remain sequenced after the P3
+   operational-extensions tier.
 
 ## Detailed Backlog
 

@@ -309,8 +309,8 @@ the task explicitly de-risks the MVP.
 | [ ] | P4-001 | P4 | Audit product multi-tenancy queries. | Review every product query for tenant filters. | Foundation audit. | Query audit checklist is complete. | Security review/tests. | Cross-tenant data leakage. | partial: `tests/test_product_tenant_isolation.py` covers initial product scope; systematic query-by-query checklist and CI guard not yet created |
 | [ ] | P4-002 | P4 | Add product tenant guards. | Middleware/dependencies/helpers for product APIs. | RLS migration. | Product APIs consistently require tenant context. | API/security tests. | Missing guard exposes data. | partial: `require_business()` and per-service `tenant_id` filter pattern in place; standardized dependency-injected tenant guard not yet abstracted |
 | [ ] | P4-003 | P4 | Add cross-tenant leakage tests. | All product APIs tested for denial. | Manual review only. | Every product route has isolation coverage. | `make validate`. | Isolation regressions merge. | partial: `tests/test_product_tenant_isolation.py` and per-feature isolation tests exist; per-route coverage requirement and enforcement in CI not yet added |
-| [ ] | P4-004 | P4 | Add self-service salon onboarding. | Signup/setup business profile. | Billing. | New salon can start setup safely. | API tests. | Manual onboarding limits scale. |
-| [ ] | P4-005 | P4 | Add onboarding wizard API. | Staff/service/hours guided setup endpoints. | Frontend. | Setup flow can be completed by API. | API tests. | Configuration remains error-prone. |
+| [ ] | P4-004 | P4 | Add self-service salon onboarding. | Signup/setup business profile. | Billing. | New salon can start setup safely. | API tests. | Manual onboarding limits scale. | partial: AVS-L004's `POST /api/v1/onboarding` already covers "setup business profile" (creates business+staff+services+hours atomically); the "signup" half — a new salon owner provisioning their own tenant/admin account without a manually-created one — is not implemented (tenant/user creation is still manual, see `docs/runbooks/pilot-onboarding.md`) |
+| [x] | P4-005 | P4 | Add onboarding wizard API. | Staff/service/hours guided setup endpoints. | Frontend. | Setup flow can be completed by API. | API tests. | Configuration remains error-prone. | done — duplicate/already covered by AVS-L004's `POST /api/v1/onboarding` (`app/api/routes/onboarding.py`, `app/services/onboarding_service.py`), which already provides exactly this: staff/service/hours guided setup in one API call. Found during `docs/audits/p3-remaining-backlog-audit.md`; this row was never reconciled against EPIC L when AVS-L004 shipped |
 | [ ] | P4-006 | P4 | Add phone provisioning workflow. | Reserve/assign provider numbers. | BYO phone porting. | Number lifecycle is tracked. | Adapter tests. | Phone setup remains manual/unreliable. |
 | [ ] | P4-007 | P4 | Add Stripe Billing model. | Subscription/customer/price linkage. | Deposit payments. | Salon subscription state is stored. | Model/webhook tests. | SaaS cannot monetize. |
 | [ ] | P4-008 | P4 | Add plans and limits. | Feature limits by plan. | Entitlement UI. | Limits are enforceable in service layer. | Service tests. | Overuse or surprise blocking. |
@@ -320,40 +320,45 @@ the task explicitly de-risks the MVP.
 
 ## Production expansion audit notes
 
-**Audit date:** 2026-06-17 (`audit/backlog-reality-check` branch)
+**Audit history:** initial backlog-reality-check audit 2026-06-17 (now
+superseded by the table above, which reflects actual current status, not a
+point-in-time snapshot). Pre-P3 security/tenancy audit 2026-06-19/22 —
+`docs/audits/pre-p3-readiness-audit.md`. Remaining-backlog and
+documentation-accuracy audit 2026-06-22 —
+`docs/audits/p3-remaining-backlog-audit.md` (current source of truth for
+"what's left"; do not rely on the per-item summary previously inlined here,
+which described a 2026-06-17 snapshot that predates all of P1, most of P2,
+and all of P3).
 
-**Scope:** All 50 P1–P4 backlog items inspected against application code, models,
-services, routes, worker, migrations, tests, and docs.
+**Current summary (see `docs/audits/p3-remaining-backlog-audit.md` for full
+verification):** 52 P1–P4 items tracked — 33 fully implemented or covered
+(all of P1, all of P2 except P2-013/014, 7 of 14 P3 items, and P4-005 via
+duplicate coverage by AVS-L004), 4 partially implemented (P4-001/002/003 —
+tenancy-audit related — and P4-004, partially covered by the same AVS-L004
+endpoint), 15 not started (P2-013/014; P3-006/007/008/010/011/013/014;
+P4-006 through P4-011).
 
-**Summary (updated 2026-06-17 after P1-001 through P1-013, and P2-001 through P2-005):**
-- 16 items fully implemented: P1-001, P1-002, P1-003, P1-004, P1-005, P1-006,
-  P1-007, P1-008, P1-009, P1-011, P1-012, P2-001, P2-002, P2-003, P2-004,
-  P2-005 (reminder SMS, SMS reply confirm/cancel, IVR + admin reschedule,
-  IVR timeout/invalid-input/repeat-menu/backend-unavailable fallback,
-  per-job-type Redis queues, DLQ depth/failure-rate alerting,
-  provider-level failure metrics, CRM clients table + booking linkage +
-  history API, returning-caller greeting, GDPR anonymization — see rows
-  above for evidence)
-- 4 items partially implemented as of this audit date (noted inline above);
-  P1-013 has since been fully completed (2026-06-22) once P3-012 shipped the
-  admin override feature its audit events depend on — see the P1-013/P3-012
-  rows above for current status
-- 2 items already covered by completed MVP work: P1-010 (exponential backoff —
-  `calculate_retry_delay_seconds()` in `app/core/job_queue.py`) and the
-  create/cancel portion of P1-013 (`AuditLog` + `audit_log_service.py`)
-- 28 items not implemented
+**Duplicate found:** P4-005 was accidentally already covered by AVS-L004's
+self-service onboarding API, shipped during EPIC L and never reconciled
+against the P4 backlog — see the P4-005 row above and
+`docs/audits/p3-remaining-backlog-audit.md` §4. No other P1–P4 item was
+found to be a side-effect duplicate of MVP or other backlog work.
+`PlanPolicyService` is an intentional stub for P4-008 only.
 
-**High-risk non-duplicates confirmed:** No P1–P4 item was accidentally
-implemented as a side-effect of MVP work. `PlanPolicyService` is an intentional
-stub for P4-008 only.
-
-**Recommended implementation order for pilot:**
-1. ~~P1-001 — Reminder SMS~~ done
-2. P4-001 — Tenancy query audit (run before new expansion to catch leaks early)
-3. ~~P1-005/P1-006/P1-007 — IVR timeout/invalid/repeat~~ done
-4. ~~P1-002 — SMS reply confirm/cancel~~ done
-5. ~~P1-003/P1-004 — Reschedule (IVR + admin)~~ done (see `docs/specs/ivr-reschedule.md`)
-6. ~~P1-008 — Backend-unavailable fallback~~ done
+**Recommended order for remaining work** (per
+`docs/audits/p3-remaining-backlog-audit.md` §6, continuing the
+`pre-p3-readiness-audit.md` §10 execution order):
+1. `feat/p3-013-reconciliation-job` — no dependency on any other remaining
+   item; can land in parallel with the deposits track.
+2. `docs/adr-deposits-architecture` (P3-006) — ADR only, unblocks P3-007/008.
+3. `docs/adr-calendar-import-spike` (P3-011) — ADR/spike only.
+4. `docs/adr-two-way-calendar-sync` (P3-014) — depends on #3.
+5. `feat/p3-010-calendar-visibility` — depends on #3.
+6. `feat/p3-007-stripe-payment-links` — depends on #2.
+7. `feat/p3-008-pending-payment-state` — depends on #6.
+8. P2-013/014 and P4-001 through P4-011 remain sequenced after the P3
+   operational-extensions tier per this file's own tier ordering (P4-005 is
+   already done — see that row above).
 
 ## Validation commands
 
