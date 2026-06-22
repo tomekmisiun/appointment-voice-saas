@@ -21,6 +21,7 @@ from app.api.routes.working_hours import router as working_hours_router
 from app.api.routes import users
 from app.api.routes.onboarding import router as onboarding_router
 from app.api.routes.owner_leads import router as owner_leads_router
+from app.api.routes.recurring_staff_blocks import router as recurring_staff_blocks_router
 
 
 API_V1_PREFIX = "/api/v1"
@@ -39,6 +40,7 @@ api_v1_router.include_router(services_router)
 api_v1_router.include_router(working_hours_router)
 api_v1_router.include_router(business_transfer_hours_router)
 api_v1_router.include_router(availability_exceptions_router)
+api_v1_router.include_router(recurring_staff_blocks_router)
 api_v1_router.include_router(availability_router)
 api_v1_router.include_router(bookings_router)
 api_v1_router.include_router(clients_router)

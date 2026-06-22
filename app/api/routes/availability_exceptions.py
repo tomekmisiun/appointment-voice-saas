@@ -47,9 +47,9 @@ def create_exception_endpoint(
 
     For recurring closures (e.g. every Sunday) use `WorkingHours` (simply
     don't create a row for that weekday) rather than one exception per
-    date. For a recurring partial block (e.g. a daily lunch break), see
-    `docs/adr/0003-recurring-staff-blocks.md` -- not yet implemented
-    (P3-005)."""
+    date. For a recurring partial block (e.g. a daily lunch break), use
+    `POST /businesses/{business_id}/recurring-staff-blocks` instead (P3-005,
+    see `docs/adr/0003-recurring-staff-blocks.md`)."""
     return create_availability_exception(
         db,
         tenant_id=current_user.tenant_id,

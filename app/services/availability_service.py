@@ -1,3 +1,21 @@
+"""Availability slot generation.
+
+Three schedule-related tables are consulted, in this fixed precedence
+order (ADR 0003):
+
+1. `WorkingHours` -- recurring weekly open windows, intersected between a
+   staff member's own hours and the business's wide ones (P3-002).
+2. `AvailabilityException` -- a one-off date override that fully replaces
+   step 1's windows for that exact date (full closure, special hours, or
+   no change), and always wins over step 3 if it's a closure (P3-003).
+3. `RecurringStaffBlock` -- a recurring weekly unavailable window,
+   subtracted from whatever step 1/2 left in place (P3-005). Unlike step
+   2, this never goes stale when working hours change later, because it
+   clips the then-current schedule at query time rather than a frozen
+   snapshot of it -- see `docs/adr/0003-recurring-staff-blocks.md` for why
+   that distinction required a separate model instead of reusing
+   `AvailabilityException`.
+"""
 from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -7,6 +25,7 @@ from sqlalchemy.orm import Session
 from app.core.domain_errors import NotFoundError
 from app.models.availability_exception import AvailabilityException
 from app.models.booking import Booking, BookingStatus
+from app.models.recurring_staff_block import RecurringStaffBlock
 from app.models.working_hours import WorkingHours
 from app.services.business_service import require_business
 from app.services.service_service import require_service
@@ -47,6 +66,29 @@ def _intersect_time_windows(
             if start < end:
                 overlaps.append((start, end))
     return overlaps
+
+
+def _subtract_time_windows(
+    base_windows: list[tuple[time, time]], block_windows: list[tuple[time, time]]
+) -> list[tuple[time, time]]:
+    """Subtract every block window from every base window (P3-005),
+    splitting a base window into 0, 1, or 2 remaining sub-windows per
+    overlapping block. Blocks are applied one at a time so multiple blocks
+    (e.g. a lunch break and a separate afternoon break) each carve their
+    own gap out of whatever windows remain after the previous one."""
+    result = list(base_windows)
+    for block_start, block_end in block_windows:
+        next_result = []
+        for win_start, win_end in result:
+            if block_end <= win_start or block_start >= win_end:
+                next_result.append((win_start, win_end))
+                continue
+            if win_start < block_start:
+                next_result.append((win_start, block_start))
+            if block_end < win_end:
+                next_result.append((block_end, win_end))
+        result = next_result
+    return result
 
 
 def get_available_slots(
@@ -209,19 +251,42 @@ def _get_available_slots_for_duration(
         e for e in exceptions if not e.is_closed and e.start_time and e.end_time
     ]
 
-    candidate_starts: list[datetime] = []
-    if special_hours:
-        for exc in special_hours:
-            candidate_starts.extend(
-                _slots_in_window(
-                    query_date, exc.start_time, exc.end_time, duration_minutes, tz
-                )
+    effective_windows = (
+        [(exc.start_time, exc.end_time) for exc in special_hours]
+        if special_hours
+        else working_hours
+    )
+
+    # P3-005 (ADR 0003): recurring blocks subtract from whatever windows
+    # AvailabilityException left in place, rather than replacing them like
+    # a one-off exception does -- this runs *after* exceptions so a block
+    # always clips the current schedule, never a frozen snapshot of it (see
+    # the ADR for why this had to be a separate model from
+    # AvailabilityException). A business-wide closure already returned []
+    # above, so blocks are only reached when the day is genuinely open.
+    block_query = db.query(RecurringStaffBlock).filter(
+        RecurringStaffBlock.business_id == business_id,
+        RecurringStaffBlock.tenant_id == tenant_id,
+        RecurringStaffBlock.day_of_week == day_of_week,
+    )
+    if staff_id is not None:
+        block_query = block_query.filter(
+            or_(
+                RecurringStaffBlock.staff_id == staff_id,
+                RecurringStaffBlock.staff_id.is_(None),
             )
+        )
     else:
-        for window_start, window_end in working_hours:
-            candidate_starts.extend(
-                _slots_in_window(query_date, window_start, window_end, duration_minutes, tz)
-            )
+        block_query = block_query.filter(RecurringStaffBlock.staff_id.is_(None))
+    block_windows = [(b.start_time, b.end_time) for b in block_query.all()]
+    if block_windows:
+        effective_windows = _subtract_time_windows(effective_windows, block_windows)
+
+    candidate_starts: list[datetime] = []
+    for window_start, window_end in effective_windows:
+        candidate_starts.extend(
+            _slots_in_window(query_date, window_start, window_end, duration_minutes, tz)
+        )
 
     candidate_starts = sorted(set(candidate_starts))
     if not candidate_starts:
