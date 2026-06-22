@@ -13,10 +13,18 @@ See **[`PROJECT_STATUS.md`](PROJECT_STATUS.md)** (verified section) and
 **[`docs/learning/00-current-state-audit.md`](docs/learning/00-current-state-audit.md)**
 for code-verified state. Do not trust this README's high-level bullets alone.
 
-- **Implemented:** foundation app + appointment domain (business, staff, service,
-  hours, availability, bookings, audit) with tests and migrations.
-- **Planned:** IVR, SMS outbox, calendar adapter, call transfer, smoke demos,
-  billing, frontend (roadmap EPIC E–J).
+- **Implemented:** full MVP foundation (Epics A–L) — appointment domain, availability
+  engine, booking engine, notification outbox, calendar adapter, IVR
+  simulation, real Twilio voice/SMS providers, call transfer, demo/smoke
+  tests, owner lead intake. Plus all 13 P1 items and 12 of 14 P2
+  production-expansion items (reminder SMS, reschedule, CRM, preferred
+  staff, multi-service bookings, waitlist — P2-013/P2-014 owner
+  metrics/CSV export not yet started) and 7 of 14 P3 operational-extension
+  items (salon hours/intersection/closures/staff blocks incl. recurring
+  blocks, admin override, multilingual IVR prompt architecture).
+- **Planned:** owner metrics/CSV export (P2-013/014), deposits/Stripe
+  payments, calendar privacy/two-way-sync ADRs, integration reconciliation
+  job (remaining P3), billing and phone provisioning (P4), frontend.
 
 ## What Exists Today
 
@@ -38,20 +46,39 @@ Inherited foundation capabilities available for reuse:
 
 ## What Is Implemented
 
-As of Epic I / Epic J:
+Full MVP foundation (Epics A–L) plus P1/P2 production-expansion backlog and
+part of P3 — see `PROJECT_STATUS.md` for the verified, evidence-backed list.
+Highlights:
 
-- **Appointment domain**: business, staff, service, working hours, availability engine, bookings with double-booking protection.
-- **Notification outbox**: fake SMS provider (logs, marks delivered); real Twilio provider wired.
+- **Appointment domain**: business, staff, service, working hours, availability
+  exceptions, recurring staff blocks, availability engine (incl. salon/staff
+  hours intersection), bookings with double-booking protection.
+- **Notification outbox**: fake SMS provider for tests; real Twilio provider wired.
 - **Calendar adapter**: fake calendar provider; real Google Calendar provider wired.
-- **IVR simulation**: `/api/v1/ivr/simulate/*` — start call, press keys, book an appointment or transfer.
+- **IVR simulation**: `/api/v1/ivr/simulate/*` — start call, press keys, select
+  service/staff/slot, book or transfer; multilingual prompt-key architecture
+  (English populated, adding a locale needs no flow-logic changes).
 - **Call transfer**: press 2 in IVR → resolves to business phone or eligible staff.
+- **CRM/personalization**: clients, returning-caller greeting, preferred/last
+  staff suggestion, GDPR anonymization, waitlist with offer/timeout/escalation.
+- **Admin override**: reasoned, audited override-create/override-cancel for
+  support edge cases (does not bypass the DB-level no-overlap constraint).
 - **Demo seed**: `make seed-demo` seeds a deterministic demo scenario (Glamour Studio Demo).
 - **Smoke tests**: J001–J004 prove manual booking, IVR booking, cancellation, and demo seed locally.
 
 ## What Does Not Exist Yet
 
-- Dedicated Customer HTTP CRUD API (customers exist via booking flow only).
-- Billing, subscriptions, or frontend.
+- Owner metrics dashboard / CSV export (P2-013/P2-014).
+- Booking-failure and IVR-failure-specific metrics/alerts (AVS-TD-016) —
+  SMS/calendar provider failures and the worker DLQ backlog are already
+  monitored, but not booking- or IVR-level failures specifically.
+- Deposits/prepayments, Stripe payment links, pending-payment booking state (P3-006/007/008).
+- Calendar privacy rules, two-way calendar sync (P3-010/011/014), integration reconciliation job (P3-013).
+- True self-serve tenant/account signup, phone provisioning, Stripe Billing/subscriptions, plan limits (P4) — the staff/service/hours setup half of self-service onboarding already exists (`POST /api/v1/onboarding`).
+- Frontend.
+
+See `docs/audits/p3-remaining-backlog-audit.md` for the full verified
+remaining-backlog breakdown.
 
 ## Product Documentation Map
 
@@ -120,8 +147,11 @@ Default inherited development login after seed:
 
 ## Project Structure
 
-The current code structure is inherited from the foundation and will be extended
-with Appointment Voice SaaS product modules in later implementation tasks.
+The current code structure inherits the foundation's layout and is already
+extended with the Appointment Voice SaaS product modules listed below
+(business, staff, service, booking, availability, IVR, notification,
+calendar, waitlist, CRM, etc. — see `app/models/`, `app/services/`,
+`app/api/routes/` for the full current list).
 
 | Path | Purpose |
 |------|---------|
@@ -178,6 +208,10 @@ for automated smoke assertions.
 
 ## Next Implementation Step
 
-See [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md) for
-remaining tasks. Open items: AVS-A000 (roadmap cleanup), AVS-J006 (pilot
-deployment checklist), and post-MVP epics (billing, frontend, real providers).
+See [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md)
+for the full backlog and
+[`docs/audits/p3-remaining-backlog-audit.md`](docs/audits/p3-remaining-backlog-audit.md)
+for the current recommended order. Next up: P3-013 (integration
+reconciliation job), then P3-006 (deposits/prepayments ADR), followed by
+the rest of the P3 operational-extensions tier, then
+P2-013/014 and P4 (billing, onboarding, scale).
