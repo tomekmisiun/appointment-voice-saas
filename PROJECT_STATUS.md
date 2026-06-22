@@ -4,7 +4,7 @@ Verified as of 2026-06-22.
 
 ## Current Status
 
-All MVP foundation epics (A–K) and full Epic L (L001–L004, owner acquisition + onboarding) implemented. Production expansion backlog P1-001 through P1-013 and P2-001 through P2-012 (CRM, preferred staff, multi-service bookings, waitlist with offer/timeout/escalation) done. Both pilot-blocking gaps found in the pre-P3 audit (cross-business tenant isolation, waitlist offer concurrency) are fixed. P3-012 (manual admin override) and P3-009 (multilingual IVR prompt architecture) are done — the first two P3 operational-extension items. 910 tests collected and passing (the one previously-flaky, order-dependent worker test passed cleanly on this run too). CI green.
+All MVP foundation epics (A–K) and full Epic L (L001–L004, owner acquisition + onboarding) implemented. Production expansion backlog P1-001 through P1-013 and P2-001 through P2-012 (CRM, preferred staff, multi-service bookings, waitlist with offer/timeout/escalation) done. Both pilot-blocking gaps found in the pre-P3 audit (cross-business tenant isolation, waitlist offer concurrency) are fixed, plus a related cross-business gap found independently in working-hours/availability-exceptions (GAP-014/AVS-TD-032) — also fixed. P3-012 (manual admin override) and P3-009 (multilingual IVR prompt architecture) are done — the first two P3 operational-extension items. ADR 0003 accepted for P3-005's model decision (implementation still pending). 915 tests collected and passing. CI green.
 
 The product can be fully demonstrated locally using fake SMS and fake calendar
 providers. Real Twilio voice and SMS providers are wired and configured via env
@@ -181,6 +181,7 @@ Two independent dimensions added to `Business`:
 | GAP-011 | ~~`get_client`/`require_client`/`update_client`/`get_customer`/`require_customer`/`gdpr_delete_customer` (and pre-existing `get_staff`/`get_booking`) filter by `tenant_id` only, not `business_id`, despite routes accepting `business_id` in the URL — a tenant with multiple businesses can read/mutate/anonymize another business's client or customer data.~~ | CRITICAL | **Fixed — AVS-TD-029, PR #42** |
 | GAP-012 | ~~Waitlist offer matching (`find_matching_waitlist_entries()`) has no row locking or idempotency guard; concurrent cancellations or an overlapping maintenance tick can double-offer the same waitlist entry.~~ | HIGH | **Fixed — AVS-TD-030, PR #45** |
 | GAP-013 | `app/api/routes/twilio_voice.py:150`'s `VoiceSession` lookup doesn't validate `business_id`, only `session_id`; mitigated by mandatory Twilio signature validation. | LOW | Open — AVS-TD-031, see `docs/audits/pre-p3-readiness-audit.md` |
+| GAP-014 | ~~Same pattern as GAP-011, found in two files that audit didn't cover: `require_working_hours`/`require_availability_exception` filtered by `tenant_id` only, despite their GET/DELETE routes accepting `business_id` in the URL.~~ | CRITICAL | **Fixed — AVS-TD-032** |
 
 ## Readiness Assessment
 

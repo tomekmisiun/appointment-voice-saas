@@ -9,7 +9,7 @@ from app.services.working_hours_service import (
     create_working_hours,
     delete_working_hours,
     list_working_hours,
-    require_working_hours,
+    require_working_hours_in_business,
     update_working_hours,
 )
 
@@ -58,7 +58,7 @@ def get_working_hours_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return require_working_hours(db, wh_id, current_user.tenant_id)
+    return require_working_hours_in_business(db, wh_id, business_id, current_user.tenant_id)
 
 
 @router.patch("/{wh_id}", response_model=WorkingHoursRead)
@@ -84,4 +84,4 @@ def delete_working_hours_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin")),
 ):
-    delete_working_hours(db, wh_id, current_user.tenant_id)
+    delete_working_hours(db, wh_id, current_user.tenant_id, business_id=business_id)

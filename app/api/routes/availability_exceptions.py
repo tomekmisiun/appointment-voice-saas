@@ -14,7 +14,7 @@ from app.services.availability_exception_service import (
     create_availability_exception,
     delete_availability_exception,
     list_availability_exceptions,
-    require_availability_exception,
+    require_availability_exception_in_business,
 )
 
 router = APIRouter(
@@ -71,7 +71,9 @@ def get_exception_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return require_availability_exception(db, exception_id, current_user.tenant_id)
+    return require_availability_exception_in_business(
+        db, exception_id, business_id, current_user.tenant_id
+    )
 
 
 @router.delete("/{exception_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -81,4 +83,6 @@ def delete_exception_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin")),
 ):
-    delete_availability_exception(db, exception_id, current_user.tenant_id)
+    delete_availability_exception(
+        db, exception_id, current_user.tenant_id, business_id=business_id
+    )
