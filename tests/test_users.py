@@ -393,12 +393,13 @@ def test_pagination_size_must_not_exceed_limit(client, admin_user):
 
 
 def test_admin_can_sort_users_by_email_desc(db, client, admin_user):
-    create_user_and_login(db, client, "c-user@example.com")
-    create_user_and_login(db, client, "a-user@example.com")
-    create_user_and_login(db, client, "b-user@example.com")
+    marker = f"sort-{uuid7().hex}"
+    create_user_and_login(db, client, f"c-{marker}@example.com")
+    create_user_and_login(db, client, f"a-{marker}@example.com")
+    create_user_and_login(db, client, f"b-{marker}@example.com")
 
     response = client.get(
-        "/users/?sort_by=email&sort_order=desc&page=1&size=100",
+        f"/users/?sort_by=email&sort_order=desc&search={marker}&search_mode=contains&size=100",
         headers=admin_user["headers"],
     )
 
@@ -406,20 +407,10 @@ def test_admin_can_sort_users_by_email_desc(db, client, admin_user):
 
     emails = [user["email"] for user in users_page_items(response)]
 
-    filtered_emails = [
-        email
-        for email in emails
-        if email in {
-            "a-user@example.com",
-            "b-user@example.com",
-            "c-user@example.com",
-        }
-    ]
-
-    assert filtered_emails == [
-        "c-user@example.com",
-        "b-user@example.com",
-        "a-user@example.com",
+    assert emails == [
+        f"c-{marker}@example.com",
+        f"b-{marker}@example.com",
+        f"a-{marker}@example.com",
     ]
 
 
