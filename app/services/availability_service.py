@@ -176,6 +176,16 @@ def _get_available_slots_for_duration(
     if not working_hours:
         return []
 
+    # P3-003: business-wide (staff_id IS NULL) and staff-specific exceptions
+    # for this date are merged into one set here, then handled uniformly --
+    # a business-wide closure always wins (the `any(is_closed)` check below
+    # doesn't distinguish scope), and business-wide special hours apply to
+    # a staff-specific search exactly like the staff's own would. This is
+    # an OR/union of whichever rows exist, not an intersection: unlike
+    # P3-002's WorkingHours handling, a staff-specific exception doesn't
+    # get clipped to a business-wide one, since exceptions already mean
+    # "this date is different from the rule" rather than "this is the
+    # rule" -- deliberately unchanged from pre-P3-002/003 behavior.
     exc_query = db.query(AvailabilityException).filter(
         AvailabilityException.business_id == business_id,
         AvailabilityException.tenant_id == tenant_id,

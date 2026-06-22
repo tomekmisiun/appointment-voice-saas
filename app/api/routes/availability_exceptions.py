@@ -32,6 +32,24 @@ def create_exception_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin")),
 ):
+    """Create a one-off date override -- a full closure or special hours
+    for a single date (P3-003/P3-004).
+
+    Omit `staff_id` (or send it as null) for a business-wide closure or
+    holiday: it removes every slot for every staff member that date,
+    regardless of their own hours or any staff-specific exception for the
+    same date -- a business-wide `is_closed=True` row always wins
+    (`get_available_slots()` closes the day the moment *any* matching
+    exception is closed, business-wide or staff-specific). Set `staff_id`
+    to scope the override to one staff member instead -- it has no effect
+    on other staff members' availability or on a search with no staff_id
+    ("any available staff").
+
+    For recurring closures (e.g. every Sunday) use `WorkingHours` (simply
+    don't create a row for that weekday) rather than one exception per
+    date. For a recurring partial block (e.g. a daily lunch break), see
+    `docs/adr/0003-recurring-staff-blocks.md` -- not yet implemented
+    (P3-005)."""
     return create_availability_exception(
         db,
         tenant_id=current_user.tenant_id,

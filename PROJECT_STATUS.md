@@ -4,7 +4,7 @@ Verified as of 2026-06-22.
 
 ## Current Status
 
-All MVP foundation epics (A–K) and full Epic L (L001–L004, owner acquisition + onboarding) implemented. Production expansion backlog P1-001 through P1-013 and P2-001 through P2-012 (CRM, preferred staff, multi-service bookings, waitlist with offer/timeout/escalation) done. Both pilot-blocking gaps found in the pre-P3 audit (cross-business tenant isolation, waitlist offer concurrency) are fixed, plus a related cross-business gap found independently in working-hours/availability-exceptions (GAP-014/AVS-TD-032) — also fixed. P3-012 (manual admin override), P3-009 (multilingual IVR prompt architecture), P3-004 (staff time block overlap validation), P3-001 (salon opening hours API — found and closed a real gap: staff-specific working hours had no API path at all), and P3-002 (salon/staff hours intersection — found and fixed a related gap: staff with no individual schedule used to get zero availability instead of falling back to the salon's hours, which had silently neutered IVR per-staff selection in the demo data) are done. ADR 0003 accepted for P3-005's model decision (implementation still pending). 944 tests collected and passing. CI green.
+All MVP foundation epics (A–K) and full Epic L (L001–L004, owner acquisition + onboarding) implemented. Production expansion backlog P1-001 through P1-013 and P2-001 through P2-012 (CRM, preferred staff, multi-service bookings, waitlist with offer/timeout/escalation) done. Both pilot-blocking gaps found in the pre-P3 audit (cross-business tenant isolation, waitlist offer concurrency) are fixed, plus a related cross-business gap found independently in working-hours/availability-exceptions (GAP-014/AVS-TD-032) — also fixed. P3-012 (manual admin override), P3-009 (multilingual IVR prompt architecture), P3-004 (staff time block overlap validation), P3-001 (salon opening hours API — found and closed a real gap: staff-specific working hours had no API path at all), P3-002 (salon/staff hours intersection — found and fixed a related gap: staff with no individual schedule used to get zero availability instead of falling back to the salon's hours, which had silently neutered IVR per-staff selection in the demo data), and P3-003 (salon closures API clarity + precedence/isolation tests) are done. ADR 0003 accepted for P3-005's model decision (implementation still pending). 949 tests collected and passing. CI green.
 
 The product can be fully demonstrated locally using fake SMS and fake calendar
 providers. Real Twilio voice and SMS providers are wired and configured via env
@@ -196,8 +196,8 @@ Two independent dimensions added to `Business`:
 ## Not Implemented (Expansion Backlog)
 
 Audited 2026-06-17, updated 2026-06-22 after P1-001 through P1-013, P2-001
-through P2-012, and P3-001/P3-002/P3-004/P3-009/P3-012.
-52 P1–P4 items tracked; 29 fully implemented, 3 partially, 20 not yet started.
+through P2-012, and P3-001/P3-002/P3-003/P3-004/P3-009/P3-012.
+52 P1–P4 items tracked; 30 fully implemented, 2 partially, 20 not yet started.
 
 **P1 — Must-have for pilot:**
 - NOT_IMPLEMENTED: none.
@@ -315,10 +315,13 @@ through P2-012, and P3-001/P3-002/P3-004/P3-009/P3-012.
   made in ADR 0003), deposits ADR, Stripe payment links, pending-payment
   booking state, calendar privacy rules, calendar conflict import ADR,
   integration reconciliation job, two-way calendar ADR.
-- PARTIAL: salon closures (`AvailabilityException` business-wide closure
-  already works; API docs/tests for that scope still missing — distinct
-  from staff-specific blocks, which are now done below).
-- DONE: salon opening hours API — `POST /businesses/{business_id}/working-hours`
+- DONE: salon closures/holidays — business-wide closure exclusion and overlap
+  validation already worked; added the missing API clarity (create
+  endpoint docstring documents that a business-wide `staff_id=null`
+  closure always wins over any staff-specific exception for the same
+  date, and that a staff-specific exception never leaks into other staff
+  members' or an "any available staff" search) and precedence/isolation
+  tests the audit flagged as missing (P3-003); salon opening hours API — `POST /businesses/{business_id}/working-hours`
   previously hardcoded `staff_id=None`, so a real admin had no API path to
   configure a staff-specific schedule at all (only business-wide "salon"
   hours), even though `get_available_slots()` and P2-006's IVR
