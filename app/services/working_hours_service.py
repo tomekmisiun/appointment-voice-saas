@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.domain_errors import BadRequestError, NotFoundError
 from app.models.working_hours import WorkingHours
 from app.services.business_service import require_business
+from app.services.staff_service import require_staff_in_business
 
 
 def create_working_hours(
@@ -18,6 +19,8 @@ def create_working_hours(
     end_time: time,
 ) -> WorkingHours:
     require_business(db, business_id, tenant_id)
+    if staff_id is not None:
+        require_staff_in_business(db, staff_id, business_id, tenant_id)
     wh = WorkingHours(
         tenant_id=tenant_id,
         business_id=business_id,

@@ -7,6 +7,10 @@ class WorkingHoursCreate(BaseModel):
     day_of_week: int = Field(ge=0, le=6, description="0=Monday, 6=Sunday")
     start_time: time
     end_time: time
+    staff_id: int | None = Field(
+        default=None,
+        description="Omit or null for business-wide (salon) hours; set to scope this window to one staff member.",
+    )
 
     @model_validator(mode="after")
     def end_after_start(self) -> "WorkingHoursCreate":
