@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit --incremental false",
     "test": "vitest run",
     "test:watch": "vitest",
     "api:generate": "cd .. && PYTHONPATH=. uv run python scripts/export-openapi.py > frontend/lib/api/openapi.json && cd frontend && pnpm exec openapi-typescript lib/api/openapi.json -o lib/api/schema.gen.ts",
