@@ -158,13 +158,17 @@ describe("DashboardLayout", () => {
     );
     const { default: DashboardLayout } = await import("./layout");
     const { AppShell } = await import("@/components/layout/AppShell");
+    const { QueryProvider } = await import("@/components/providers/QueryProvider");
 
     const result = await DashboardLayout({ children: "child-content" });
 
     expect(result.type).toBe(AppShell);
     expect(result.props.business.id).toBe(42);
     expect(result.props.user.email).toBe("owner@example.com");
-    expect(result.props.children).toBe("child-content");
+    // Children are wrapped in QueryProvider (added for the bookings list's
+    // client-side data fetching) rather than passed straight through.
+    expect(result.props.children.type).toBe(QueryProvider);
+    expect(result.props.children.props.children).toBe("child-content");
   });
 
   it("renders the multiple-businesses state without picking one, regardless of order", async () => {

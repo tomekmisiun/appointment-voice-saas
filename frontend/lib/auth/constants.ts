@@ -13,7 +13,7 @@ export const ACCESS_TOKEN_EXPIRY_SAFETY_WINDOW_MS = 30_000;
  * to. Deliberately excludes "/auth/refresh" and "/login" themselves, so a
  * misused or tampered `next` value can never produce a redirect loop.
  */
-export const SAFE_REFRESH_REDIRECT_TARGETS = ["/dashboard"] as const;
+export const SAFE_REFRESH_REDIRECT_TARGETS = ["/dashboard", "/dashboard/bookings"] as const;
 export const DEFAULT_REFRESH_REDIRECT_TARGET = "/dashboard";
 
 export function isSafeInternalPath(path: string): boolean {

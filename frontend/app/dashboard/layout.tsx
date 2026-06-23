@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
+import { QueryProvider } from "@/components/providers/QueryProvider";
 import { getCurrentBusinessContext } from "@/features/dashboard/current-business";
 import { MultipleBusinessesState } from "@/features/dashboard/components/MultipleBusinessesState";
 import { NoBusinessState } from "@/features/dashboard/components/NoBusinessState";
@@ -43,7 +44,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <AppShell business={context.business} user={context.user}>
-      {children}
+      <QueryProvider>{children}</QueryProvider>
     </AppShell>
   );
 }

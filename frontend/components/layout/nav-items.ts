@@ -1,13 +1,13 @@
 export interface NavItem {
   label: string;
   href: string;
-  /** Only "Overview" is real in this branch — every other module ships in its own later branch. */
+  /** Only modules with a real page ship as "active" — every other module ships in its own later branch. */
   status: "active" | "coming-soon";
 }
 
 export const NAV_ITEMS: NavItem[] = [
   { label: "Overview", href: "/dashboard", status: "active" },
-  { label: "Bookings", href: "/dashboard/bookings", status: "coming-soon" },
+  { label: "Bookings", href: "/dashboard/bookings", status: "active" },
   { label: "Calendar", href: "/dashboard/calendar", status: "coming-soon" },
   { label: "Clients", href: "/dashboard/clients", status: "coming-soon" },
   { label: "Staff", href: "/dashboard/staff", status: "coming-soon" },
