@@ -1,0 +1,46 @@
+{
+  "name": "avs-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "api:generate": "cd .. && PYTHONPATH=. uv run python scripts/export-openapi.py > frontend/lib/api/openapi.json && cd frontend && pnpm exec openapi-typescript lib/api/openapi.json -o lib/api/schema.gen.ts",
+    "api:check": "pnpm api:generate && git diff --exit-code -- lib/api/openapi.json lib/api/schema.gen.ts"
+  },
+  "dependencies": {
+    "next": "16.2.9",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "react-hook-form": "7.80.0",
+    "server-only": "0.0.1",
+    "zod": "4.4.3",
+    "@hookform/resolvers": "5.4.0"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "@types/node": "26.0.0",
+    "tailwindcss": "4.3.1",
+    "@tailwindcss/postcss": "4.3.1",
+    "postcss": "8.5.15",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.2.9",
+    "vite": "8.1.0",
+    "vitest": "4.1.9",
+    "@vitejs/plugin-react": "6.0.3",
+    "@testing-library/react": "16.3.2",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/user-event": "14.6.1",
+    "jsdom": "29.1.1",
+    "msw": "2.14.6",
+    "openapi-typescript": "7.13.0"
+  }
+}
