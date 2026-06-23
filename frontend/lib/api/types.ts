@@ -11,3 +11,5 @@ export type BusinessRead = components["schemas"]["BusinessRead"];
 export type StaffRead = components["schemas"]["StaffRead"];
 export type ServiceRead = components["schemas"]["ServiceRead"];
 export type WorkingHoursRead = components["schemas"]["WorkingHoursRead"];
+export type BookingRead = components["schemas"]["BookingRead"];
+export type BookingStatus = components["schemas"]["BookingStatus"];
