@@ -1,0 +1,49 @@
+import { redirect } from "next/navigation";
+import { AppShell } from "@/components/layout/AppShell";
+import { getCurrentBusinessContext } from "@/features/dashboard/current-business";
+import { MultipleBusinessesState } from "@/features/dashboard/components/MultipleBusinessesState";
+import { NoBusinessState } from "@/features/dashboard/components/NoBusinessState";
+import { ApiError } from "@/lib/api/errors";
+import { getSession, isAccessTokenExpired } from "@/lib/auth/server";
+
+/**
+ * The actual auth enforcement boundary for every /dashboard/* route — not
+ * middleware (see lib/auth/actions.ts for why). Reads the session cookie
+ * directly and fetches FastAPI while the token looks valid; never
+ * refreshes here (Server Components must not — see the refresh flow).
+ */
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const session = await getSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  if (isAccessTokenExpired(session)) {
+    redirect("/auth/refresh?next=/dashboard");
+  }
+
+  let context;
+  try {
+    context = await getCurrentBusinessContext(session.accessToken);
+  } catch (error) {
+    if (error instanceof ApiError && error.isAuthError) {
+      redirect("/auth/refresh?next=/dashboard");
+    }
+    throw error;
+  }
+
+  if (context.kind === "none") {
+    return <NoBusinessState />;
+  }
+
+  if (context.kind === "multiple") {
+    return <MultipleBusinessesState businesses={context.businesses} />;
+  }
+
+  return (
+    <AppShell business={context.business} user={context.user}>
+      {children}
+    </AppShell>
+  );
+}

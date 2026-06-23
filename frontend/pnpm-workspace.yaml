@@ -1,0 +1,7 @@
+allowBuilds:
+  msw: false
+  sharp: true
+  unrs-resolver: true
+minimumReleaseAgeExclude:
+  - '@vitejs/plugin-react@6.0.3'
+  - vite@8.1.0
