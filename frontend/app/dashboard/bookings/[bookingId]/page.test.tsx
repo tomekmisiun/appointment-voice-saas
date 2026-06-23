@@ -1,8 +1,20 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { server } from "../../../../tests/mocks/server";
 import { _resetSessionSecretCacheForTests, encryptSession } from "@/lib/auth/session";
+
+// The detail page may render <CancelBookingDialog>, a Client Component
+// that calls useMutation() — it needs a QueryClientProvider even in these
+// otherwise-Server-Component-only tests.
+function renderPage(element: React.ReactElement | null) {
+  if (element === null) {
+    throw new Error("expected BookingDetailPage to render an element, got null");
+  }
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<QueryClientProvider client={queryClient}>{element}</QueryClientProvider>);
+}
 
 const cookieStore = vi.hoisted(() => {
   const raw = new Map<string, string>();
@@ -26,6 +38,7 @@ vi.mock("next/navigation", () => ({
   redirect: vi.fn((path: string) => {
     throw new Error(`REDIRECT:${path}`);
   }),
+  useRouter: () => ({ refresh: vi.fn() }),
   notFound: vi.fn(() => {
     throw new Error("NOT_FOUND");
   }),
@@ -118,11 +131,80 @@ describe("BookingDetailPage", () => {
     const { default: BookingDetailPage } = await import("./page");
 
     const result = await BookingDetailPage({ params: Promise.resolve({ bookingId: "1" }) });
-    render(result);
+    renderPage(result);
 
     expect(screen.getByText("Haircut")).toBeInTheDocument();
     expect(screen.getByText("Alice")).toBeInTheDocument();
     expect(screen.getByText(/Customer #7/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancel booking" })).toBeInTheDocument();
+  });
+
+  it("hides the cancel action for a non-admin user", async () => {
+    seedValidSession();
+    server.use(
+      http.get(`${BACKEND_URL}/api/v1/auth/me`, () => HttpResponse.json({ ...ME_RESPONSE, role: "user" })),
+      http.get(`${BACKEND_URL}/api/v1/businesses`, () => HttpResponse.json([business(42)])),
+      http.get(`${BACKEND_URL}/api/v1/businesses/42/bookings/1`, () => HttpResponse.json(booking())),
+      http.get(`${BACKEND_URL}/api/v1/businesses/42/services/10`, () =>
+        HttpResponse.json({ id: 10, name: "Haircut" }),
+      ),
+      http.get(`${BACKEND_URL}/api/v1/businesses/42/staff/1`, () =>
+        HttpResponse.json({ id: 1, name: "Alice" }),
+      ),
+    );
+    const { default: BookingDetailPage } = await import("./page");
+
+    const result = await BookingDetailPage({ params: Promise.resolve({ bookingId: "1" }) });
+    renderPage(result);
+
+    expect(screen.queryByRole("button", { name: "Cancel booking" })).not.toBeInTheDocument();
+  });
+
+  it("shows the cancel action for a platform_admin, mirroring the backend's role hierarchy", async () => {
+    seedValidSession();
+    server.use(
+      http.get(`${BACKEND_URL}/api/v1/auth/me`, () =>
+        HttpResponse.json({ ...ME_RESPONSE, role: "platform_admin" }),
+      ),
+      http.get(`${BACKEND_URL}/api/v1/businesses`, () => HttpResponse.json([business(42)])),
+      http.get(`${BACKEND_URL}/api/v1/businesses/42/bookings/1`, () => HttpResponse.json(booking())),
+      http.get(`${BACKEND_URL}/api/v1/businesses/42/services/10`, () =>
+        HttpResponse.json({ id: 10, name: "Haircut" }),
+      ),
+      http.get(`${BACKEND_URL}/api/v1/businesses/42/staff/1`, () =>
+        HttpResponse.json({ id: 1, name: "Alice" }),
+      ),
+    );
+    const { default: BookingDetailPage } = await import("./page");
+
+    const result = await BookingDetailPage({ params: Promise.resolve({ bookingId: "1" }) });
+    renderPage(result);
+
+    expect(screen.getByRole("button", { name: "Cancel booking" })).toBeInTheDocument();
+  });
+
+  it("hides the cancel action for an already-cancelled booking", async () => {
+    seedValidSession();
+    server.use(
+      http.get(`${BACKEND_URL}/api/v1/auth/me`, () => HttpResponse.json(ME_RESPONSE)),
+      http.get(`${BACKEND_URL}/api/v1/businesses`, () => HttpResponse.json([business(42)])),
+      http.get(`${BACKEND_URL}/api/v1/businesses/42/bookings/1`, () =>
+        HttpResponse.json(booking({ status: "cancelled", cancel_reason: "Already gone" })),
+      ),
+      http.get(`${BACKEND_URL}/api/v1/businesses/42/services/10`, () =>
+        HttpResponse.json({ id: 10, name: "Haircut" }),
+      ),
+      http.get(`${BACKEND_URL}/api/v1/businesses/42/staff/1`, () =>
+        HttpResponse.json({ id: 1, name: "Alice" }),
+      ),
+    );
+    const { default: BookingDetailPage } = await import("./page");
+
+    const result = await BookingDetailPage({ params: Promise.resolve({ bookingId: "1" }) });
+    renderPage(result);
+
+    expect(screen.queryByRole("button", { name: "Cancel booking" })).not.toBeInTheDocument();
+    expect(screen.getByText("Already gone")).toBeInTheDocument();
   });
 
   it("falls back to a numbered label when the staff record is gone", async () => {
@@ -141,7 +223,7 @@ describe("BookingDetailPage", () => {
     const { default: BookingDetailPage } = await import("./page");
 
     const result = await BookingDetailPage({ params: Promise.resolve({ bookingId: "1" }) });
-    render(result);
+    renderPage(result);
 
     expect(screen.getByText("Staff #1")).toBeInTheDocument();
   });
@@ -161,7 +243,7 @@ describe("BookingDetailPage", () => {
     const { default: BookingDetailPage } = await import("./page");
 
     const result = await BookingDetailPage({ params: Promise.resolve({ bookingId: "1" }) });
-    render(result);
+    renderPage(result);
 
     expect(screen.getByText("Any available")).toBeInTheDocument();
   });

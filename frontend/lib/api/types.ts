@@ -13,3 +13,4 @@ export type ServiceRead = components["schemas"]["ServiceRead"];
 export type WorkingHoursRead = components["schemas"]["WorkingHoursRead"];
 export type BookingRead = components["schemas"]["BookingRead"];
 export type BookingStatus = components["schemas"]["BookingStatus"];
+export type BookingCancelRequest = components["schemas"]["BookingCancelRequest"];
