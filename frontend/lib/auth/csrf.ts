@@ -52,11 +52,15 @@ export function isSameOriginRequest(request: Request): boolean {
  * this — they must never mutate state in the first place (see the refresh
  * flow's use of a Server Action instead of a GET handler, for exactly this
  * reason).
+ *
+ * Generic over any extra arguments (e.g. Next's `{ params }` context for a
+ * dynamic route segment) so a wrapped handler's signature matches what
+ * Next.js actually calls it with.
  */
-export function withCsrfProtection(
-  handler: (request: NextRequest) => Promise<Response>,
+export function withCsrfProtection<Extra extends unknown[]>(
+  handler: (request: NextRequest, ...extra: Extra) => Promise<Response>,
 ) {
-  return async (request: NextRequest): Promise<Response> => {
+  return async (request: NextRequest, ...extra: Extra): Promise<Response> => {
     if (!isSameOriginRequest(request)) {
       return NextResponse.json(
         {
@@ -68,6 +72,6 @@ export function withCsrfProtection(
         { status: 403 },
       );
     }
-    return handler(request);
+    return handler(request, ...extra);
   };
 }

@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { BookingStatusBadge } from "@/features/bookings/components/BookingStatusBadge";
+import { CancelBookingDialog } from "@/features/bookings/components/CancelBookingDialog";
 import { resolveNameOrFallback } from "@/features/bookings/server";
 import { formatInBusinessTimezone } from "@/features/bookings/utils";
 import { getCurrentBusinessContext } from "@/features/dashboard/current-business";
 import { ApiError } from "@/lib/api/errors";
 import { fetchFromBackend } from "@/lib/api/server";
 import type { BookingRead } from "@/lib/api/types";
+import { roleIncludes } from "@/lib/auth/roles";
 import { getSession } from "@/lib/auth/server";
 
 export default async function BookingDetailPage({
@@ -61,6 +63,13 @@ export default async function BookingDetailPage({
       : Promise.resolve("Any available"),
   ]);
 
+  // Role check mirrors the proxy route's own check (the real boundary —
+  // the backend enforces require_role("admin") regardless of this UI),
+  // including the role hierarchy (platform_admin counts as admin too —
+  // see lib/auth/roles.ts). Hiding the action for an insufficient role or
+  // an already-cancelled booking is a UX nicety, not the security control.
+  const canCancel = roleIncludes(context.user.role, "admin") && booking.status === "confirmed";
+
   return (
     <div className="max-w-xl space-y-4">
       <Link href="/dashboard/bookings" className="text-sm text-blue-700 hover:underline">
@@ -87,6 +96,8 @@ export default async function BookingDetailPage({
         <Row label="Source">{booking.source}</Row>
         {booking.cancel_reason ? <Row label="Cancel reason">{booking.cancel_reason}</Row> : null}
       </dl>
+
+      {canCancel ? <CancelBookingDialog bookingId={booking.id} /> : null}
     </div>
   );
 }

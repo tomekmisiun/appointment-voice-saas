@@ -45,15 +45,15 @@ and a destructive action together.
 
 | Field | Detail |
 |---|---|
-| Status | Not started |
+| Status | **Done** — `feat/frontend-booking-cancel` |
 | Branch | `feat/frontend-booking-cancel` |
 | Goal | Let an owner (admin role) cancel a booking from the detail page, with explicit confirmation. |
-| Scope | Cancel button on the booking-detail page (own route, not a modal-as-primary-UI); native `<dialog>` confirmation (optional reason field, mirrors `BookingCancelRequest`); `POST .../bookings/{id}/cancel` via a CSRF-protected Route Handler; role-aware UI — hide the action entirely when the signed-in user's role (from `/auth/me`) isn't `admin`, rather than showing it and letting the backend 403. |
+| Scope | Cancel button on the booking-detail page (own route, not a modal-as-primary-UI); native `<dialog>` confirmation (optional reason field, mirrors `BookingCancelRequest`); `POST .../bookings/{id}/cancel` via a CSRF-protected `/api/bookings/[bookingId]/cancel` Route Handler that resolves the business from the session (same pattern as the list proxy) and independently re-checks the admin role server-side (the UI hiding the button is a UX nicety, not the boundary — the backend's own `require_role("admin")` is); the dialog calls `router.refresh()` on success so the Server-Component detail page re-renders with the new status instead of duplicating booking state client-side. |
 | Out of scope | Rescheduling (separate task, 1d), admin override create/cancel endpoints (separate decision — those bypass normal flows and need their own authorization review), bulk cancellation. |
-| Backend dependencies | `POST /api/v1/businesses/{id}/bookings/{id}/cancel` (role `admin`). No gaps. |
-| Acceptance | Cancellation requires explicit confirmation; succeeds and updates the UI without a full reload; backend errors (404/409) surface clearly; the button never renders for a non-admin user. |
-| Tests | Confirmation dialog interaction; successful cancel mutation; error handling (e.g. already-cancelled); role-based visibility. |
-| Risks | A booking that's already been cancelled by someone else between page load and the confirm click — handle the 409/404 from a stale view explicitly, don't assume the click always succeeds. |
+| Backend dependencies | `POST /api/v1/businesses/{id}/bookings/{id}/cancel` (role `admin`). Re-verified unchanged since 1a/1b's audits before writing any code. |
+| Acceptance | Cancellation requires explicit confirmation; succeeds and updates the UI via `router.refresh()` without a full page reload; backend errors (403/409) surface clearly inline in the dialog; the button never renders for a non-admin user or an already-cancelled booking. |
+| Tests | Proxy route: CSRF reject, unauthorized, non-admin 403 (without calling the backend), invalid booking id, successful cancel forwarding the reason, backend conflict passthrough. Dialog: opening requires a click before any network call, "Keep booking" never calls the network, confirming sends the typed reason and calls `router.refresh()`, a backend rejection shows an inline error and does not refresh. Detail page: cancel button present for admin+confirmed, hidden for non-admin, hidden for an already-cancelled booking. |
+| Risks | A booking already cancelled by someone else between page load and the confirm click surfaces as a 409 from the backend, shown inline in the dialog — not silently treated as success. jsdom doesn't implement `HTMLDialogElement.showModal()`/`close()` (still true as of jsdom 29) — polyfilled once in `tests/setup.ts` rather than per test file. Caught pre-merge by cross-provider review: an initial `role === "admin"` check (both in the proxy route and the UI) would have incorrectly locked out a `platform_admin` user, who the backend's own `ROLE_HIERARCHY`/`require_role("admin")` actually grants this to — fixed with a small `roleIncludes()` helper (`lib/auth/roles.ts`) that mirrors the backend's hierarchy exactly, used in both places instead of a strict string match. |
 
 ## 1d. Booking reschedule UI
 
