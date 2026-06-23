@@ -38,7 +38,7 @@ vi.mock("next/navigation", () => ({
   redirect: vi.fn((path: string) => {
     throw new Error(`REDIRECT:${path}`);
   }),
-  useRouter: () => ({ refresh: vi.fn() }),
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
   notFound: vi.fn(() => {
     throw new Error("NOT_FOUND");
   }),
@@ -137,6 +137,7 @@ describe("BookingDetailPage", () => {
     expect(screen.getByText("Alice")).toBeInTheDocument();
     expect(screen.getByText(/Customer #7/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Cancel booking" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reschedule" })).toBeInTheDocument();
   });
 
   it("hides the cancel action for a non-admin user", async () => {
@@ -158,6 +159,7 @@ describe("BookingDetailPage", () => {
     renderPage(result);
 
     expect(screen.queryByRole("button", { name: "Cancel booking" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reschedule" })).not.toBeInTheDocument();
   });
 
   it("shows the cancel action for a platform_admin, mirroring the backend's role hierarchy", async () => {
@@ -181,6 +183,7 @@ describe("BookingDetailPage", () => {
     renderPage(result);
 
     expect(screen.getByRole("button", { name: "Cancel booking" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reschedule" })).toBeInTheDocument();
   });
 
   it("hides the cancel action for an already-cancelled booking", async () => {
@@ -204,6 +207,7 @@ describe("BookingDetailPage", () => {
     renderPage(result);
 
     expect(screen.queryByRole("button", { name: "Cancel booking" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reschedule" })).not.toBeInTheDocument();
     expect(screen.getByText("Already gone")).toBeInTheDocument();
   });
 

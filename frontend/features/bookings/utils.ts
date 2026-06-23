@@ -25,3 +25,19 @@ export function bookingStatusLabel(status: string): string {
 export function buildIdNameMap(items: { id: number; name: string }[]): Map<number, string> {
   return new Map(items.map((item) => [item.id, item.name]));
 }
+
+/** Time-only, in the business's own timezone — for a same-day slot picker list. */
+export function formatTimeInBusinessTimezone(isoDateTime: string, timeZone: string): string {
+  return new Intl.DateTimeFormat(undefined, { timeZone, timeStyle: "short" }).format(
+    new Date(isoDateTime),
+  );
+}
+
+/**
+ * "Today" as YYYY-MM-DD in the given timezone — not the browser's. The
+ * en-CA locale formats dates as YYYY-MM-DD, which doubles as a reliable
+ * way to extract that shape from Intl without manual string-splitting.
+ */
+export function todayInTimezone(timeZone: string): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone }).format(new Date());
+}

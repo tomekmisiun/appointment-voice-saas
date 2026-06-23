@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { BookingStatusBadge } from "@/features/bookings/components/BookingStatusBadge";
 import { CancelBookingDialog } from "@/features/bookings/components/CancelBookingDialog";
+import { RescheduleBookingDialog } from "@/features/bookings/components/RescheduleBookingDialog";
 import { resolveNameOrFallback } from "@/features/bookings/server";
 import { formatInBusinessTimezone } from "@/features/bookings/utils";
 import { getCurrentBusinessContext } from "@/features/dashboard/current-business";
@@ -63,12 +64,13 @@ export default async function BookingDetailPage({
       : Promise.resolve("Any available"),
   ]);
 
-  // Role check mirrors the proxy route's own check (the real boundary —
+  // Role check mirrors the proxy routes' own checks (the real boundary —
   // the backend enforces require_role("admin") regardless of this UI),
   // including the role hierarchy (platform_admin counts as admin too —
-  // see lib/auth/roles.ts). Hiding the action for an insufficient role or
-  // an already-cancelled booking is a UX nicety, not the security control.
-  const canCancel = roleIncludes(context.user.role, "admin") && booking.status === "confirmed";
+  // see lib/auth/roles.ts). Hiding these actions for an insufficient role
+  // or an already-cancelled booking is a UX nicety, not the security
+  // control. Cancel and reschedule share the same eligibility rule.
+  const canModify = roleIncludes(context.user.role, "admin") && booking.status === "confirmed";
 
   return (
     <div className="max-w-xl space-y-4">
@@ -97,7 +99,17 @@ export default async function BookingDetailPage({
         {booking.cancel_reason ? <Row label="Cancel reason">{booking.cancel_reason}</Row> : null}
       </dl>
 
-      {canCancel ? <CancelBookingDialog bookingId={booking.id} /> : null}
+      {canModify ? (
+        <div className="flex gap-3">
+          <RescheduleBookingDialog
+            bookingId={booking.id}
+            serviceId={booking.service_id}
+            staffId={booking.staff_id}
+            timezone={context.business.timezone}
+          />
+          <CancelBookingDialog bookingId={booking.id} />
+        </div>
+      ) : null}
     </div>
   );
 }
