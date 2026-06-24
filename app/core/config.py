@@ -72,6 +72,8 @@ class Settings(BaseSettings):
     auth_login_rate_limit_window_seconds: int = Field(default=60, gt=0)
     auth_register_rate_limit_limit: int = Field(default=5, gt=0)
     auth_register_rate_limit_window_seconds: int = Field(default=300, gt=0)
+    tenant_signup_rate_limit_limit: int = Field(default=3, gt=0)
+    tenant_signup_rate_limit_window_seconds: int = Field(default=3600, gt=0)
     auth_refresh_rate_limit_limit: int = Field(default=30, gt=0)
     auth_refresh_rate_limit_window_seconds: int = Field(default=60, gt=0)
     auth_logout_rate_limit_limit: int = Field(default=30, gt=0)

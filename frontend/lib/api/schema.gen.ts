@@ -1027,6 +1027,26 @@ export interface paths {
         patch: operations["patch_lead_status_api_v1_owner_leads__lead_id__status_patch"];
         trace?: never;
     };
+    "/api/v1/signup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Self-service salon signup
+         * @description Public endpoint — no authentication required. Creates a brand new tenant and its first admin user in one call; no manually-created tenant or platform-admin action needed first. Rate-limited per IP.
+         */
+        post: operations["signup_api_v1_signup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users/": {
         parameters: {
             query?: never;
@@ -2699,6 +2719,36 @@ export interface components {
             name: string;
             /** Slug */
             slug: string;
+        };
+        /** TenantSignupRequest */
+        TenantSignupRequest: {
+            /**
+             * Admin Email
+             * Format: email
+             * @example owner@example.com
+             */
+            admin_email: string;
+            /**
+             * Admin Password
+             * @example strong-password
+             */
+            admin_password: string;
+            /**
+             * Salon Name
+             * @example Glamour Studio
+             */
+            salon_name: string;
+            /**
+             * Slug
+             * @description Optional. Auto-generated from salon_name when omitted.
+             * @example glamour-studio
+             */
+            slug?: string | null;
+        };
+        /** TenantSignupResponse */
+        TenantSignupResponse: {
+            tenant: components["schemas"]["TenantRead"];
+            user: components["schemas"]["UserRead"];
         };
         /** TenantUpdate */
         TenantUpdate: {
@@ -5988,6 +6038,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OwnerLeadAdminRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    signup_api_v1_signup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantSignupRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantSignupResponse"];
                 };
             };
             /** @description Validation Error */

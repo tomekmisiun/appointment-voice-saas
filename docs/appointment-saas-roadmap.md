@@ -309,7 +309,7 @@ the task explicitly de-risks the MVP.
 | [ ] | P4-001 | P4 | Audit product multi-tenancy queries. | Review every product query for tenant filters. | Foundation audit. | Query audit checklist is complete. | Security review/tests. | Cross-tenant data leakage. | partial: `tests/test_product_tenant_isolation.py` covers initial product scope; systematic query-by-query checklist and CI guard not yet created |
 | [ ] | P4-002 | P4 | Add product tenant guards. | Middleware/dependencies/helpers for product APIs. | RLS migration. | Product APIs consistently require tenant context. | API/security tests. | Missing guard exposes data. | partial: `require_business()` and per-service `tenant_id` filter pattern in place; standardized dependency-injected tenant guard not yet abstracted |
 | [ ] | P4-003 | P4 | Add cross-tenant leakage tests. | All product APIs tested for denial. | Manual review only. | Every product route has isolation coverage. | `make validate`. | Isolation regressions merge. | partial: `tests/test_product_tenant_isolation.py` and per-feature isolation tests exist; per-route coverage requirement and enforcement in CI not yet added |
-| [ ] | P4-004 | P4 | Add self-service salon onboarding. | Signup/setup business profile. | Billing. | New salon can start setup safely. | API tests. | Manual onboarding limits scale. | partial: AVS-L004's `POST /api/v1/onboarding` already covers "setup business profile" (creates business+staff+services+hours atomically); the "signup" half — a new salon owner provisioning their own tenant/admin account without a manually-created one — is not implemented (tenant/user creation is still manual, see `docs/runbooks/pilot-onboarding.md`) |
+| [x] | P4-004 | P4 | Add self-service salon onboarding. | Signup/setup business profile. | Billing. | New salon can start setup safely. | API tests. | Manual onboarding limits scale. | done: AVS-L004's `POST /api/v1/onboarding` already covered "setup business profile"; this closes the remaining "signup" half with a new public, unauthenticated `POST /api/v1/signup` (`app/api/routes/signup.py`, rate-limited per IP via new `tenant_signup_rate_limit_limit`/`window_seconds` settings, default 3/hour, gated by the same `registration_enabled` flag as `/auth/register`) — creates a brand new `Tenant` and its first `role="admin"` user in one call, with no manually-created tenant or platform-admin action needed first. Deliberately distinct from `POST /admin/tenants` (`provision_tenant()`), which is for an *already-onboarded* platform admin to create *another* tenant, not for the public to create their first one. Slug is optional (auto-generated from `salon_name`, de-duplicated with a numeric suffix on collision) or explicit (validated against the existing `TENANT_SLUG_PATTERN`, 400 on an already-taken explicit slug). New audit action source `"self_signup"` (admin_id=None) on the existing `AuditAction.TENANT_CREATED`, distinguishing it from an admin-initiated provision. `create_user()` gained an optional `role` param (default unchanged: `"user"`) — `tests/test_tenant_signup.py` (create + auto-slug collision + explicit-slug collision + weak password/invalid slug rejection + audit log + full login-and-create-a-business round trip proving the admin role actually works + registration-disabled gate) |
 | [x] | P4-005 | P4 | Add onboarding wizard API. | Staff/service/hours guided setup endpoints. | Frontend. | Setup flow can be completed by API. | API tests. | Configuration remains error-prone. | done — duplicate/already covered by AVS-L004's `POST /api/v1/onboarding` (`app/api/routes/onboarding.py`, `app/services/onboarding_service.py`), which already provides exactly this: staff/service/hours guided setup in one API call. Found during `docs/audits/p3-remaining-backlog-audit.md`; this row was never reconciled against EPIC L when AVS-L004 shipped |
 | [ ] | P4-006 | P4 | Add phone provisioning workflow. | Reserve/assign provider numbers. | BYO phone porting. | Number lifecycle is tracked. | Adapter tests. | Phone setup remains manual/unreliable. |
 | [ ] | P4-007 | P4 | Add Stripe Billing model. | Subscription/customer/price linkage. | Deposit payments. | Salon subscription state is stored. | Model/webhook tests. | SaaS cannot monetize. |
@@ -317,6 +317,7 @@ the task explicitly de-risks the MVP.
 | [ ] | P4-009 | P4 | Add billing webhooks. | Idempotent Stripe subscription events. | Checkout frontend. | Subscription state updates from webhooks. | Webhook tests. | Billing state drifts. |
 | [ ] | P4-010 | P4 | Block after plan limit exceeded. | Enforce booking/staff/service/feature limits. | Sales override UI. | Exceeded plans fail with clear errors. | API tests. | Revenue leakage or bad UX. |
 | [ ] | P4-011 | P4 | Add backward compatibility checklist. | Migration/versioning policy for existing salons. | Full API versioning rewrite. | Changes include compatibility review. | Docs/policy review. | Existing salons break on release. |
+| [ ] | P4-012 | P4 | Add per-business IVR prompt customization. | Salon owner edits specific IVR message text (e.g. greeting, booking-confirmed message) from the dashboard, stored per-business, read by `resolve_prompt()` as an override layer on top of the existing locale-default templates (P3-009/`app/core/ivr_prompts.py`). Confirmed feasible with Twilio while scoping this row: `<Say>` just reads whatever text it's given, in whatever `language` voice is already configured (P3-009 follow-up, `app/services/twilio_voice_adapter.py`) — no Twilio-side blocker. | Freeform editor for every one of the ~30 prompt keys at once; pre-recorded audio upload; changing IVR branching/flow logic itself; per-business custom languages beyond en/pl. | Owner can override at least the greeting/welcome message from the dashboard; a real call reflects the override; any prompt the owner hasn't overridden keeps using the existing locale-default template unchanged. | API + IVR tests. | An unescaped override breaks the call's TwiML (XSS-style injection into `<Say>`) or silently drops required `{placeholder}` data a prompt depends on (e.g. `{service_name}`, `{options}`) if validation doesn't enforce that required placeholders stay present in a custom override. |
 
 ## Production expansion audit notes
 
@@ -331,15 +332,16 @@ which described a 2026-06-17 snapshot that predates all of P1, most of P2,
 and all of P3).
 
 **Current summary (see `docs/audits/p3-remaining-backlog-audit.md` for the
-2026-06-22 point-in-time verification; P3-013/006/008/010/011/014 below
-post-date that audit):** 52 P1–P4 items tracked — 39 fully implemented or
-covered (all of P1, all of P2 except P2-013/014, **13 of 14 P3 items** —
-P3-013 done PR #66, P3-006 done as an ADR-only decision, P3-008 done
-PR #68, P3-011 and P3-014 done as ADR/spike-only decisions (ADRs 0005/0006),
-P3-010 done — and P4-005 via duplicate coverage by AVS-L004), 4 partially
-implemented (P4-001/002/003 — tenancy-audit related — and P4-004, partially
-covered by the same AVS-L004 endpoint), 9 not started (P2-013/014; P3-007;
-P4-006 through P4-011). P3-007 (Stripe payment links) is unblocked
+2026-06-22 point-in-time verification; P3-013/006/008/010/011/014 and
+P4-004/P4-012 below post-date that audit):** 53 P1–P4 items tracked — 40
+fully implemented or covered (all of P1, all of P2 except P2-013/014,
+**13 of 14 P3 items** — P3-013 done PR #66, P3-006 done as an ADR-only
+decision, P3-008 done PR #68, P3-011 and P3-014 done as ADR/spike-only
+decisions (ADRs 0005/0006), P3-010 done — and P4-004/P4-005 fully done,
+the latter via duplicate coverage by AVS-L004), 3 partially implemented
+(P4-001/002/003 — tenancy-audit related), 10 not started (P2-013/014;
+P3-007; P4-006 through P4-012, including the newly added P4-012 IVR
+prompt customization item). P3-007 (Stripe payment links) is unblocked
 (per P3-008/ADR 0004) but is the one item being **deliberately
 deprioritized** rather than picked up next — see "Next up" below.
 
@@ -365,17 +367,23 @@ found to be a side-effect duplicate of MVP or other backlog work.
    the customer pays, so the status, the widened double-booking guards, and
    the hold-expiry job had to exist first.
 7. `feat/p3-007-stripe-payment-links` — depends on #6, now unblocked.
-8. P2-013/014 and P4-001 through P4-011 remain sequenced after the P3
-   operational-extensions tier per this file's own tier ordering (P4-005 is
-   already done — see that row above).
+8. ~~`feat/p4-004-self-service-signup`~~ — **done** (P4-004 row above), built
+   ahead of the rest of the P4 tier at the user's explicit request — new
+   public `POST /api/v1/signup`.
+9. P2-013/014 and P4-001/002/003/006 through P4-012 remain sequenced after
+   the P3 operational-extensions tier per this file's own tier ordering
+   (P4-005 is already done — see that row above).
 
 **P3 tier is now fully closed** except `feat/p3-007-stripe-payment-links`
 (P3-007), which is unblocked (per P3-008/ADR 0004) but **deliberately
 deprioritized** for now — this is a portfolio/practice project, not
 something being sold, so real third-party payment integration is not being
-picked up without it coming up again explicitly. **Next up (if continuing
-past P3):** P2-013/014, or the P4 operational-extensions tier
-(P4-001 through P4-011) per this file's own tier ordering.
+picked up without it coming up again explicitly. P4-004 (self-service
+signup) is also now done, ahead of the rest of P4. **Next up (if continuing
+past this):** P4-012 (per-business IVR prompt customization, newly added
+to this row per explicit request — no frontend exists for it yet), P2-013/014,
+or the rest of the P4 operational-extensions tier per this file's own tier
+ordering.
 
 ## Validation commands
 

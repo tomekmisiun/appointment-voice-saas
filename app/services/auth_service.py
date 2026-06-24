@@ -24,7 +24,9 @@ def get_user_by_email(db: Session, email: str, tenant_id: int) -> User | None:
     )
 
 
-def create_user(db: Session, user_data: UserCreate, tenant_id: int) -> User:
+def create_user(
+    db: Session, user_data: UserCreate, tenant_id: int, *, role: str = "user"
+) -> User:
     existing_user = get_user_by_email(db, user_data.email, tenant_id)
 
     if existing_user:
@@ -36,6 +38,7 @@ def create_user(db: Session, user_data: UserCreate, tenant_id: int) -> User:
         email=user_data.email,
         hashed_password=hashed_password,
         tenant_id=tenant_id,
+        role=role,
     )
 
     db.add(user)

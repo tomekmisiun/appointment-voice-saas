@@ -87,6 +87,14 @@ def auth_register_rate_limit():
     )
 
 
+def tenant_signup_rate_limit():
+    return rate_limit(
+        limit=settings.tenant_signup_rate_limit_limit,
+        window_seconds=settings.tenant_signup_rate_limit_window_seconds,
+        key_prefix="rate_limit:tenant_signup",
+    )
+
+
 def auth_refresh_rate_limit():
     return rate_limit(
         limit=settings.auth_refresh_rate_limit_limit,
