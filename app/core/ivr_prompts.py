@@ -1,10 +1,13 @@
 """Locale-keyed IVR prompt templates (P3-009).
 
-Architecture only -- this module has exactly one populated locale (English).
-Adding a second locale means adding one more dict entry to `_PROMPTS`; no
+Two locales populated: English ("en", the default) and Polish ("pl").
+Adding another locale means adding one more dict entry to `_PROMPTS`; no
 step-handler logic in `ivr_service.py` changes, because every call site
 already goes through `resolve_prompt()`/`format_option_list()` with an
-explicit `locale` argument rather than an inline string literal.
+explicit `locale` argument rather than an inline string literal. Which
+locale a given call uses is `Business.language`, snapshotted onto
+`VoiceSession.locale` at session creation (see `_session_locale()` in
+`app/services/ivr_service.py`).
 
 `resolve_prompt()` falls back to `IVR_DEFAULT_LOCALE` whenever the requested
 locale is missing entirely, or is missing a specific key (so a partially
@@ -148,6 +151,89 @@ _PROMPTS: dict[str, dict[PromptKey, str]] = {
         PromptKey.LABEL_CANCEL_APPOINTMENT: "Cancel appointment",
         PromptKey.LABEL_RESCHEDULE_APPOINTMENT: "Reschedule appointment",
         PromptKey.LABEL_ANY_AVAILABLE_STAFF: "Any available staff member",
+    },
+    "pl": {
+        PromptKey.SESSION_EXPIRED: "Twoja sesja wygasła. Zadzwoń ponownie, aby zarezerwować wizytę.",
+        PromptKey.SESSION_ALREADY_COMPLETE: "Ta sesja została już zakończona. Zadzwoń ponownie.",
+        PromptKey.UNEXPECTED_STATE: "Nieoczekiwany stan sesji.",
+        PromptKey.TOO_MANY_INVALID_KEYS: (
+            "Za dużo nieprawidłowych wyborów. Sesja została zakończona. "
+            "Zadzwoń ponownie, aby zarezerwować wizytę."
+        ),
+        PromptKey.TOO_MANY_NO_INPUT: (
+            "Nie otrzymaliśmy żadnej odpowiedzi. Sesja została zakończona. "
+            "Zadzwoń ponownie, aby zarezerwować wizytę."
+        ),
+        PromptKey.NO_INPUT_PREFIX: "Nie usłyszeliśmy odpowiedzi. ",
+        PromptKey.NO_SLOTS: "Nie ma dostępnych terminów. Zadzwoń ponownie później.",
+        PromptKey.NO_SERVICES: "Przepraszamy, obecnie nie ma dostępnych usług. Zadzwoń ponownie później.",
+        PromptKey.PLEASE_MAKE_A_SELECTION: "Proszę wybrać jedną z opcji.",
+        PromptKey.MAIN_MENU_INTERNAL: (
+            "Witamy! Naciśnij 1, aby zarezerwować wizytę, "
+            "naciśnij 2, aby połączyć się z pracownikiem, "
+            "lub naciśnij 3, aby zarządzać istniejącą wizytą."
+        ),
+        PromptKey.MAIN_MENU_EXTERNAL: (
+            "Witamy! Naciśnij 1, aby otrzymać link do rezerwacji SMS-em, "
+            "naciśnij 2, aby połączyć się z pracownikiem, "
+            "lub naciśnij 3, aby zarządzać istniejącą wizytą."
+        ),
+        PromptKey.GREETING_PREFIX: "Witamy ponownie, {name}! ",
+        PromptKey.SELECT_SERVICE: "Proszę wybrać usługę: {options}.",
+        PromptKey.INVALID_SELECT_SERVICE: "Nieprawidłowy wybór. Proszę wybrać usługę: {options}.",
+        PromptKey.NO_SLOTS_FOR_SERVICE: (
+            "Przepraszamy, nie ma dostępnych terminów dla usługi {service_name} "
+            "w najbliższym tygodniu. Zadzwoń ponownie później."
+        ),
+        PromptKey.AVAILABLE_SLOTS_FOR_SERVICE: (
+            "Dostępne terminy dla usługi {service_name}: {options}. Naciśnij wybraną opcję."
+        ),
+        PromptKey.SELECT_SLOT: "Proszę wybrać termin: {options}.",
+        PromptKey.INVALID_SELECT_SLOT: "Nieprawidłowy wybór. Proszę wybrać termin: {options}.",
+        PromptKey.BOOKING_CONFIRMED: (
+            "Twoja wizyta została zarezerwowana na {when}. "
+            "Otrzymasz potwierdzenie SMS-em. Dziękujemy, do usłyszenia!"
+        ),
+        PromptKey.STAFF_SELECTION_PROMPT: "Z kim chcesz zarezerwować usługę {service_name}? {options}.",
+        PromptKey.EXTERNAL_LINK_SENT: (
+            "Wysłaliśmy Ci SMS z linkiem do rezerwacji wizyty online. Dziękujemy, do usłyszenia!"
+        ),
+        PromptKey.TRANSFER_DISABLED: (
+            "Połączenie z pracownikiem nie jest dostępne dla tej firmy. Naciśnij 1, aby zarezerwować wizytę."
+        ),
+        PromptKey.TRANSFER_NO_STAFF: (
+            "Przepraszamy, żaden pracownik nie jest obecnie dostępny, aby odebrać połączenie. "
+            "Naciśnij 1, aby zarezerwować wizytę."
+        ),
+        PromptKey.TRANSFERRING: "Łączymy Cię z pracownikiem. Proszę czekać.",
+        PromptKey.PRESS_1_MAIN_MENU: "Naciśnij 1, aby wrócić do menu głównego.",
+        PromptKey.NO_UPCOMING_BOOKING_PREFIX: "Nie znaleźliśmy nadchodzącej wizyty dla tego numeru. ",
+        PromptKey.MANAGE_BOOKING_FOUND: (
+            "Znaleźliśmy Twoją wizytę na usługę {service_name} w terminie {when}. "
+            "Naciśnij 1, aby ją odwołać, naciśnij 2, aby zmienić termin, "
+            "lub naciśnij 3, aby wrócić do menu głównego."
+        ),
+        PromptKey.BOOKING_CANCELLED: "Twoja wizyta została odwołana. Dziękujemy, do usłyszenia!",
+        PromptKey.NO_SLOTS_TO_RESCHEDULE: (
+            "Przepraszamy, obecnie nie ma dostępnych terminów do zmiany. Zadzwoń ponownie później."
+        ),
+        PromptKey.SELECT_NEW_TIME: "Proszę wybrać nowy termin: {options}.",
+        PromptKey.INVALID_SELECT_NEW_TIME: "Nieprawidłowy wybór. Proszę wybrać nowy termin: {options}.",
+        PromptKey.BOOKING_RESCHEDULED: (
+            "Twoja wizyta została przełożona na {when}. "
+            "Otrzymasz potwierdzenie SMS-em. Dziękujemy, do usłyszenia!"
+        ),
+        PromptKey.OPTION_ITEM: "naciśnij {key} dla {label}",
+        PromptKey.STAFF_OPTION_PREFERRED: "naciśnij {key} dla {label} — Twojego ostatniego wyboru",
+        PromptKey.STAFF_OPTION_ANY: "naciśnij 0, aby wybrać dowolnego dostępnego pracownika",
+        PromptKey.LABEL_MAIN_MENU: "Menu główne",
+        PromptKey.LABEL_BOOK_APPOINTMENT: "Zarezerwuj wizytę",
+        PromptKey.LABEL_BOOKING_LINK_SMS: "Otrzymaj link do rezerwacji SMS-em",
+        PromptKey.LABEL_SPEAK_WITH_STAFF: "Połącz z pracownikiem",
+        PromptKey.LABEL_MANAGE_BOOKING: "Zarządzaj istniejącą wizytą",
+        PromptKey.LABEL_CANCEL_APPOINTMENT: "Odwołaj wizytę",
+        PromptKey.LABEL_RESCHEDULE_APPOINTMENT: "Zmień termin wizyty",
+        PromptKey.LABEL_ANY_AVAILABLE_STAFF: "Dowolny dostępny pracownik",
     },
 }
 

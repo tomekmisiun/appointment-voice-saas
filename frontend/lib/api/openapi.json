@@ -786,6 +786,10 @@
             ],
             "title": "External Booking Url"
           },
+          "language": {
+            "$ref": "#/components/schemas/BusinessLanguage",
+            "default": "en"
+          },
           "name": {
             "maxLength": 255,
             "minLength": 1,
@@ -833,6 +837,15 @@
         ],
         "title": "BusinessCreate",
         "type": "object"
+      },
+      "BusinessLanguage": {
+        "description": "IVR prompt locale for this business (app/core/ivr_prompts.py).\nPlain String column, not a native DB enum -- adding a new locale later\nmeans adding a _PROMPTS entry plus a new value here, no migration.",
+        "enum": [
+          "en",
+          "pl"
+        ],
+        "title": "BusinessLanguage",
+        "type": "string"
       },
       "BusinessRead": {
         "properties": {
@@ -886,6 +899,10 @@
             "title": "Is Active",
             "type": "boolean"
           },
+          "language": {
+            "title": "Language",
+            "type": "string"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -927,6 +944,7 @@
           "tenant_id",
           "name",
           "timezone",
+          "language",
           "phone",
           "is_active",
           "transfer_enabled",
@@ -1065,6 +1083,16 @@
               }
             ],
             "title": "Is Active"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BusinessLanguage"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "name": {
             "anyOf": [

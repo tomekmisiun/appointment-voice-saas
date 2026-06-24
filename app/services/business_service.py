@@ -10,6 +10,7 @@ def create_business(
     tenant_id: int,
     name: str,
     timezone: str,
+    language: str = "en",
     phone: str | None = None,
     transfer_enabled: bool = False,
     transfer_destination_policy: str = "business_phone",
@@ -23,6 +24,7 @@ def create_business(
         tenant_id=tenant_id,
         name=name,
         timezone=timezone,
+        language=language,
         phone=phone,
         is_active=True,
         transfer_enabled=transfer_enabled,
@@ -80,6 +82,7 @@ def update_business(
     *,
     name: str | None = None,
     timezone: str | None = None,
+    language: str | None = None,
     phone: str | None = None,
     is_active: bool | None = None,
     transfer_enabled: bool | None = None,
@@ -95,6 +98,8 @@ def update_business(
         business.name = name
     if timezone is not None:
         business.timezone = timezone
+    if language is not None:
+        business.language = language
     if phone is not None:
         business.phone = phone
     if is_active is not None:

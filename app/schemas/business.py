@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.models.business import (
     BookingMode,
+    BusinessLanguage,
     ExternalBookingProvider,
     SubscriptionPlan,
     TransferDestinationPolicy,
@@ -34,6 +35,7 @@ def _validate_booking_label(label: str | None) -> str | None:
 class BusinessCreate(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     timezone: str = Field(min_length=1, max_length=64, examples=["Europe/Warsaw"])
+    language: BusinessLanguage = BusinessLanguage.EN
     phone: str | None = Field(default=None, max_length=32)
     transfer_enabled: bool = False
     transfer_destination_policy: TransferDestinationPolicy = TransferDestinationPolicy.BUSINESS_PHONE
@@ -70,6 +72,7 @@ class BusinessRead(BaseModel):
     tenant_id: int
     name: str
     timezone: str
+    language: str
     phone: str | None
     is_active: bool
     transfer_enabled: bool
@@ -87,6 +90,7 @@ class BusinessRead(BaseModel):
 class BusinessUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
     timezone: str | None = Field(default=None, min_length=1, max_length=64)
+    language: BusinessLanguage | None = None
     phone: str | None = Field(default=None, max_length=32)
     is_active: bool | None = None
     transfer_enabled: bool | None = None
