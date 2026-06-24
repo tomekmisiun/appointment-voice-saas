@@ -148,6 +148,7 @@ class Settings(BaseSettings):
     ivr_slot_search_days: int = Field(default=7, gt=0)
     ivr_max_slots: int = Field(default=5, gt=0)
     reminder_lead_minutes: int = Field(default=1440, gt=0)
+    reminder_min_advance_minutes: int = Field(default=1440, gt=0)
     waitlist_offer_timeout_minutes: int = Field(default=60, gt=0)
     worker_shutdown_grace_seconds: float = Field(default=60.0, ge=0)
     readiness_check_s3_enabled: bool = False

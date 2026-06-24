@@ -173,9 +173,20 @@ def enqueue_due_reminders(db: Session) -> int:
     """Enqueue a reminder SMS for confirmed bookings starting within the
     reminder lead window. Idempotent: skips bookings that already have a
     BOOKING_REMINDER outbox row, so it is safe to call on every maintenance
-    tick regardless of cadence."""
+    tick regardless of cadence.
+
+    Skips bookings made with less than `settings.reminder_min_advance_minutes`
+    of notice (e.g. booked today for tomorrow) -- those bookings are already
+    within the reminder lead window the moment they're created, so a
+    reminder would land minutes after the confirmation SMS for no reason.
+    The two settings are independent and both deliberately default to the
+    same value (1440 = 1 day): reminder_lead_minutes controls how close to
+    the appointment the reminder fires; reminder_min_advance_minutes
+    controls whether the *original booking* was made far enough ahead for a
+    reminder to be worth sending at all."""
     now = datetime.now(timezone.utc)
     threshold = now + timedelta(minutes=settings.reminder_lead_minutes)
+    min_advance = timedelta(minutes=settings.reminder_min_advance_minutes)
 
     due_bookings = (
         db.query(Booking)
@@ -189,6 +200,9 @@ def enqueue_due_reminders(db: Session) -> int:
 
     count = 0
     for booking in due_bookings:
+        if booking.starts_at - booking.created_at < min_advance:
+            continue
+
         already_queued = (
             db.query(NotificationOutbox)
             .filter(
