@@ -1965,6 +1965,8 @@ export interface components {
             external_booking_provider?: components["schemas"]["ExternalBookingProvider"] | null;
             /** External Booking Url */
             external_booking_url?: string | null;
+            /** @default en */
+            language: components["schemas"]["BusinessLanguage"];
             /** Name */
             name: string;
             /** Phone */
@@ -1984,6 +1986,14 @@ export interface components {
              */
             transfer_enabled: boolean;
         };
+        /**
+         * BusinessLanguage
+         * @description IVR prompt locale for this business (app/core/ivr_prompts.py).
+         *     Plain String column, not a native DB enum -- adding a new locale later
+         *     means adding a _PROMPTS entry plus a new value here, no migration.
+         * @enum {string}
+         */
+        BusinessLanguage: "en" | "pl";
         /** BusinessRead */
         BusinessRead: {
             /** Booking Mode */
@@ -2003,6 +2013,8 @@ export interface components {
             id: number;
             /** Is Active */
             is_active: boolean;
+            /** Language */
+            language: string;
             /** Name */
             name: string;
             /** Phone */
@@ -2067,6 +2079,7 @@ export interface components {
             external_booking_url?: string | null;
             /** Is Active */
             is_active?: boolean | null;
+            language?: components["schemas"]["BusinessLanguage"] | null;
             /** Name */
             name?: string | null;
             /** Phone */

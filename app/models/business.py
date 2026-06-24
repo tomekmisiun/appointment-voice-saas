@@ -30,6 +30,14 @@ class SubscriptionPlan(StrEnum):
     FULL_BOOKING_PRO  = "full_booking_pro"
 
 
+class BusinessLanguage(StrEnum):
+    """IVR prompt locale for this business (app/core/ivr_prompts.py).
+    Plain String column, not a native DB enum -- adding a new locale later
+    means adding a _PROMPTS entry plus a new value here, no migration."""
+    EN = "en"
+    PL = "pl"
+
+
 class Business(Base):
     __tablename__ = "businesses"
     __table_args__ = (Index("ix_businesses_tenant_id", "tenant_id"),)
@@ -40,6 +48,9 @@ class Business(Base):
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     timezone: Mapped[str] = mapped_column(String(64), nullable=False)
+    language: Mapped[str] = mapped_column(
+        String(8), nullable=False, default=BusinessLanguage.EN
+    )
     phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     transfer_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

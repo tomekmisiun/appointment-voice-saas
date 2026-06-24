@@ -23,8 +23,60 @@ def test_admin_can_create_business(db, client):
     data = response.json()
     assert data["name"] == "Quick Cuts"
     assert data["timezone"] == "Europe/Warsaw"
+    assert data["language"] == "en"
     assert data["is_active"] is True
     assert "id" in data
+
+
+def test_admin_can_create_business_with_polish_language(db, client):
+    register_user(client, "owner_pl@example.com")
+    promote_to_admin(db, "owner_pl@example.com")
+    token = login_user(client, "owner_pl@example.com").json()["access_token"]
+
+    response = client.post(
+        "/api/v1/businesses",
+        json={"name": "Salon Polski", "timezone": "Europe/Warsaw", "language": "pl"},
+        headers=auth_headers(token),
+    )
+
+    assert response.status_code == 201
+    assert response.json()["language"] == "pl"
+
+
+def test_create_business_rejects_unsupported_language(db, client):
+    register_user(client, "owner_badlang@example.com")
+    promote_to_admin(db, "owner_badlang@example.com")
+    token = login_user(client, "owner_badlang@example.com").json()["access_token"]
+
+    response = client.post(
+        "/api/v1/businesses",
+        json={"name": "Salon", "timezone": "Europe/Warsaw", "language": "fr"},
+        headers=auth_headers(token),
+    )
+
+    assert response.status_code == 422
+
+
+def test_admin_can_update_business_language(db, client):
+    register_user(client, "owner_updatelang@example.com")
+    promote_to_admin(db, "owner_updatelang@example.com")
+    token = login_user(client, "owner_updatelang@example.com").json()["access_token"]
+
+    created = client.post(
+        "/api/v1/businesses",
+        json={"name": "Salon", "timezone": "Europe/Warsaw"},
+        headers=auth_headers(token),
+    ).json()
+    assert created["language"] == "en"
+
+    response = client.patch(
+        f"/api/v1/businesses/{created['id']}",
+        json={"language": "pl"},
+        headers=auth_headers(token),
+    )
+
+    assert response.status_code == 200
+    assert response.json()["language"] == "pl"
 
 
 def test_regular_user_cannot_create_business(db, client):

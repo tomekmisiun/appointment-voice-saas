@@ -44,6 +44,10 @@ class VoiceSession(Base):
     step: Mapped[str] = mapped_column(
         String(32), nullable=False, default=IvrStep.INCOMING
     )
+    # Snapshot of Business.language at session-creation time (P3-009 follow-up):
+    # a call already in progress must keep using the locale it started with
+    # even if the business's language setting changes mid-call.
+    locale: Mapped[str] = mapped_column(String(8), nullable=False, default="en")
     selected_service_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("services.id"), nullable=True
     )

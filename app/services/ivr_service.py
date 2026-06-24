@@ -41,10 +41,12 @@ logger = logging.getLogger(__name__)
 
 def _session_locale(session: VoiceSession) -> str:
     """Single extension point for P3-009: every prompt call site resolves
-    its locale through here rather than hardcoding IVR_DEFAULT_LOCALE, so
-    wiring up a real per-session/per-business locale later (e.g. a
-    VoiceSession.locale column) only means changing this one function."""
-    return IVR_DEFAULT_LOCALE
+    its locale through here rather than hardcoding IVR_DEFAULT_LOCALE.
+    Wired (P3-009 follow-up) to the VoiceSession.locale column, itself a
+    snapshot of Business.language taken once in start_session() -- a call
+    already in progress keeps its locale even if the business's language
+    setting changes mid-call."""
+    return session.locale or IVR_DEFAULT_LOCALE
 
 
 def start_session(
@@ -64,6 +66,7 @@ def start_session(
         caller_phone=caller_phone,
         step=IvrStep.INCOMING,
         expires_at=expires_at,
+        locale=business.language,
     )
     db.add(session)
     db.commit()

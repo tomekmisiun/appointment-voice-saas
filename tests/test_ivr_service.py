@@ -75,6 +75,53 @@ def test_start_session_rejects_unknown_business(db):
         start_session(db, business_id=99999, tenant_id=tenant.id, caller_phone="+48600111222")
 
 
+# --- P3-009 follow-up: per-business IVR locale ---
+
+
+def test_start_session_defaults_to_english_locale(db):
+    tenant_id, biz, _svc = _setup(db)
+
+    session, response = start_session(
+        db, business_id=biz.id, tenant_id=tenant_id, caller_phone="+48600111223"
+    )
+
+    assert session.locale == "en"
+    assert "Welcome" in response.prompt
+
+
+def test_start_session_uses_business_polish_language(db):
+    tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
+    biz = create_business(
+        db, tenant_id=tenant.id, name="Salon Polski", timezone="UTC", language="pl"
+    )
+
+    session, response = start_session(
+        db, business_id=biz.id, tenant_id=tenant.id, caller_phone="+48600111224"
+    )
+
+    assert session.locale == "pl"
+    assert "Witamy" in response.prompt
+
+
+def test_changing_business_language_does_not_affect_in_progress_session(db):
+    """A call already in progress keeps its original locale even if the
+    business's language setting changes mid-call -- VoiceSession.locale is
+    a snapshot taken at session creation, not a live lookup."""
+    tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
+    biz = create_business(
+        db, tenant_id=tenant.id, name="Salon Zmiana", timezone="UTC", language="pl"
+    )
+    session, _response = start_session(
+        db, business_id=biz.id, tenant_id=tenant.id, caller_phone="+48600111225"
+    )
+    assert session.locale == "pl"
+
+    update_business(db, biz.id, tenant.id, language="en")
+
+    db.refresh(session)
+    assert session.locale == "pl"
+
+
 # --- G004: Main menu ---
 
 def test_press_1_transitions_to_service_selection(db):
