@@ -318,7 +318,7 @@ coverage).
 **P3 — Operational extensions:**
 - NOT_IMPLEMENTED: deposits ADR, Stripe payment links, pending-payment
   booking state, calendar privacy rules, calendar conflict import ADR,
-  integration reconciliation job, two-way calendar ADR.
+  two-way calendar ADR.
 - DONE: salon closures/holidays — business-wide closure exclusion and overlap
   validation already worked; added the missing API clarity (create
   endpoint docstring documents that a business-wide `staff_id=null`
@@ -372,7 +372,19 @@ coverage).
   subtracted from generated slots as a third precedence step after
   `WorkingHours`/`AvailabilityException` in `_get_available_slots_for_duration()`,
   verified to stay correct when working hours change later instead of going
-  stale (P3-005).
+  stale (P3-005); integration reconciliation job — new
+  `app/services/reconciliation_service.py` sweeps `NotificationOutbox`/
+  `CalendarEvent` rows stuck `PENDING` (or, for calendar, also `FAILED`)
+  past a configurable staleness window and re-enqueues a fresh job, closing
+  the gap where the DB commit and the Redis job enqueue are two separate
+  steps that can lose each other on a crash or transient Redis failure;
+  gated on `COALESCE(reconciled_at, created_at)` (new nullable column, both
+  models) rather than `created_at` alone, so an already-requeued row isn't
+  requeued again on every maintenance tick while the original job may still
+  be in flight — a `created_at`-only first draft was caught by
+  cross-provider review as a duplicate-send risk; new
+  `integration_reconciliation_requeued_total{record_type}` metric surfaces
+  ongoing drift instead of silently retrying forever (P3-013).
 
 **P4 — SaaS model and scale:**
 - NOT_IMPLEMENTED: phone provisioning, Stripe Billing model, plan limits

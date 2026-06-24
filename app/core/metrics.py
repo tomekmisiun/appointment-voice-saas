@@ -37,6 +37,7 @@ _worker_maintenance_runs_total: Counter | None = None
 _dependency_checks_total: Counter | None = None
 _dependency_health_status: Gauge | None = None
 _worker_failed_queue_depth: Gauge | None = None
+_integration_reconciliation_requeued_total: Counter | None = None
 _sms_provider_requests_total: Counter | None = None
 _calendar_provider_requests_total: Counter | None = None
 _app_info: Gauge | None = None
@@ -50,7 +51,7 @@ def configure_metrics(app_settings: "Settings | None" = None) -> None:
     global _http_requests_total, _http_request_duration_seconds
     global _worker_jobs_total, _worker_maintenance_runs_total
     global _dependency_checks_total, _dependency_health_status, _app_info
-    global _worker_failed_queue_depth
+    global _worker_failed_queue_depth, _integration_reconciliation_requeued_total
     global _sms_provider_requests_total, _calendar_provider_requests_total
 
     if _metrics_configured:
@@ -116,6 +117,12 @@ def configure_metrics(app_settings: "Settings | None" = None) -> None:
         "worker_failed_queue_depth",
         "Number of jobs currently sitting in the worker dead-letter queue.",
         **gauge_kwargs,
+    )
+    _integration_reconciliation_requeued_total = Counter(
+        "integration_reconciliation_requeued_total",
+        "Total stale notification/calendar records re-queued by the reconciliation sweep.",
+        ["record_type"],
+        **counter_kwargs,
     )
     _sms_provider_requests_total = Counter(
         "sms_provider_requests_total",
@@ -197,6 +204,13 @@ def observe_worker_failed_queue_depth(depth: int) -> None:
         configure_metrics()
 
     _worker_failed_queue_depth.set(depth)
+
+
+def observe_integration_reconciliation_requeued(*, record_type: str, count: int) -> None:
+    if _integration_reconciliation_requeued_total is None:
+        configure_metrics()
+
+    _integration_reconciliation_requeued_total.labels(record_type=record_type).inc(count)
 
 
 def observe_sms_provider_request(*, provider: str, status: str) -> None:

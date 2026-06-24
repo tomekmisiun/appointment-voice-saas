@@ -55,6 +55,10 @@ from app.services.upload_verification_service import (
     verify_presigned_upload_in_worker,
 )
 from app.services.ivr_service import expire_stale_sessions
+from app.services.reconciliation_service import (
+    reconcile_stale_calendar_events,
+    reconcile_stale_notifications,
+)
 from app.services.waitlist_service import expire_stale_waitlist_offers
 from app.services.webhook_service import cleanup_old_webhook_events
 
@@ -237,6 +241,8 @@ def run_scheduled_maintenance(now: float | None = None) -> bool:
         voice_sessions_expired = expire_stale_sessions(db)
         reminders_enqueued = enqueue_due_reminders(db)
         waitlist_offers_expired = expire_stale_waitlist_offers(db)
+        notifications_reconciled = reconcile_stale_notifications(db)
+        calendar_events_reconciled = reconcile_stale_calendar_events(db)
     finally:
         db.close()
 
@@ -252,6 +258,8 @@ def run_scheduled_maintenance(now: float | None = None) -> bool:
         "voice_sessions_expired=%s "
         "reminders_enqueued=%s "
         "waitlist_offers_expired=%s "
+        "notifications_reconciled=%s "
+        "calendar_events_reconciled=%s "
         "failed_queue_depth=%s",
         password_reset_deleted,
         idempotency_deleted,
@@ -260,6 +268,8 @@ def run_scheduled_maintenance(now: float | None = None) -> bool:
         voice_sessions_expired,
         reminders_enqueued,
         waitlist_offers_expired,
+        notifications_reconciled,
+        calendar_events_reconciled,
         failed_queue_depth,
     )
     observe_worker_maintenance(status="completed")

@@ -335,7 +335,8 @@ def test_scheduled_maintenance_runs_when_lock_acquired(monkeypatch):
     cleanup_calls = {
         "password_reset": 0, "idempotency": 0, "webhook_events": 0,
         "audit_logs": 0, "voice_sessions": 0, "reminders": 0,
-        "waitlist_offers": 0, "failed_depth": 0,
+        "waitlist_offers": 0, "notifications_reconciled": 0,
+        "calendar_events_reconciled": 0, "failed_depth": 0,
     }
     observed_depths = []
 
@@ -375,6 +376,18 @@ def test_scheduled_maintenance_runs_when_lock_acquired(monkeypatch):
         lambda db: cleanup_calls.__setitem__("waitlist_offers", cleanup_calls["waitlist_offers"] + 1) or 0,
     )
     monkeypatch.setattr(
+        "app.worker.reconcile_stale_notifications",
+        lambda db: cleanup_calls.__setitem__(
+            "notifications_reconciled", cleanup_calls["notifications_reconciled"] + 1
+        ) or 0,
+    )
+    monkeypatch.setattr(
+        "app.worker.reconcile_stale_calendar_events",
+        lambda db: cleanup_calls.__setitem__(
+            "calendar_events_reconciled", cleanup_calls["calendar_events_reconciled"] + 1
+        ) or 0,
+    )
+    monkeypatch.setattr(
         "app.worker.get_failed_queue_depth",
         lambda: cleanup_calls.__setitem__("failed_depth", cleanup_calls["failed_depth"] + 1) or 6,
     )
@@ -394,6 +407,8 @@ def test_scheduled_maintenance_runs_when_lock_acquired(monkeypatch):
         "voice_sessions": 1,
         "reminders": 1,
         "waitlist_offers": 1,
+        "notifications_reconciled": 1,
+        "calendar_events_reconciled": 1,
         "failed_depth": 1,
     }
     assert observed_depths == [6]
