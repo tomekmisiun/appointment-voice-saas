@@ -297,7 +297,7 @@ the task explicitly de-risks the MVP.
 | [x] | P3-008 | P3 | Add pending-payment booking state. | Hold expiry and transition rules. | Full checkout. | Pending holds expire safely. | Worker/service tests. | Slots remain locked after abandoned payment. | done: per `docs/adr/0004-deposits-and-payment-holds.md` — `create_pending_payment_hold()` reserves the slot without firing the confirmation SMS/calendar sync (those only fire at `confirm_booking_payment()`'s `PENDING_PAYMENT`→`CONFIRMED` transition, the existing `BOOKING_CONFIRMED` audit action with `source="stripe_webhook"`, idempotent for a duplicate webhook delivery); `expire_pending_payment_hold()` transitions an abandoned hold to `CANCELLED` (no cancellation SMS, distinct `BOOKING_HOLD_EXPIRED` audit action, still escalates the freed slot to the waitlist), swept periodically by `expire_stale_payment_holds()` (new `booking_payment_hold_minutes` setting, default 15) wired into `run_scheduled_maintenance()`; `confirm_booking_payment()`/`expire_pending_payment_hold()`/`cancel_booking()` all take a row lock (`with_for_update()` + `populate_existing()`) on the booking to close the same class of concurrent-transition race PR #45/AVS-TD-030 already had to fix elsewhere; added the manual admin-triggered `refund_booking_payment()` + `POST .../bookings/{id}/refund` endpoint ADR §6 calls for; `Service.deposit_required`/`deposit_minor_units` are now configurable via the service create/update API (validated together with `currency`) — `tests/test_avs_p3008_pending_payment_state.py`, `tests/test_payment_hold_concurrency.py` (real-thread row-lock regression tests), extended `tests/test_availability.py`/`tests/test_worker.py`/`tests/test_services.py` |
 | [x] | P3-009 | P3 | Add multilingual IVR prompt architecture. | Prompt keys/templates per language. | Translation content. | Flow can choose language without logic fork. | IVR tests. | Localization duplicates IVR code. | done: new `app/core/ivr_prompts.py` — `PromptKey` enum (one entry per distinct prompt/label template), `_PROMPTS: dict[locale, dict[PromptKey, str]]` (only `en` populated, by design — translation content is out of scope), `resolve_prompt(key, *, locale, **kwargs)` (falls back to `IVR_DEFAULT_LOCALE` for an unknown locale or a locale missing a specific key, so a partial translation degrades gracefully), `format_option_list()` (centralizes the repeated "press {key} for {label}" join pattern that was previously duplicated at ~7 call sites in `ivr_service.py`); every hardcoded prompt string and static `IvrOption` label in `ivr_service.py` now resolves through these, gated by a single `_session_locale(session)` helper — adding a real locale later means changing that one function plus adding one `_PROMPTS` entry, zero step-handler changes; exact rendered text preserved byte-for-byte, verified by the full existing IVR test suite (99 tests across `test_ivr_e2e.py`, `test_ivr_service.py`, and every `test_avs_p1*/p2*_ivr_*.py`) passing unchanged — `tests/test_avs_p3009_ivr_prompt_keys.py` (new: key/locale resolution, fallback for unknown locale and partially-translated locale, option-list join, and an explicit "adding a second locale requires zero ivr_service.py changes" proof) |
 | [ ] | P3-010 | P3 | Add private staff calendar visibility rules. | Avoid exposing private calendar details. | Calendar UI. | Sync stores busy/free only where needed. | Privacy tests. | Sensitive staff details leak. |
-| [ ] | P3-011 | P3 | Add calendar conflict import spike. | Investigate one-way busy import. | Full two-way sync. | ADR documents safe approach. | Docs review. | External conflicts missed. |
+| [x] | P3-011 | P3 | Add calendar conflict import spike. | Investigate one-way busy import. | Full two-way sync. | ADR documents safe approach. | Docs review. | External conflicts missed. | done: `docs/adr/0005-calendar-conflict-import-spike.md`. Sketches a `get_busy_periods()` addition to `CalendarProvider` (busy/free only, never event details — privacy-minimal by construction, no provider/OAuth implementation), polling not push (push needs domain-verified webhooks, out of scope for a spike); the central scope-creep question is answered directly — an imported `BusyPeriod` must never become a fourth availability-subtraction step alongside `WorkingHours`/`AvailabilityException`/`RecurringStaffBlock`, since that would let external calendar state decide booking eligibility, the exact thing ADR 0002 §1 already ruled out and exactly what P3-014 (not this spike) is scoped to decide deliberately; the only sanctioned use here is an informational, never-authoritative conflict alert (concrete delivery mechanism left undesigned, follow-up work). Decision/sketch only, no code |
 | [x] | P3-012 | P3 | Add manual admin override workflow. | Override booking/cancel with a mandatory reason and a distinct audit trail (does not bypass the DB-level no-overlap safety constraint for a genuine same-staff conflict — see evidence). | Frontend UI; force-overbooking a specific staff member's slot past the no-overlap constraint (would require a migration weakening that Critical-priority safety constraint — out of scope, see evidence). | Overrides are explicit and audited. | API tests. | Support cannot resolve edge cases. | done: `POST /businesses/{business_id}/bookings/override` and `POST /businesses/{business_id}/bookings/{booking_id}/override-cancel`, both admin-only (`require_role("admin")`) with a required, non-blank `reason`; both call the existing `create_booking()`/`cancel_booking()` with a new `override=True` flag, logging the new `AuditAction.BOOKING_OVERRIDE_CREATED`/`BOOKING_OVERRIDE_CANCELLED` (with `source` set to the admin's reason, queryable separately from regular `BOOKING_CREATED`/`BOOKING_CANCELLED`) instead of changing booking mechanics — override-create does **not** bypass the DB-level `no_overlapping_staff_bookings` exclusion constraint for a genuine same-staff conflict (still 409s), a deliberate scope decision recorded in `tests/test_avs_p3012_admin_override.py`'s module docstring; unblocks P1-013's remaining admin-override audit gap — `tests/test_avs_p3012_admin_override.py` |
 | [x] | P3-013 | P3 | Add integration reconciliation job. | Detect stale SMS/calendar outbox records. | Provider-specific repair UI. | Stale records are reported/retried. | Worker tests. | Integration drift accumulates. | done: new `app/services/reconciliation_service.py` (`reconcile_stale_notifications()`, `reconcile_stale_calendar_events()`), wired into the existing `run_scheduled_maintenance()` tick. Closes the gap where the DB commit (outbox/calendar row) and the Redis job enqueue are two separate steps — a crash or transient Redis failure between them left a `PENDING` row with no job ever processing it. Gated on `COALESCE(reconciled_at, created_at)` (new nullable column on both models, migration `p3013a2b3c4d5e`) rather than `created_at` alone — caught by cross-provider review, which flagged a `created_at`-only sweep as re-enqueuing the same stale row on every maintenance tick forever, risking a duplicate SMS/calendar-event send if the original job was still in flight. New `integration_reconciliation_requeued_total{record_type}` metric surfaces ongoing drift, per the roadmap's explicit "Provider-specific repair UI" exclusion — `tests/test_reconciliation_service.py`, extended `tests/test_worker.py`/`tests/test_worker_metrics.py` |
 | [ ] | P3-014 | P3 | Write two-way calendar sync ADR. | Risks, source of truth, conflict policy. | Implementation. | ADR rejects or scopes two-way sync safely. | Docs review. | Calendar becomes competing source of truth. |
@@ -331,13 +331,14 @@ which described a 2026-06-17 snapshot that predates all of P1, most of P2,
 and all of P3).
 
 **Current summary (see `docs/audits/p3-remaining-backlog-audit.md` for the
-2026-06-22 point-in-time verification; P3-013/P3-006 below post-date that
-audit):** 52 P1–P4 items tracked — 35 fully implemented or covered (all of
-P1, all of P2 except P2-013/014, 9 of 14 P3 items — P3-013 done PR #66,
-P3-006 done as an ADR-only decision — and P4-005 via duplicate coverage by
+2026-06-22 point-in-time verification; P3-013/006/008/011 below post-date
+that audit):** 52 P1–P4 items tracked — 37 fully implemented or covered (all
+of P1, all of P2 except P2-013/014, 11 of 14 P3 items — P3-013 done PR #66,
+P3-006 done as an ADR-only decision, P3-008 done PR #68, P3-011 done as an
+ADR/spike-only decision (ADR 0005) — and P4-005 via duplicate coverage by
 AVS-L004), 4 partially implemented (P4-001/002/003 — tenancy-audit related —
-and P4-004, partially covered by the same AVS-L004 endpoint), 13 not started
-(P2-013/014; P3-007/008/010/011/014; P4-006 through P4-011).
+and P4-004, partially covered by the same AVS-L004 endpoint), 11 not started
+(P2-013/014; P3-007/010/014; P4-006 through P4-011).
 
 **Duplicate found:** P4-005 was accidentally already covered by AVS-L004's
 self-service onboarding API, shipped during EPIC L and never reconciled
@@ -351,9 +352,9 @@ found to be a side-effect duplicate of MVP or other backlog work.
 `pre-p3-readiness-audit.md` §10 execution order):
 1. ~~`feat/p3-013-reconciliation-job`~~ — **done** (P3-013 row above).
 2. ~~`docs/adr-deposits-architecture`~~ (P3-006) — **done**, `docs/adr/0004-deposits-and-payment-holds.md`. Unblocks P3-007/008.
-3. `docs/adr-calendar-import-spike` (P3-011) — ADR/spike only.
-4. `docs/adr-two-way-calendar-sync` (P3-014) — depends on #3.
-5. `feat/p3-010-calendar-visibility` — depends on #3.
+3. ~~`docs/adr-calendar-import-spike`~~ (P3-011) — **done** (P3-011 row above).
+4. `docs/adr-two-way-calendar-sync` (P3-014) — depends on #3, now unblocked.
+5. `feat/p3-010-calendar-visibility` — depends on #3, now unblocked.
 6. ~~`feat/p3-008-pending-payment-state`~~ — **done** (P3-008 row above).
    Was reordered ahead of P3-007 (the original audit-era order had this
    depending on P3-007, the reverse): ADR 0004 §3 concludes the Stripe
@@ -365,10 +366,11 @@ found to be a side-effect duplicate of MVP or other backlog work.
    operational-extensions tier per this file's own tier ordering (P4-005 is
    already done — see that row above).
 
-**Next up:** `feat/p3-007-stripe-payment-links` (P3-007, now unblocked), or
-`docs/adr-calendar-import-spike` (P3-011, no dependency on P3-007, can run
-in parallel) — see ADR 0004 for the implementation contract P3-007 must
-follow.
+**Next up:** `docs/adr-two-way-calendar-sync` (P3-014) or
+`feat/p3-010-calendar-visibility` (P3-010), both now unblocked by P3-011
+(ADR 0005). `feat/p3-007-stripe-payment-links` (P3-007) is also unblocked
+(per P3-008/ADR 0004) but deprioritized for now — see ADR 0005 for the
+import-contract sketch P3-014 should adopt, amend, or reject.
 
 ## Validation commands
 
