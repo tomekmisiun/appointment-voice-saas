@@ -22,6 +22,7 @@ from app.api.routes import users
 from app.api.routes.onboarding import router as onboarding_router
 from app.api.routes.owner_leads import router as owner_leads_router
 from app.api.routes.recurring_staff_blocks import router as recurring_staff_blocks_router
+from app.api.routes.signup import router as signup_router
 
 
 API_V1_PREFIX = "/api/v1"
@@ -50,3 +51,4 @@ api_v1_router.include_router(twilio_voice_router)
 api_v1_router.include_router(twilio_sms_router)
 api_v1_router.include_router(owner_leads_router)
 api_v1_router.include_router(onboarding_router)
+api_v1_router.include_router(signup_router)

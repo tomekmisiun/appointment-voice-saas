@@ -2905,6 +2905,75 @@
         "title": "TenantRead",
         "type": "object"
       },
+      "TenantSignupRequest": {
+        "properties": {
+          "admin_email": {
+            "examples": [
+              "owner@example.com"
+            ],
+            "format": "email",
+            "title": "Admin Email",
+            "type": "string"
+          },
+          "admin_password": {
+            "examples": [
+              "strong-password"
+            ],
+            "minLength": 8,
+            "title": "Admin Password",
+            "type": "string"
+          },
+          "salon_name": {
+            "examples": [
+              "Glamour Studio"
+            ],
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Salon Name",
+            "type": "string"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "maxLength": 63,
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional. Auto-generated from salon_name when omitted.",
+            "examples": [
+              "glamour-studio"
+            ],
+            "title": "Slug"
+          }
+        },
+        "required": [
+          "salon_name",
+          "admin_email",
+          "admin_password"
+        ],
+        "title": "TenantSignupRequest",
+        "type": "object"
+      },
+      "TenantSignupResponse": {
+        "properties": {
+          "tenant": {
+            "$ref": "#/components/schemas/TenantRead"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserRead"
+          }
+        },
+        "required": [
+          "tenant",
+          "user"
+        ],
+        "title": "TenantSignupResponse",
+        "type": "object"
+      },
       "TenantUpdate": {
         "properties": {
           "is_active": {
@@ -8457,6 +8526,48 @@
         "summary": "Update lead status (admin)",
         "tags": [
           "owner-leads"
+        ]
+      }
+    },
+    "/api/v1/signup": {
+      "post": {
+        "description": "Public endpoint \u2014 no authentication required. Creates a brand new tenant and its first admin user in one call; no manually-created tenant or platform-admin action needed first. Rate-limited per IP.",
+        "operationId": "signup_api_v1_signup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TenantSignupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantSignupResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Self-service salon signup",
+        "tags": [
+          "signup"
         ]
       }
     },

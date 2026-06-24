@@ -1,3 +1,5 @@
+import re
+
 from fastapi import Request
 from sqlalchemy.orm import Session
 
@@ -5,7 +7,11 @@ from app.core.domain_errors import BadRequestError, NotFoundError
 from app.core.tenant_context import DEFAULT_TENANT_SLUG, get_tenant_id
 from app.models.audit_log import AuditAction
 from app.models.tenant import Tenant
+from app.models.user import User
+from app.schemas.auth import UserCreate
 from app.services.audit_log_service import create_audit_log
+
+_SLUG_INVALID_CHARS = re.compile(r"[^a-z0-9]+")
 
 
 def get_tenant_by_slug(db: Session, slug: str) -> Tenant | None:
@@ -121,6 +127,72 @@ def provision_tenant(
     )
 
     return tenant
+
+
+def _slugify(name: str) -> str:
+    slug = _SLUG_INVALID_CHARS.sub("-", name.strip().lower()).strip("-")
+    return slug or "salon"
+
+
+def _unique_slug(db: Session, base_slug: str) -> str:
+    """Append -2, -3, ... until a free slug is found. Bounded loop, not
+    unbounded recursion -- a public signup endpoint must not be able to
+    spin forever even under a pathological flood of identical salon_name
+    values."""
+    if get_tenant_by_slug(db, base_slug) is None:
+        return base_slug
+    for suffix in range(2, 1000):
+        candidate = f"{base_slug}-{suffix}"
+        if get_tenant_by_slug(db, candidate) is None:
+            return candidate
+    raise BadRequestError("Could not generate a unique slug, please provide one explicitly")
+
+
+def signup_tenant(
+    db: Session,
+    *,
+    salon_name: str,
+    slug: str | None,
+    admin_email: str,
+    admin_password: str,
+) -> tuple[Tenant, User]:
+    """Public self-service signup (P4-004): a new salon owner provisions
+    their own tenant and admin account, with no manually-created tenant or
+    platform-admin action required first -- the gap `provision_tenant()`
+    (admin-only, `POST /admin/tenants`) deliberately does not fill, since
+    that endpoint exists for an already-onboarded platform admin to create
+    *another* tenant, not for the public to create their own first one.
+
+    Resolves `slug` if not explicitly provided (auto-generated from
+    `salon_name`, de-duplicated with a numeric suffix), then creates the
+    tenant and a single admin-role user in it -- admin, not the default
+    "user" role, since they need to immediately manage their own business
+    (staff/services/hours) via the existing `POST /api/v1/onboarding` flow,
+    which is unchanged by this function and not called from here."""
+    from app.services.auth_service import create_user  # local: avoids a
+    # module-load-time circular import (auth_service -> user_service ->
+    # tenant_service), since this function is the only thing in
+    # tenant_service.py that needs auth_service at all.
+
+    resolved_slug = slug or _unique_slug(db, _slugify(salon_name))
+    tenant = create_tenant(db, resolved_slug, salon_name)
+
+    user = create_user(
+        db,
+        UserCreate(email=admin_email, password=admin_password),
+        tenant.id,
+        role="admin",
+    )
+
+    create_audit_log(
+        db,
+        tenant_id=tenant.id,
+        admin_id=None,
+        action=AuditAction.TENANT_CREATED,
+        source="self_signup",
+    )
+
+    return tenant, user
 
 
 def set_tenant_active_state(
