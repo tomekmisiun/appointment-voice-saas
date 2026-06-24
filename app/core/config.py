@@ -108,6 +108,7 @@ class Settings(BaseSettings):
     worker_queue_maintenance_interval_seconds: int = Field(default=5, gt=0)
     worker_queue_promote_batch_size: int = Field(default=100, gt=0)
     worker_reconciliation_stale_minutes: int = Field(default=15, gt=0)
+    booking_payment_hold_minutes: int = Field(default=15, gt=0)
     users_cache_enabled: bool = True
     users_cache_ttl_seconds: int = Field(default=60, gt=0)
     s3_endpoint_url: str = "http://minio:9000"

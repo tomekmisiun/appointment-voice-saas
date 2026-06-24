@@ -18,6 +18,8 @@
           "booking.confirmed",
           "booking.override_created",
           "booking.override_cancelled",
+          "booking.hold_expired",
+          "booking.payment_refunded",
           "customer.anonymized"
         ],
         "title": "AuditAction",
@@ -483,6 +485,139 @@
         "title": "BookingOverrideCreateRequest",
         "type": "object"
       },
+      "BookingPaymentRead": {
+        "properties": {
+          "amount_minor_units": {
+            "title": "Amount Minor Units",
+            "type": "integer"
+          },
+          "booking_id": {
+            "title": "Booking Id",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "failure_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Reason"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "paid_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid At"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "provider_payment_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Payment Id"
+          },
+          "provider_session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Session Id"
+          },
+          "refunded_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refunded At"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookingPaymentStatus"
+          }
+        },
+        "required": [
+          "id",
+          "booking_id",
+          "provider",
+          "provider_session_id",
+          "provider_payment_id",
+          "amount_minor_units",
+          "currency",
+          "status",
+          "failure_reason",
+          "created_at",
+          "paid_at",
+          "refunded_at"
+        ],
+        "title": "BookingPaymentRead",
+        "type": "object"
+      },
+      "BookingPaymentRefundRequest": {
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "title": "BookingPaymentRefundRequest",
+        "type": "object"
+      },
+      "BookingPaymentStatus": {
+        "enum": [
+          "pending",
+          "succeeded",
+          "failed",
+          "refunded"
+        ],
+        "title": "BookingPaymentStatus",
+        "type": "string"
+      },
       "BookingRead": {
         "properties": {
           "business_id": {
@@ -605,7 +740,8 @@
       "BookingStatus": {
         "enum": [
           "confirmed",
-          "cancelled"
+          "cancelled",
+          "pending_payment"
         ],
         "title": "BookingStatus",
         "type": "string"
@@ -2282,6 +2418,23 @@
             ],
             "title": "Currency"
           },
+          "deposit_minor_units": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deposit Minor Units"
+          },
+          "deposit_required": {
+            "default": false,
+            "title": "Deposit Required",
+            "type": "boolean"
+          },
           "duration_minutes": {
             "maximum": 480.0,
             "minimum": 1.0,
@@ -2336,6 +2489,21 @@
             ],
             "title": "Currency"
           },
+          "deposit_minor_units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deposit Minor Units"
+          },
+          "deposit_required": {
+            "title": "Deposit Required",
+            "type": "boolean"
+          },
           "duration_minutes": {
             "title": "Duration Minutes",
             "type": "integer"
@@ -2377,6 +2545,8 @@
           "is_active",
           "price_minor_units",
           "currency",
+          "deposit_required",
+          "deposit_minor_units",
           "created_at"
         ],
         "title": "ServiceRead",
@@ -2396,6 +2566,29 @@
               }
             ],
             "title": "Currency"
+          },
+          "deposit_minor_units": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deposit Minor Units"
+          },
+          "deposit_required": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deposit Required"
           },
           "duration_minutes": {
             "anyOf": [
@@ -5664,6 +5857,73 @@
           }
         ],
         "summary": "Override Cancel Booking Endpoint",
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
+    "/api/v1/businesses/{business_id}/bookings/{booking_id}/refund": {
+      "post": {
+        "description": "Manual admin-triggered refund recording (P3-008, ADR 0004 SS6). Does\nnot call any payment-provider API -- records that a refund already\nhappened out-of-band.",
+        "operationId": "refund_booking_payment_endpoint_api_v1_businesses__business_id__bookings__booking_id__refund_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "business_id",
+            "required": true,
+            "schema": {
+              "title": "Business Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "booking_id",
+            "required": true,
+            "schema": {
+              "title": "Booking Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingPaymentRefundRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingPaymentRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Refund Booking Payment Endpoint",
         "tags": [
           "bookings"
         ]

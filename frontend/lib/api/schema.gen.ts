@@ -510,6 +510,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/businesses/{business_id}/bookings/{booking_id}/refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refund Booking Payment Endpoint
+         * @description Manual admin-triggered refund recording (P3-008, ADR 0004 SS6). Does
+         *     not call any payment-provider API -- records that a refund already
+         *     happened out-of-band.
+         */
+        post: operations["refund_booking_payment_endpoint_api_v1_businesses__business_id__bookings__booking_id__refund_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/businesses/{business_id}/bookings/{booking_id}/reschedule": {
         parameters: {
             query?: never;
@@ -1667,7 +1689,7 @@ export interface components {
          * AuditAction
          * @enum {string}
          */
-        AuditAction: "user.updated" | "user.deactivated" | "user.activated" | "user.deleted" | "password_reset.requested" | "password_reset.confirmed" | "tenant.created" | "tenant.activated" | "tenant.deactivated" | "booking.created" | "booking.cancelled" | "booking.rescheduled" | "booking.confirmed" | "booking.override_created" | "booking.override_cancelled" | "customer.anonymized";
+        AuditAction: "user.updated" | "user.deactivated" | "user.activated" | "user.deleted" | "password_reset.requested" | "password_reset.confirmed" | "tenant.created" | "tenant.activated" | "tenant.deactivated" | "booking.created" | "booking.cancelled" | "booking.rescheduled" | "booking.confirmed" | "booking.override_created" | "booking.override_cancelled" | "booking.hold_expired" | "booking.payment_refunded" | "customer.anonymized";
         /** AuditLogRead */
         AuditLogRead: {
             action: components["schemas"]["AuditAction"];
@@ -1839,6 +1861,45 @@ export interface components {
              */
             starts_at: string;
         };
+        /** BookingPaymentRead */
+        BookingPaymentRead: {
+            /** Amount Minor Units */
+            amount_minor_units: number;
+            /** Booking Id */
+            booking_id: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Currency */
+            currency: string;
+            /** Failure Reason */
+            failure_reason: string | null;
+            /** Id */
+            id: number;
+            /** Paid At */
+            paid_at: string | null;
+            /** Provider */
+            provider: string;
+            /** Provider Payment Id */
+            provider_payment_id: string | null;
+            /** Provider Session Id */
+            provider_session_id: string | null;
+            /** Refunded At */
+            refunded_at: string | null;
+            status: components["schemas"]["BookingPaymentStatus"];
+        };
+        /** BookingPaymentRefundRequest */
+        BookingPaymentRefundRequest: {
+            /** Reason */
+            reason?: string | null;
+        };
+        /**
+         * BookingPaymentStatus
+         * @enum {string}
+         */
+        BookingPaymentStatus: "pending" | "succeeded" | "failed" | "refunded";
         /** BookingRead */
         BookingRead: {
             /** Business Id */
@@ -1894,7 +1955,7 @@ export interface components {
          * BookingStatus
          * @enum {string}
          */
-        BookingStatus: "confirmed" | "cancelled";
+        BookingStatus: "confirmed" | "cancelled" | "pending_payment";
         /** BusinessCreate */
         BusinessCreate: {
             /** @default internal_booking */
@@ -2483,6 +2544,13 @@ export interface components {
         ServiceCreate: {
             /** Currency */
             currency?: string | null;
+            /** Deposit Minor Units */
+            deposit_minor_units?: number | null;
+            /**
+             * Deposit Required
+             * @default false
+             */
+            deposit_required: boolean;
             /** Duration Minutes */
             duration_minutes: number;
             /** Name */
@@ -2501,6 +2569,10 @@ export interface components {
             created_at: string;
             /** Currency */
             currency: string | null;
+            /** Deposit Minor Units */
+            deposit_minor_units: number | null;
+            /** Deposit Required */
+            deposit_required: boolean;
             /** Duration Minutes */
             duration_minutes: number;
             /** Id */
@@ -2518,6 +2590,10 @@ export interface components {
         ServiceUpdate: {
             /** Currency */
             currency?: string | null;
+            /** Deposit Minor Units */
+            deposit_minor_units?: number | null;
+            /** Deposit Required */
+            deposit_required?: boolean | null;
             /** Duration Minutes */
             duration_minutes?: number | null;
             /** Is Active */
@@ -4367,6 +4443,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BookingRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refund_booking_payment_endpoint_api_v1_businesses__business_id__bookings__booking_id__refund_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                business_id: number;
+                booking_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingPaymentRefundRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingPaymentRead"];
                 };
             };
             /** @description Validation Error */

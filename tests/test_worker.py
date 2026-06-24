@@ -336,7 +336,8 @@ def test_scheduled_maintenance_runs_when_lock_acquired(monkeypatch):
         "password_reset": 0, "idempotency": 0, "webhook_events": 0,
         "audit_logs": 0, "voice_sessions": 0, "reminders": 0,
         "waitlist_offers": 0, "notifications_reconciled": 0,
-        "calendar_events_reconciled": 0, "failed_depth": 0,
+        "calendar_events_reconciled": 0, "payment_holds_expired": 0,
+        "failed_depth": 0,
     }
     observed_depths = []
 
@@ -388,6 +389,12 @@ def test_scheduled_maintenance_runs_when_lock_acquired(monkeypatch):
         ) or 0,
     )
     monkeypatch.setattr(
+        "app.worker.expire_stale_payment_holds",
+        lambda db: cleanup_calls.__setitem__(
+            "payment_holds_expired", cleanup_calls["payment_holds_expired"] + 1
+        ) or 0,
+    )
+    monkeypatch.setattr(
         "app.worker.get_failed_queue_depth",
         lambda: cleanup_calls.__setitem__("failed_depth", cleanup_calls["failed_depth"] + 1) or 6,
     )
@@ -409,6 +416,7 @@ def test_scheduled_maintenance_runs_when_lock_acquired(monkeypatch):
         "waitlist_offers": 1,
         "notifications_reconciled": 1,
         "calendar_events_reconciled": 1,
+        "payment_holds_expired": 1,
         "failed_depth": 1,
     }
     assert observed_depths == [6]
