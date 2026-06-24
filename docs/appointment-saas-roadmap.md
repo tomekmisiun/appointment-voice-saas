@@ -300,7 +300,7 @@ the task explicitly de-risks the MVP.
 | [x] | P3-011 | P3 | Add calendar conflict import spike. | Investigate one-way busy import. | Full two-way sync. | ADR documents safe approach. | Docs review. | External conflicts missed. | done: `docs/adr/0005-calendar-conflict-import-spike.md`. Sketches a `get_busy_periods()` addition to `CalendarProvider` (busy/free only, never event details — privacy-minimal by construction, no provider/OAuth implementation), polling not push (push needs domain-verified webhooks, out of scope for a spike); the central scope-creep question is answered directly — an imported `BusyPeriod` must never become a fourth availability-subtraction step alongside `WorkingHours`/`AvailabilityException`/`RecurringStaffBlock`, since that would let external calendar state decide booking eligibility, the exact thing ADR 0002 §1 already ruled out and exactly what P3-014 (not this spike) is scoped to decide deliberately; the only sanctioned use here is an informational, never-authoritative conflict alert (concrete delivery mechanism left undesigned, follow-up work). Decision/sketch only, no code |
 | [x] | P3-012 | P3 | Add manual admin override workflow. | Override booking/cancel with a mandatory reason and a distinct audit trail (does not bypass the DB-level no-overlap safety constraint for a genuine same-staff conflict — see evidence). | Frontend UI; force-overbooking a specific staff member's slot past the no-overlap constraint (would require a migration weakening that Critical-priority safety constraint — out of scope, see evidence). | Overrides are explicit and audited. | API tests. | Support cannot resolve edge cases. | done: `POST /businesses/{business_id}/bookings/override` and `POST /businesses/{business_id}/bookings/{booking_id}/override-cancel`, both admin-only (`require_role("admin")`) with a required, non-blank `reason`; both call the existing `create_booking()`/`cancel_booking()` with a new `override=True` flag, logging the new `AuditAction.BOOKING_OVERRIDE_CREATED`/`BOOKING_OVERRIDE_CANCELLED` (with `source` set to the admin's reason, queryable separately from regular `BOOKING_CREATED`/`BOOKING_CANCELLED`) instead of changing booking mechanics — override-create does **not** bypass the DB-level `no_overlapping_staff_bookings` exclusion constraint for a genuine same-staff conflict (still 409s), a deliberate scope decision recorded in `tests/test_avs_p3012_admin_override.py`'s module docstring; unblocks P1-013's remaining admin-override audit gap — `tests/test_avs_p3012_admin_override.py` |
 | [x] | P3-013 | P3 | Add integration reconciliation job. | Detect stale SMS/calendar outbox records. | Provider-specific repair UI. | Stale records are reported/retried. | Worker tests. | Integration drift accumulates. | done: new `app/services/reconciliation_service.py` (`reconcile_stale_notifications()`, `reconcile_stale_calendar_events()`), wired into the existing `run_scheduled_maintenance()` tick. Closes the gap where the DB commit (outbox/calendar row) and the Redis job enqueue are two separate steps — a crash or transient Redis failure between them left a `PENDING` row with no job ever processing it. Gated on `COALESCE(reconciled_at, created_at)` (new nullable column on both models, migration `p3013a2b3c4d5e`) rather than `created_at` alone — caught by cross-provider review, which flagged a `created_at`-only sweep as re-enqueuing the same stale row on every maintenance tick forever, risking a duplicate SMS/calendar-event send if the original job was still in flight. New `integration_reconciliation_requeued_total{record_type}` metric surfaces ongoing drift, per the roadmap's explicit "Provider-specific repair UI" exclusion — `tests/test_reconciliation_service.py`, extended `tests/test_worker.py`/`tests/test_worker_metrics.py` |
-| [ ] | P3-014 | P3 | Write two-way calendar sync ADR. | Risks, source of truth, conflict policy. | Implementation. | ADR rejects or scopes two-way sync safely. | Docs review. | Calendar becomes competing source of truth. |
+| [x] | P3-014 | P3 | Write two-way calendar sync ADR. | Risks, source of truth, conflict policy. | Implementation. | ADR rejects or scopes two-way sync safely. | Docs review. | Calendar becomes competing source of truth. | done: `docs/adr/0006-two-way-calendar-sync.md`. Reaffirms ADR 0002 §1 without amendment — rejects all three harder forms of "two-way" (availability-blocking from imported busy/free, reactive sync from a staff member editing/deleting a synced Google Calendar event, and full bidirectional conflict resolution); a `Booking`'s status/time/existence stays decided exclusively by `booking_service.py`, never by reading or reacting to external calendar state, which is what keeps the roadmap's named risk ("competing source of truth") structurally impossible rather than something to manage after the fact; ADR 0005's read-only informational-alert sketch (already decided, not reopened here) remains the only sanctioned use of any future calendar import. No code changes — ADR only |
 
 ### PRIORITY 4 - SaaS model and scale
 
@@ -331,14 +331,14 @@ which described a 2026-06-17 snapshot that predates all of P1, most of P2,
 and all of P3).
 
 **Current summary (see `docs/audits/p3-remaining-backlog-audit.md` for the
-2026-06-22 point-in-time verification; P3-013/006/008/011 below post-date
-that audit):** 52 P1–P4 items tracked — 37 fully implemented or covered (all
-of P1, all of P2 except P2-013/014, 11 of 14 P3 items — P3-013 done PR #66,
-P3-006 done as an ADR-only decision, P3-008 done PR #68, P3-011 done as an
-ADR/spike-only decision (ADR 0005) — and P4-005 via duplicate coverage by
-AVS-L004), 4 partially implemented (P4-001/002/003 — tenancy-audit related —
-and P4-004, partially covered by the same AVS-L004 endpoint), 11 not started
-(P2-013/014; P3-007/010/014; P4-006 through P4-011).
+2026-06-22 point-in-time verification; P3-013/006/008/011/014 below post-date
+that audit):** 52 P1–P4 items tracked — 38 fully implemented or covered (all
+of P1, all of P2 except P2-013/014, 12 of 14 P3 items — P3-013 done PR #66,
+P3-006 done as an ADR-only decision, P3-008 done PR #68, P3-011 and P3-014
+done as ADR/spike-only decisions (ADRs 0005/0006) — and P4-005 via duplicate
+coverage by AVS-L004), 4 partially implemented (P4-001/002/003 —
+tenancy-audit related — and P4-004, partially covered by the same AVS-L004
+endpoint), 10 not started (P2-013/014; P3-007/010; P4-006 through P4-011).
 
 **Duplicate found:** P4-005 was accidentally already covered by AVS-L004's
 self-service onboarding API, shipped during EPIC L and never reconciled
@@ -353,7 +353,7 @@ found to be a side-effect duplicate of MVP or other backlog work.
 1. ~~`feat/p3-013-reconciliation-job`~~ — **done** (P3-013 row above).
 2. ~~`docs/adr-deposits-architecture`~~ (P3-006) — **done**, `docs/adr/0004-deposits-and-payment-holds.md`. Unblocks P3-007/008.
 3. ~~`docs/adr-calendar-import-spike`~~ (P3-011) — **done** (P3-011 row above).
-4. `docs/adr-two-way-calendar-sync` (P3-014) — depends on #3, now unblocked.
+4. ~~`docs/adr-two-way-calendar-sync`~~ (P3-014) — **done** (P3-014 row above).
 5. `feat/p3-010-calendar-visibility` — depends on #3, now unblocked.
 6. ~~`feat/p3-008-pending-payment-state`~~ — **done** (P3-008 row above).
    Was reordered ahead of P3-007 (the original audit-era order had this
@@ -366,11 +366,11 @@ found to be a side-effect duplicate of MVP or other backlog work.
    operational-extensions tier per this file's own tier ordering (P4-005 is
    already done — see that row above).
 
-**Next up:** `docs/adr-two-way-calendar-sync` (P3-014) or
-`feat/p3-010-calendar-visibility` (P3-010), both now unblocked by P3-011
-(ADR 0005). `feat/p3-007-stripe-payment-links` (P3-007) is also unblocked
-(per P3-008/ADR 0004) but deprioritized for now — see ADR 0005 for the
-import-contract sketch P3-014 should adopt, amend, or reject.
+**Next up:** `feat/p3-010-calendar-visibility` (P3-010), now the only
+remaining unblocked P3 item — visibility-tier field + outbound sync-mode
+logic, per ADR 0005/0006's confirmation that this product's calendar sync
+stays outbound-only. `feat/p3-007-stripe-payment-links` (P3-007) is
+unblocked (per P3-008/ADR 0004) but deliberately deprioritized for now.
 
 ## Validation commands
 
