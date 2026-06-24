@@ -31,6 +31,8 @@ def create_service_endpoint(
         duration_minutes=body.duration_minutes,
         price_minor_units=body.price_minor_units,
         currency=body.currency,
+        deposit_required=body.deposit_required,
+        deposit_minor_units=body.deposit_minor_units,
     )
 
 
@@ -92,4 +94,6 @@ def update_service_endpoint(
         price_minor_units=body.price_minor_units,
         currency=body.currency,
         is_active=body.is_active,
+        deposit_required=body.deposit_required,
+        deposit_minor_units=body.deposit_minor_units,
     )

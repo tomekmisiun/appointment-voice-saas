@@ -11,6 +11,7 @@ from app.db.base import Base
 class BookingStatus(StrEnum):
     CONFIRMED = "confirmed"
     CANCELLED = "cancelled"
+    PENDING_PAYMENT = "pending_payment"
 
 
 class BookingSource(StrEnum):

@@ -294,7 +294,7 @@ the task explicitly de-risks the MVP.
 | [x] | P3-005 | P3 | Add recurring staff blocks. | Lunches/recurring unavailable windows. | Complex recurrence UI. | Recurring blocks apply predictably. | Availability tests. | Daily breaks remain bookable. | done: model decision per `docs/adr/0003-recurring-staff-blocks.md` (Accepted) — new `RecurringStaffBlock` model (`app/models/recurring_staff_block.py`), business-scoped CRUD with same-scope overlap validation (`app/services/recurring_staff_block_service.py`), API at `/businesses/{business_id}/recurring-staff-blocks` (admin-only writes); `_get_available_slots_for_duration()` now applies blocks as a third precedence step that *subtracts* from whatever `WorkingHours`/`AvailabilityException` left in place via new `_subtract_time_windows()`, applied after exceptions so it clips the then-current schedule rather than a frozen snapshot — verified to stay correct after working hours change later, the bug a recurrence rule on `AvailabilityException` would have reintroduced — `tests/test_avs_p3005_recurring_staff_blocks.py`, cross-business isolation tests added to `tests/test_fix_tenant_business_scoping.py` |
 | [x] | P3-006 | P3 | Design deposits/prepayments. | ADR for payment state, booking holds, refunds. | Stripe implementation. | Architecture approved before payment code. | Docs review. | Payments corrupt booking lifecycle. | done: `docs/adr/0004-deposits-and-payment-holds.md`. New `BookingPayment` model (per-booking, one model per concern, mirroring `NotificationOutbox`/`CalendarEvent` rather than fields bolted onto `Booking`); deposit is a flat `Service.deposit_minor_units` (not a percentage of price); a new `BookingStatus.PENDING_PAYMENT` *does* reserve the slot (widens all three places that decide "is this slot taken": the DB exclusion constraint, `_check_double_booking()`, *and* `availability_service.py`'s slot-generation query — missing any one reopens the exact double-booking race PRs #42/#45 already had to close, or leaves availability/IVR showing a held slot as free until a 409 at create time), with a short configurable hold expiry; hold expiry reuses `CANCELLED` (not a 4th status) via a new function that skips the customer-facing cancellation SMS and logs a distinct `BOOKING_HOLD_EXPIRED` audit action instead of `BOOKING_CANCELLED`; refund policy explicitly deferred (recorded on `BookingPayment`, not automated) — no product requirement to anchor a default. Decision only; implementation is P3-007/P3-008 |
 | [ ] | P3-007 | P3 | Add Stripe payment links. | Payment-link creation for selected services. | Stripe Billing subscriptions. | Booking can require/link deposit payment. | Adapter tests. | Payment failures cause bad bookings. |
-| [ ] | P3-008 | P3 | Add pending-payment booking state. | Hold expiry and transition rules. | Full checkout. | Pending holds expire safely. | Worker/service tests. | Slots remain locked after abandoned payment. |
+| [x] | P3-008 | P3 | Add pending-payment booking state. | Hold expiry and transition rules. | Full checkout. | Pending holds expire safely. | Worker/service tests. | Slots remain locked after abandoned payment. | done: per `docs/adr/0004-deposits-and-payment-holds.md` — `create_pending_payment_hold()` reserves the slot without firing the confirmation SMS/calendar sync (those only fire at `confirm_booking_payment()`'s `PENDING_PAYMENT`→`CONFIRMED` transition, the existing `BOOKING_CONFIRMED` audit action with `source="stripe_webhook"`, idempotent for a duplicate webhook delivery); `expire_pending_payment_hold()` transitions an abandoned hold to `CANCELLED` (no cancellation SMS, distinct `BOOKING_HOLD_EXPIRED` audit action, still escalates the freed slot to the waitlist), swept periodically by `expire_stale_payment_holds()` (new `booking_payment_hold_minutes` setting, default 15) wired into `run_scheduled_maintenance()`; `confirm_booking_payment()`/`expire_pending_payment_hold()`/`cancel_booking()` all take a row lock (`with_for_update()` + `populate_existing()`) on the booking to close the same class of concurrent-transition race PR #45/AVS-TD-030 already had to fix elsewhere; added the manual admin-triggered `refund_booking_payment()` + `POST .../bookings/{id}/refund` endpoint ADR §6 calls for; `Service.deposit_required`/`deposit_minor_units` are now configurable via the service create/update API (validated together with `currency`) — `tests/test_avs_p3008_pending_payment_state.py`, `tests/test_payment_hold_concurrency.py` (real-thread row-lock regression tests), extended `tests/test_availability.py`/`tests/test_worker.py`/`tests/test_services.py` |
 | [x] | P3-009 | P3 | Add multilingual IVR prompt architecture. | Prompt keys/templates per language. | Translation content. | Flow can choose language without logic fork. | IVR tests. | Localization duplicates IVR code. | done: new `app/core/ivr_prompts.py` — `PromptKey` enum (one entry per distinct prompt/label template), `_PROMPTS: dict[locale, dict[PromptKey, str]]` (only `en` populated, by design — translation content is out of scope), `resolve_prompt(key, *, locale, **kwargs)` (falls back to `IVR_DEFAULT_LOCALE` for an unknown locale or a locale missing a specific key, so a partial translation degrades gracefully), `format_option_list()` (centralizes the repeated "press {key} for {label}" join pattern that was previously duplicated at ~7 call sites in `ivr_service.py`); every hardcoded prompt string and static `IvrOption` label in `ivr_service.py` now resolves through these, gated by a single `_session_locale(session)` helper — adding a real locale later means changing that one function plus adding one `_PROMPTS` entry, zero step-handler changes; exact rendered text preserved byte-for-byte, verified by the full existing IVR test suite (99 tests across `test_ivr_e2e.py`, `test_ivr_service.py`, and every `test_avs_p1*/p2*_ivr_*.py`) passing unchanged — `tests/test_avs_p3009_ivr_prompt_keys.py` (new: key/locale resolution, fallback for unknown locale and partially-translated locale, option-list join, and an explicit "adding a second locale requires zero ivr_service.py changes" proof) |
 | [ ] | P3-010 | P3 | Add private staff calendar visibility rules. | Avoid exposing private calendar details. | Calendar UI. | Sync stores busy/free only where needed. | Privacy tests. | Sensitive staff details leak. |
 | [ ] | P3-011 | P3 | Add calendar conflict import spike. | Investigate one-way busy import. | Full two-way sync. | ADR documents safe approach. | Docs review. | External conflicts missed. |
@@ -354,23 +354,21 @@ found to be a side-effect duplicate of MVP or other backlog work.
 3. `docs/adr-calendar-import-spike` (P3-011) — ADR/spike only.
 4. `docs/adr-two-way-calendar-sync` (P3-014) — depends on #3.
 5. `feat/p3-010-calendar-visibility` — depends on #3.
-6. `feat/p3-008-pending-payment-state` — depends on #2. **Reordered ahead of
-   P3-007** (the original audit-era order had this depending on P3-007, the
-   reverse): ADR 0004 §3 concludes the Stripe payment-link flow must create
-   the booking as `PENDING_PAYMENT` *before* the customer pays, so the
-   status, the widened double-booking guards, and the hold-expiry job have
-   to exist first — P3-007 has nothing safe to create a hold *with*
-   otherwise. Don't re-flip this back to the original order without
-   re-arguing ADR 0004 §3.
-7. `feat/p3-007-stripe-payment-links` — depends on #6.
+6. ~~`feat/p3-008-pending-payment-state`~~ — **done** (P3-008 row above).
+   Was reordered ahead of P3-007 (the original audit-era order had this
+   depending on P3-007, the reverse): ADR 0004 §3 concludes the Stripe
+   payment-link flow must create the booking as `PENDING_PAYMENT` *before*
+   the customer pays, so the status, the widened double-booking guards, and
+   the hold-expiry job had to exist first.
+7. `feat/p3-007-stripe-payment-links` — depends on #6, now unblocked.
 8. P2-013/014 and P4-001 through P4-011 remain sequenced after the P3
    operational-extensions tier per this file's own tier ordering (P4-005 is
    already done — see that row above).
 
-**Next up:** `feat/p3-008-pending-payment-state` (P3-008), or
-`docs/adr-calendar-import-spike` (P3-011, no dependency on P3-007/008, can
-run in parallel) — see ADR 0004 for the implementation contract this
-decision already fixed.
+**Next up:** `feat/p3-007-stripe-payment-links` (P3-007, now unblocked), or
+`docs/adr-calendar-import-spike` (P3-011, no dependency on P3-007, can run
+in parallel) — see ADR 0004 for the implementation contract P3-007 must
+follow.
 
 ## Validation commands
 

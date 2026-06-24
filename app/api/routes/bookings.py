@@ -13,10 +13,12 @@ from app.schemas.booking import (
     BookingRead,
     BookingRescheduleRequest,
 )
+from app.schemas.booking_payment import BookingPaymentRead, BookingPaymentRefundRequest
 from app.services.booking_service import (
     cancel_booking,
     create_booking,
     list_bookings,
+    refund_booking_payment,
     require_booking_in_business,
     reschedule_booking,
 )
@@ -140,6 +142,27 @@ def override_cancel_booking_endpoint(
         reason=body.reason,
         actor_id=current_user.id,
         override=True,
+    )
+
+
+@router.post("/{booking_id}/refund", response_model=BookingPaymentRead)
+def refund_booking_payment_endpoint(
+    business_id: int,
+    booking_id: int,
+    body: BookingPaymentRefundRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin")),
+):
+    """Manual admin-triggered refund recording (P3-008, ADR 0004 SS6). Does
+    not call any payment-provider API -- records that a refund already
+    happened out-of-band."""
+    return refund_booking_payment(
+        db,
+        booking_id,
+        business_id,
+        current_user.tenant_id,
+        actor_id=current_user.id,
+        reason=body.reason,
     )
 
 

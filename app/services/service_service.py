@@ -1,8 +1,20 @@
 from sqlalchemy.orm import Session
 
-from app.core.domain_errors import ConflictError, NotFoundError
+from app.core.domain_errors import BadRequestError, ConflictError, NotFoundError
 from app.models.service import Service
 from app.services.business_service import require_business
+
+
+def _check_deposit_fields(svc: Service) -> None:
+    """A service with deposit_required=True must have both
+    deposit_minor_units and currency set -- create_pending_payment_hold()
+    (booking_service.py, P3-008/ADR 0004) rejects a hold otherwise, so
+    catch the inconsistent state at config time instead of at booking
+    time."""
+    if svc.deposit_required and (svc.deposit_minor_units is None or svc.currency is None):
+        raise BadRequestError(
+            "deposit_minor_units and currency are required when deposit_required is true"
+        )
 
 
 def create_service(
@@ -14,6 +26,8 @@ def create_service(
     duration_minutes: int,
     price_minor_units: int | None = None,
     currency: str | None = None,
+    deposit_required: bool = False,
+    deposit_minor_units: int | None = None,
 ) -> Service:
     require_business(db, business_id, tenant_id)
     svc = Service(
@@ -24,7 +38,10 @@ def create_service(
         is_active=True,
         price_minor_units=price_minor_units,
         currency=currency,
+        deposit_required=deposit_required,
+        deposit_minor_units=deposit_minor_units,
     )
+    _check_deposit_fields(svc)
     db.add(svc)
     db.commit()
     db.refresh(svc)
@@ -84,6 +101,8 @@ def delete_service(
         db.query(Booking)
         .filter(
             Booking.service_id == service_id,
+            Booking.business_id == business_id,
+            Booking.tenant_id == tenant_id,
             Booking.status != BookingStatus.CANCELLED,
         )
         .first()
@@ -105,6 +124,8 @@ def update_service(
     price_minor_units: int | None = None,
     currency: str | None = None,
     is_active: bool | None = None,
+    deposit_required: bool | None = None,
+    deposit_minor_units: int | None = None,
 ) -> Service:
     svc = require_service_in_business(db, service_id, business_id, tenant_id)
     if name is not None:
@@ -117,6 +138,11 @@ def update_service(
         svc.currency = currency
     if is_active is not None:
         svc.is_active = is_active
+    if deposit_required is not None:
+        svc.deposit_required = deposit_required
+    if deposit_minor_units is not None:
+        svc.deposit_minor_units = deposit_minor_units
+    _check_deposit_fields(svc)
     db.commit()
     db.refresh(svc)
     return svc

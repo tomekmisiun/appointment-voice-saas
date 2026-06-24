@@ -54,6 +54,7 @@ from app.services.upload_verification_service import (
     VERIFY_PRESIGNED_UPLOAD_JOB,
     verify_presigned_upload_in_worker,
 )
+from app.services.booking_service import expire_stale_payment_holds
 from app.services.ivr_service import expire_stale_sessions
 from app.services.reconciliation_service import (
     reconcile_stale_calendar_events,
@@ -243,6 +244,7 @@ def run_scheduled_maintenance(now: float | None = None) -> bool:
         waitlist_offers_expired = expire_stale_waitlist_offers(db)
         notifications_reconciled = reconcile_stale_notifications(db)
         calendar_events_reconciled = reconcile_stale_calendar_events(db)
+        payment_holds_expired = expire_stale_payment_holds(db)
     finally:
         db.close()
 
@@ -260,6 +262,7 @@ def run_scheduled_maintenance(now: float | None = None) -> bool:
         "waitlist_offers_expired=%s "
         "notifications_reconciled=%s "
         "calendar_events_reconciled=%s "
+        "payment_holds_expired=%s "
         "failed_queue_depth=%s",
         password_reset_deleted,
         idempotency_deleted,
@@ -270,6 +273,7 @@ def run_scheduled_maintenance(now: float | None = None) -> bool:
         waitlist_offers_expired,
         notifications_reconciled,
         calendar_events_reconciled,
+        payment_holds_expired,
         failed_queue_depth,
     )
     observe_worker_maintenance(status="completed")

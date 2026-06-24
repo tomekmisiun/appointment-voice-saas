@@ -81,3 +81,104 @@ def test_service_with_price_metadata(db, client):
     data = response.json()
     assert data["price_minor_units"] == 5000
     assert data["currency"] == "PLN"
+
+
+# --- deposit configuration (P3-008, ADR 0004 SS1) ---
+
+
+def test_admin_can_create_service_with_deposit(db, client):
+    token, biz_id = _setup(db, client, "svc5@example.com")
+
+    response = client.post(
+        f"/api/v1/businesses/{biz_id}/services",
+        json={
+            "name": "Color",
+            "duration_minutes": 60,
+            "price_minor_units": 10000,
+            "currency": "PLN",
+            "deposit_required": True,
+            "deposit_minor_units": 3000,
+        },
+        headers=auth_headers(token),
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["deposit_required"] is True
+    assert data["deposit_minor_units"] == 3000
+
+
+def test_create_service_rejects_deposit_required_without_amount(db, client):
+    token, biz_id = _setup(db, client, "svc6@example.com")
+
+    response = client.post(
+        f"/api/v1/businesses/{biz_id}/services",
+        json={
+            "name": "Color",
+            "duration_minutes": 60,
+            "currency": "PLN",
+            "deposit_required": True,
+        },
+        headers=auth_headers(token),
+    )
+
+    assert response.status_code == 422
+
+
+def test_create_service_rejects_deposit_required_without_currency(db, client):
+    token, biz_id = _setup(db, client, "svc7@example.com")
+
+    response = client.post(
+        f"/api/v1/businesses/{biz_id}/services",
+        json={
+            "name": "Color",
+            "duration_minutes": 60,
+            "deposit_required": True,
+            "deposit_minor_units": 3000,
+        },
+        headers=auth_headers(token),
+    )
+
+    assert response.status_code == 422
+
+
+def test_admin_can_enable_deposit_via_update(db, client):
+    token, biz_id = _setup(db, client, "svc8@example.com")
+    svc = client.post(
+        f"/api/v1/businesses/{biz_id}/services",
+        json={
+            "name": "Color",
+            "duration_minutes": 60,
+            "price_minor_units": 10000,
+            "currency": "PLN",
+        },
+        headers=auth_headers(token),
+    ).json()
+
+    response = client.patch(
+        f"/api/v1/businesses/{biz_id}/services/{svc['id']}",
+        json={"deposit_required": True, "deposit_minor_units": 2500},
+        headers=auth_headers(token),
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["deposit_required"] is True
+    assert data["deposit_minor_units"] == 2500
+
+
+def test_update_service_rejects_enabling_deposit_without_currency(db, client):
+    token, biz_id = _setup(db, client, "svc9@example.com")
+    svc = client.post(
+        f"/api/v1/businesses/{biz_id}/services",
+        json={"name": "Color", "duration_minutes": 60},
+        headers=auth_headers(token),
+    ).json()
+
+    response = client.patch(
+        f"/api/v1/businesses/{biz_id}/services/{svc['id']}",
+        json={"deposit_required": True, "deposit_minor_units": 2500},
+        headers=auth_headers(token),
+    )
+
+    assert response.status_code == 400

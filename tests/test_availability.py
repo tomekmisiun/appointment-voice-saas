@@ -10,7 +10,7 @@ from app.services.availability_exception_service import create_availability_exce
 from app.services.booking_service import create_booking, cancel_booking
 from app.services.business_service import create_business
 from app.services.customer_service import get_or_create_customer
-from app.services.service_service import create_service
+from app.services.service_service import create_service, require_service
 from app.services.staff_service import create_staff
 from app.services.working_hours_service import create_working_hours
 from tests.database import auth_headers, login_user, promote_to_admin, register_user
@@ -215,6 +215,58 @@ def test_confirmed_booking_removes_slot(db, domain):
         query_date=FUTURE_DATE,
     )
     # 09:00 slot taken, only 09:30 remains
+    assert len(slots) == 1
+    assert slots[0][0] == datetime(2027, 7, 7, 7, 30, 0, tzinfo=timezone.utc)
+
+
+def test_pending_payment_hold_removes_slot(db, domain):
+    """ADR 0004 SS3: a PENDING_PAYMENT hold must reserve the slot in
+    availability search too, not just the create-time double-booking
+    guard -- otherwise availability/IVR would keep showing a held slot as
+    free until a 409 at create time."""
+    from app.services.booking_service import create_pending_payment_hold
+    from app.services.service_service import update_service
+
+    update_service(
+        db,
+        domain["service_id"],
+        domain["business_id"],
+        domain["tenant_id"],
+        price_minor_units=5000,
+        currency="PLN",
+    )
+    svc = require_service(db, domain["service_id"], domain["tenant_id"])
+    svc.deposit_required = True
+    svc.deposit_minor_units = 1000
+    db.commit()
+
+    create_working_hours(
+        db,
+        tenant_id=domain["tenant_id"],
+        business_id=domain["business_id"],
+        staff_id=domain["staff_id"],
+        day_of_week=2,
+        start_time=time(9, 0),
+        end_time=time(10, 0),
+    )
+    create_pending_payment_hold(
+        db,
+        tenant_id=domain["tenant_id"],
+        business_id=domain["business_id"],
+        customer_id=domain["customer_id"],
+        service_id=domain["service_id"],
+        staff_id=domain["staff_id"],
+        starts_at=datetime(2027, 7, 7, 7, 0, 0, tzinfo=timezone.utc),
+        provider="stripe",
+    )
+    slots = get_available_slots(
+        db,
+        tenant_id=domain["tenant_id"],
+        business_id=domain["business_id"],
+        service_id=domain["service_id"],
+        staff_id=domain["staff_id"],
+        query_date=FUTURE_DATE,
+    )
     assert len(slots) == 1
     assert slots[0][0] == datetime(2027, 7, 7, 7, 30, 0, tzinfo=timezone.utc)
 

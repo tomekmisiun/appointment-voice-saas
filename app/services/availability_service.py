@@ -299,7 +299,7 @@ def _get_available_slots_for_duration(
     booking_query = db.query(Booking).filter(
         Booking.business_id == business_id,
         Booking.tenant_id == tenant_id,
-        Booking.status == BookingStatus.CONFIRMED,
+        Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT]),
         Booking.starts_at < day_end_utc,
         Booking.ends_at > day_start_utc,
     )
