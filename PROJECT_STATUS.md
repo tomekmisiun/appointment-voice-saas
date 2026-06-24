@@ -316,9 +316,8 @@ coverage).
   (P2-012).
 
 **P3 — Operational extensions:**
-- NOT_IMPLEMENTED: deposits ADR, Stripe payment links, pending-payment
-  booking state, calendar privacy rules, calendar conflict import ADR,
-  two-way calendar ADR.
+- NOT_IMPLEMENTED: Stripe payment links, pending-payment booking state,
+  calendar privacy rules, calendar conflict import ADR, two-way calendar ADR.
 - DONE: salon closures/holidays — business-wide closure exclusion and overlap
   validation already worked; added the missing API clarity (create
   endpoint docstring documents that a business-wide `staff_id=null`
@@ -384,7 +383,22 @@ coverage).
   be in flight — a `created_at`-only first draft was caught by
   cross-provider review as a duplicate-send risk; new
   `integration_reconciliation_requeued_total{record_type}` metric surfaces
-  ongoing drift instead of silently retrying forever (P3-013).
+  ongoing drift instead of silently retrying forever (P3-013); deposits ADR —
+  `docs/adr/0004-deposits-and-payment-holds.md` decides a new `BookingPayment`
+  model (one model per concern, mirroring `NotificationOutbox`/
+  `CalendarEvent` rather than fields on `Booking` itself), a flat
+  `Service.deposit_minor_units` (not a percentage of price), a new
+  `BookingStatus.PENDING_PAYMENT` that *does* reserve the slot (widening all
+  three "is this slot taken" checks — the DB exclusion constraint,
+  `_check_double_booking()`, and `availability_service.py`'s slot query —
+  missing any one would silently reopen the double-booking race PRs #42/#45
+  fixed, or leave availability/IVR showing a held slot as free), hold expiry
+  reusing `CANCELLED` with a distinct `BOOKING_HOLD_EXPIRED` audit action and
+  no customer-facing cancellation SMS, and refund policy explicitly deferred
+  (recorded on `BookingPayment`, not automated — no product requirement to
+  anchor a default); decision only, implementation is **P3-008 before
+  P3-007** (reordered from the original audit sequencing — see ADR 0004 §3)
+  (P3-006).
 
 **P4 — SaaS model and scale:**
 - NOT_IMPLEMENTED: phone provisioning, Stripe Billing model, plan limits
