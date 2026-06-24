@@ -299,7 +299,7 @@ the task explicitly de-risks the MVP.
 | [ ] | P3-010 | P3 | Add private staff calendar visibility rules. | Avoid exposing private calendar details. | Calendar UI. | Sync stores busy/free only where needed. | Privacy tests. | Sensitive staff details leak. |
 | [ ] | P3-011 | P3 | Add calendar conflict import spike. | Investigate one-way busy import. | Full two-way sync. | ADR documents safe approach. | Docs review. | External conflicts missed. |
 | [x] | P3-012 | P3 | Add manual admin override workflow. | Override booking/cancel with a mandatory reason and a distinct audit trail (does not bypass the DB-level no-overlap safety constraint for a genuine same-staff conflict — see evidence). | Frontend UI; force-overbooking a specific staff member's slot past the no-overlap constraint (would require a migration weakening that Critical-priority safety constraint — out of scope, see evidence). | Overrides are explicit and audited. | API tests. | Support cannot resolve edge cases. | done: `POST /businesses/{business_id}/bookings/override` and `POST /businesses/{business_id}/bookings/{booking_id}/override-cancel`, both admin-only (`require_role("admin")`) with a required, non-blank `reason`; both call the existing `create_booking()`/`cancel_booking()` with a new `override=True` flag, logging the new `AuditAction.BOOKING_OVERRIDE_CREATED`/`BOOKING_OVERRIDE_CANCELLED` (with `source` set to the admin's reason, queryable separately from regular `BOOKING_CREATED`/`BOOKING_CANCELLED`) instead of changing booking mechanics — override-create does **not** bypass the DB-level `no_overlapping_staff_bookings` exclusion constraint for a genuine same-staff conflict (still 409s), a deliberate scope decision recorded in `tests/test_avs_p3012_admin_override.py`'s module docstring; unblocks P1-013's remaining admin-override audit gap — `tests/test_avs_p3012_admin_override.py` |
-| [ ] | P3-013 | P3 | Add integration reconciliation job. | Detect stale SMS/calendar outbox records. | Provider-specific repair UI. | Stale records are reported/retried. | Worker tests. | Integration drift accumulates. |
+| [x] | P3-013 | P3 | Add integration reconciliation job. | Detect stale SMS/calendar outbox records. | Provider-specific repair UI. | Stale records are reported/retried. | Worker tests. | Integration drift accumulates. | done: new `app/services/reconciliation_service.py` (`reconcile_stale_notifications()`, `reconcile_stale_calendar_events()`), wired into the existing `run_scheduled_maintenance()` tick. Closes the gap where the DB commit (outbox/calendar row) and the Redis job enqueue are two separate steps — a crash or transient Redis failure between them left a `PENDING` row with no job ever processing it. Gated on `COALESCE(reconciled_at, created_at)` (new nullable column on both models, migration `p3013a2b3c4d5e`) rather than `created_at` alone — caught by cross-provider review, which flagged a `created_at`-only sweep as re-enqueuing the same stale row on every maintenance tick forever, risking a duplicate SMS/calendar-event send if the original job was still in flight. New `integration_reconciliation_requeued_total{record_type}` metric surfaces ongoing drift, per the roadmap's explicit "Provider-specific repair UI" exclusion — `tests/test_reconciliation_service.py`, extended `tests/test_worker.py`/`tests/test_worker_metrics.py` |
 | [ ] | P3-014 | P3 | Write two-way calendar sync ADR. | Risks, source of truth, conflict policy. | Implementation. | ADR rejects or scopes two-way sync safely. | Docs review. | Calendar becomes competing source of truth. |
 
 ### PRIORITY 4 - SaaS model and scale
@@ -348,8 +348,7 @@ found to be a side-effect duplicate of MVP or other backlog work.
 **Recommended order for remaining work** (per
 `docs/audits/p3-remaining-backlog-audit.md` §6, continuing the
 `pre-p3-readiness-audit.md` §10 execution order):
-1. `feat/p3-013-reconciliation-job` — no dependency on any other remaining
-   item; can land in parallel with the deposits track.
+1. ~~`feat/p3-013-reconciliation-job`~~ — **done** (P3-013 row above).
 2. `docs/adr-deposits-architecture` (P3-006) — ADR only, unblocks P3-007/008.
 3. `docs/adr-calendar-import-spike` (P3-011) — ADR/spike only.
 4. `docs/adr-two-way-calendar-sync` (P3-014) — depends on #3.
@@ -359,6 +358,8 @@ found to be a side-effect duplicate of MVP or other backlog work.
 8. P2-013/014 and P4-001 through P4-011 remain sequenced after the P3
    operational-extensions tier per this file's own tier ordering (P4-005 is
    already done — see that row above).
+
+**Next up:** `docs/adr-deposits-architecture` (P3-006).
 
 ## Validation commands
 

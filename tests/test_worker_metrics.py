@@ -5,6 +5,7 @@ import httpx
 from app.core.metrics import (
     configure_metrics,
     observe_calendar_provider_request,
+    observe_integration_reconciliation_requeued,
     observe_sms_provider_request,
     observe_worker_failed_queue_depth,
     observe_worker_job,
@@ -78,6 +79,26 @@ def test_provider_failure_metrics_are_exposed(monkeypatch):
         assert (
             'calendar_provider_requests_total{operation="sync",'
             'provider="__test_calendar_provider__",status="failure"} 1.0'
+            in response.text
+        )
+    finally:
+        stop_metrics_server()
+
+
+def test_integration_reconciliation_requeued_metric_is_exposed(monkeypatch):
+    monkeypatch.setattr("app.core.config.settings.metrics_require_auth", False)
+    configure_metrics()
+    observe_integration_reconciliation_requeued(
+        record_type="__test_record_type__", count=3
+    )
+    port = start_metrics_server(host="127.0.0.1", port=0)
+
+    try:
+        response = _get_metrics(f"http://127.0.0.1:{port}/metrics")
+
+        assert response.status_code == 200
+        assert (
+            'integration_reconciliation_requeued_total{record_type="__test_record_type__"} 3.0'
             in response.text
         )
     finally:
