@@ -1,5 +1,7 @@
 import "server-only";
+import { redirect } from "next/navigation";
 import { cache } from "react";
+import { ApiError } from "@/lib/api/errors";
 import { fetchFromBackend } from "@/lib/api/server";
 import type { BusinessRead, UserRead } from "@/lib/api/types";
 
@@ -45,3 +47,27 @@ export const getCurrentBusinessContext = cache(
     return { kind: "multiple", user, businesses: active };
   },
 );
+
+/**
+ * Same as getCurrentBusinessContext, but redirects through the refresh
+ * flow on an auth failure instead of throwing — the right default for any
+ * Server Component page calling this directly (not just the dashboard
+ * layout, which already does its own expiry check first). Missing this
+ * wrapper was the root cause of three separate cross-provider review
+ * findings while building out the bookings and staff modules — every new
+ * page should use this, not call getCurrentBusinessContext() bare and
+ * re-derive the same try/catch.
+ */
+export async function getCurrentBusinessContextOrRefresh(
+  accessToken: string,
+  refreshNextPath: string,
+): Promise<CurrentBusinessContext> {
+  try {
+    return await getCurrentBusinessContext(accessToken);
+  } catch (error) {
+    if (error instanceof ApiError && error.isAuthError) {
+      redirect(`/auth/refresh?next=${refreshNextPath}`);
+    }
+    throw error;
+  }
+}

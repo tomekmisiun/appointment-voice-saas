@@ -73,29 +73,29 @@ and a destructive action together.
 
 | Field | Detail |
 |---|---|
-| Status | Not started |
+| Status | **Blocked on backend** — re-verified when starting task 3 (`git log` on `app/api/routes/bookings.py` shows no change since P3-012, well before this epic; still only `status`/`staff_id`/`page`/`size`) |
 | Branch | `feat/frontend-calendar-view` |
 | Goal | A calendar/agenda view of bookings (day/week), for a faster at-a-glance schedule than the list. |
 | Scope | Read-only calendar rendering on top of the bookings list endpoint (1b); date navigation. |
 | Out of scope | Drag-to-reschedule, external calendar sync UI (the backend's calendar adapter is an internal sync mechanism, not something the owner configures from this view). |
-| Backend dependencies | Same as 1b — `GET .../bookings`. Re-confirm whether a date-range filter has been added to the backend by this point; if not, this view has to paginate/filter client-side within whatever the list endpoint supports, which may need a backend follow-up before this task is practical. |
-| Acceptance | Calendar viewreflects real bookings; navigating dates doesn't silently show stale/incomplete data. |
-| Tests | Date navigation; rendering bookings on the correct day/time in the business's timezone. |
-| Risks | Without a backend date filter, a week view may require fetching unbounded pages — flag this as a likely backend blocker before starting, don't work around it client-side with an unbounded fetch loop. |
+| Backend dependencies | **Blocked**: `GET .../bookings` still has no `date_from`/`date_to` filter. Faking a date range by walking unbounded pagination client-side would repeat the exact anti-pattern already rejected for CSV export (task 12) — not done. Smallest backend change that would unblock this: add an optional `date_from`/`date_to` query param pair to `GET /api/v1/businesses/{id}/bookings`, filtering on `starts_at`. That's a backend task, out of scope for this frontend epic. |
+| Acceptance | N/A until the backend filter exists. |
+| Tests | N/A. |
+| Risks | Don't silently build a degraded calendar (e.g. one page of results with no real date filter) to avoid this blocker — flagged to the user and explicitly deferred instead, per the user's choice when this was raised. Re-check `app/api/routes/bookings.py` again before picking this task back up; this status may already be stale by the time it's revisited. |
 
 ## 3. Staff management
 
 | Field | Detail |
 |---|---|
-| Status | Not started |
+| Status | **Done** — `feat/frontend-staff-management` |
 | Branch | `feat/frontend-staff-management` |
 | Goal | List, add, edit, and deactivate staff. |
-| Scope | `/dashboard/staff` list + create/edit forms; uses `PATCH .../staff/{id}` (confirmed implemented in 1a's audit, despite `docs/product/owner-dashboard.md` still listing it as a gap — re-verify the route file directly). |
+| Scope | `/dashboard/staff` list (Server Component, page/includeInactive driven by `searchParams` — plain navigation, no React Query needed for this small admin list); add/edit forms as native `<dialog>`s bound to Server Actions via `useActionState` (`features/staff/actions.ts`); deactivate/reactivate via a bound `setStaffActiveAction`. `PATCH .../staff/{id}` re-confirmed implemented (matches 1a's audit). Architecture deliberately differs from the bookings module: Server Actions + `revalidatePath`, not a Route Handler + client `fetch` proxy — staff management is a small admin CRUD screen, not interactive customer-facing data, and Next.js Server Actions already get built-in Origin/CSRF protection from the framework itself. |
 | Out of scope | Staff-specific working hours (task 5), transfer-eligibility settings (task 8). |
-| Backend dependencies | `GET/POST/PATCH /api/v1/businesses/{id}/staff[/{id}]`. |
-| Acceptance | Owner can add a staff member, edit name/phone, and deactivate one, without a page reload. |
-| Tests | Create/edit form validation; deactivate confirmation; list refresh after mutation. |
-| Risks | None beyond standard CRUD form risk. |
+| Backend dependencies | `GET/POST/PATCH /api/v1/businesses/{id}/staff[/{id}]`. No gaps. |
+| Acceptance | Owner can add a staff member, edit name/phone, and deactivate/reactivate one, without a full page reload (Server Action + `revalidatePath` soft-refreshes the list). Both create and edit/deactivate independently re-check the admin role (mirroring the backend's `ROLE_HIERARCHY` via `roleIncludes()`, same as the bookings module) rather than trusting the UI alone. |
+| Tests | Server Actions: empty-name rejection, non-admin rejection (no backend call), success forwarding a trimmed name and `null` for a blank phone, backend error passthrough, `platform_admin` allowed, no-single-business rejection. Dialogs: open/submit wiring, pre-filled edit values bound to the correct staff id, inline error display. Toggle button: correct label and argument for active/inactive, inline error on failure. List page: rendering, admin-only controls, empty state, `page`/`includeInactive` forwarded from `searchParams`, no-session redirect. |
+| Risks | Two real bugs caught by cross-provider review, fixed pre-merge: (1) the backend's `update_staff()` only assigns `phone` when it's not `None`, so sending `null`/omitting it for a blank phone field could never clear an existing one through the PATCH endpoint — fixed by normalizing a blank phone to `""` (which the same endpoint does treat as a real value to set) instead of `null`, for both create and update, with a regression test that asserts the body sent is `""` not `null`. (2) Server Actions calling `getCurrentBusinessContext()` with an expired/revoked token threw an uncaught `ApiError`, surfacing as a generic crashed-page error instead of a clean refresh. Fixed by checking `isAccessTokenExpired()` upfront and catching an auth-error response, redirecting through `/auth/refresh?next=/dashboard/staff` exactly like Server Components already do (added to the safe-redirect allow-list), instead of inventing a second error-handling path. A second review round caught two more: the list page's own staff-fetch wasn't wrapped in the same auth-error redirect (only the layout-level context resolution was) — fixed identically. And `Math.max(1, Number(params.page) \|\| 1)` let a non-integer `page` query value (e.g. `"1.5"`, `"Infinity"`) through unchanged, since both are truthy and non-`NaN` — FastAPI's `int` query param would 422 on it. Fixed with an explicit `Number.isInteger(parsed) && parsed > 0` check, falling back to page 1 for anything else. A third review round caught a narrower variant of fix (2): the *mutation* calls themselves (create/update/deactivate) could still hit a 401 if the token was revoked in the gap between `resolveAdminBusinessContext()` succeeding and the actual POST/PATCH landing, and that 401 was falling into the generic `ApiError` branch and rendering inline as a form error rather than redirecting. Fixed with a shared `toStaffActionResult()` helper used by all three mutations' catch blocks, so this auth-failure path can't be reintroduced piecemeal by a future fourth action. |
 
 ## 4. Services management
 

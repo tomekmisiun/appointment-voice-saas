@@ -10,7 +10,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Bookings", href: "/dashboard/bookings", status: "active" },
   { label: "Calendar", href: "/dashboard/calendar", status: "coming-soon" },
   { label: "Clients", href: "/dashboard/clients", status: "coming-soon" },
-  { label: "Staff", href: "/dashboard/staff", status: "coming-soon" },
+  { label: "Staff", href: "/dashboard/staff", status: "active" },
   { label: "Services", href: "/dashboard/services", status: "coming-soon" },
   { label: "Availability", href: "/dashboard/availability", status: "coming-soon" },
   { label: "Waitlist", href: "/dashboard/waitlist", status: "coming-soon" },
