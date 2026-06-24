@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { SetupStatusCard } from "@/features/dashboard/components/SetupStatusCard";
-import { getCurrentBusinessContext } from "@/features/dashboard/current-business";
+import { getCurrentBusinessContextOrRefresh } from "@/features/dashboard/current-business";
 import { getSetupStatus } from "@/features/dashboard/setup-status";
 import { getSession } from "@/lib/auth/server";
 
@@ -13,7 +13,7 @@ export default async function DashboardOverviewPage() {
   // The layout above already resolved (and would have redirected on) the
   // 0/multiple-business states — this call is memoized via React's
   // cache() for the same accessToken, so it's not a second network call.
-  const context = await getCurrentBusinessContext(session.accessToken);
+  const context = await getCurrentBusinessContextOrRefresh(session.accessToken, "/dashboard");
   if (context.kind !== "single") {
     return null;
   }

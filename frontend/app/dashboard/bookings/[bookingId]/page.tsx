@@ -5,7 +5,7 @@ import { CancelBookingDialog } from "@/features/bookings/components/CancelBookin
 import { RescheduleBookingDialog } from "@/features/bookings/components/RescheduleBookingDialog";
 import { resolveNameOrFallback } from "@/features/bookings/server";
 import { formatInBusinessTimezone } from "@/features/bookings/utils";
-import { getCurrentBusinessContext } from "@/features/dashboard/current-business";
+import { getCurrentBusinessContextOrRefresh } from "@/features/dashboard/current-business";
 import { ApiError } from "@/lib/api/errors";
 import { fetchFromBackend } from "@/lib/api/server";
 import type { BookingRead } from "@/lib/api/types";
@@ -28,7 +28,7 @@ export default async function BookingDetailPage({
     redirect("/login");
   }
 
-  const context = await getCurrentBusinessContext(session.accessToken);
+  const context = await getCurrentBusinessContextOrRefresh(session.accessToken, "/dashboard/bookings");
   if (context.kind !== "single") {
     return null;
   }

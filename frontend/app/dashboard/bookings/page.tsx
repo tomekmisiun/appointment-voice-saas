@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { BookingsListClient } from "@/features/bookings/components/BookingsListClient";
-import { getCurrentBusinessContext } from "@/features/dashboard/current-business";
+import { getCurrentBusinessContextOrRefresh } from "@/features/dashboard/current-business";
 import { fetchFromBackend } from "@/lib/api/server";
 import type { ServiceRead, StaffRead } from "@/lib/api/types";
 import { getSession } from "@/lib/auth/server";
@@ -13,7 +13,7 @@ export default async function BookingsListPage() {
 
   // Memoized via React's cache() — already resolved once by the layout
   // above for the same access token, so this isn't a second network call.
-  const context = await getCurrentBusinessContext(session.accessToken);
+  const context = await getCurrentBusinessContextOrRefresh(session.accessToken, "/dashboard/bookings");
   if (context.kind !== "single") {
     return null;
   }

@@ -1,10 +1,9 @@
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { QueryProvider } from "@/components/providers/QueryProvider";
-import { getCurrentBusinessContext } from "@/features/dashboard/current-business";
+import { getCurrentBusinessContextOrRefresh } from "@/features/dashboard/current-business";
 import { MultipleBusinessesState } from "@/features/dashboard/components/MultipleBusinessesState";
 import { NoBusinessState } from "@/features/dashboard/components/NoBusinessState";
-import { ApiError } from "@/lib/api/errors";
 import { getSession, isAccessTokenExpired } from "@/lib/auth/server";
 
 /**
@@ -24,15 +23,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/auth/refresh?next=/dashboard");
   }
 
-  let context;
-  try {
-    context = await getCurrentBusinessContext(session.accessToken);
-  } catch (error) {
-    if (error instanceof ApiError && error.isAuthError) {
-      redirect("/auth/refresh?next=/dashboard");
-    }
-    throw error;
-  }
+  const context = await getCurrentBusinessContextOrRefresh(session.accessToken, "/dashboard");
 
   if (context.kind === "none") {
     return <NoBusinessState />;
