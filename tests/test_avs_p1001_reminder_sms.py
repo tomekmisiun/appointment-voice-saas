@@ -2,7 +2,11 @@
 
 `enqueue_due_reminders()` queues a BOOKING_REMINDER notification for confirmed
 bookings starting within `settings.reminder_lead_minutes`, exactly once per
-booking, and enqueues the SEND_NOTIFICATION_JOB worker job.
+booking, and enqueues the SEND_NOTIFICATION_JOB worker job. It also skips
+bookings made with less than `settings.reminder_min_advance_minutes` of
+notice (e.g. booked today for tomorrow) -- those are already within the
+lead window the moment they're created, so a reminder would land right next
+to the confirmation SMS for no reason.
 
 Assertions are scoped to each test's own booking via `_reminder_rows()`
 rather than the function's global return count, because the shared test
@@ -54,12 +58,24 @@ def _book_at(db, tenant_id, biz, svc, customer, starts_at):
     )
 
 
+def _backdate_creation(db, booking, *, advance_minutes):
+    """Simulate a booking made `advance_minutes` before its own starts_at,
+    rather than "just now" (the default from create_booking()) -- needed to
+    exercise the reminder-lead-window logic independently of the new
+    minimum-advance-notice guard below, which the real create_booking() call
+    in these tests would otherwise always fail (starts_at is set only
+    minutes after "now" in most of these tests)."""
+    booking.created_at = booking.starts_at - timedelta(minutes=advance_minutes)
+    db.commit()
+
+
 def test_booking_due_within_lead_window_gets_reminder(db):
     tenant_id, biz, svc, customer = _setup(db)
     starts_at = datetime.now(timezone.utc) + timedelta(
         minutes=settings.reminder_lead_minutes - 10
     )
     booking = _book_at(db, tenant_id, biz, svc, customer, starts_at)
+    _backdate_creation(db, booking, advance_minutes=settings.reminder_min_advance_minutes + 60)
 
     enqueue_due_reminders(db)
 
@@ -95,6 +111,7 @@ def test_cancelled_booking_is_not_reminded(db):
     tenant_id, biz, svc, customer = _setup(db)
     starts_at = datetime.now(timezone.utc) + timedelta(minutes=30)
     booking = _book_at(db, tenant_id, biz, svc, customer, starts_at)
+    _backdate_creation(db, booking, advance_minutes=settings.reminder_min_advance_minutes + 60)
     cancel_booking(db, booking.id, biz.id, tenant_id)
 
     enqueue_due_reminders(db)
@@ -106,6 +123,7 @@ def test_reminder_is_sent_only_once(db):
     tenant_id, biz, svc, customer = _setup(db)
     starts_at = datetime.now(timezone.utc) + timedelta(minutes=30)
     booking = _book_at(db, tenant_id, biz, svc, customer, starts_at)
+    _backdate_creation(db, booking, advance_minutes=settings.reminder_min_advance_minutes + 60)
 
     enqueue_due_reminders(db)
     enqueue_due_reminders(db)
@@ -118,8 +136,54 @@ def test_enqueue_due_reminders_covers_multiple_bookings(db):
     starts_at = datetime.now(timezone.utc) + timedelta(minutes=30)
     first = _book_at(db, tenant_id, biz, svc, customer, starts_at)
     second = _book_at(db, tenant_id, biz, svc, customer, starts_at + timedelta(minutes=5))
+    _backdate_creation(db, first, advance_minutes=settings.reminder_min_advance_minutes + 60)
+    _backdate_creation(db, second, advance_minutes=settings.reminder_min_advance_minutes + 60)
 
     enqueue_due_reminders(db)
 
     assert len(_reminder_rows(db, first.id)) == 1
     assert len(_reminder_rows(db, second.id)) == 1
+
+
+# Minimum advance notice (last-minute bookings shouldn't get a redundant
+# reminder right after their confirmation SMS)
+
+
+def test_booking_made_last_minute_is_not_reminded(db):
+    """The exact case this guard exists for: booking today for a slot
+    that's already within the reminder lead window (e.g. "today for
+    tomorrow") must not also get a reminder seconds/minutes after the
+    confirmation SMS."""
+    tenant_id, biz, svc, customer = _setup(db)
+    starts_at = datetime.now(timezone.utc) + timedelta(minutes=30)
+    booking = _book_at(db, tenant_id, biz, svc, customer, starts_at)
+    # created_at is "now" (the default from create_booking()) -- only ~30
+    # minutes of advance notice, far under reminder_min_advance_minutes.
+
+    enqueue_due_reminders(db)
+
+    assert _reminder_rows(db, booking.id) == []
+
+
+def test_booking_with_exactly_minimum_advance_notice_gets_reminder(db):
+    """Boundary: advance notice exactly equal to the threshold is enough
+    (the guard blocks strictly-less-than, not less-than-or-equal)."""
+    tenant_id, biz, svc, customer = _setup(db)
+    starts_at = datetime.now(timezone.utc) + timedelta(minutes=30)
+    booking = _book_at(db, tenant_id, biz, svc, customer, starts_at)
+    _backdate_creation(db, booking, advance_minutes=settings.reminder_min_advance_minutes)
+
+    enqueue_due_reminders(db)
+
+    assert len(_reminder_rows(db, booking.id)) == 1
+
+
+def test_booking_just_under_minimum_advance_notice_is_not_reminded(db):
+    tenant_id, biz, svc, customer = _setup(db)
+    starts_at = datetime.now(timezone.utc) + timedelta(minutes=30)
+    booking = _book_at(db, tenant_id, biz, svc, customer, starts_at)
+    _backdate_creation(db, booking, advance_minutes=settings.reminder_min_advance_minutes - 1)
+
+    enqueue_due_reminders(db)
+
+    assert _reminder_rows(db, booking.id) == []
