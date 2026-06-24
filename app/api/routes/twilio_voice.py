@@ -93,7 +93,12 @@ async def twilio_voice_inbound(
             gather_url = _gather_url(business_id, existing.id)
             transfer_to = ivr_response.transfer_destination or business.phone
             return Response(
-                content=ivr_to_twiml(ivr_response, gather_action_url=gather_url, transfer_to=transfer_to),
+                content=ivr_to_twiml(
+                    ivr_response,
+                    gather_action_url=gather_url,
+                    transfer_to=transfer_to,
+                    locale=existing.locale,
+                ),
                 media_type=_TWIML,
             )
 
@@ -116,7 +121,12 @@ async def twilio_voice_inbound(
 
         gather_url = _gather_url(business_id, session.id)
         return Response(
-            content=ivr_to_twiml(ivr_response, gather_action_url=gather_url, transfer_to=business.phone),
+            content=ivr_to_twiml(
+                ivr_response,
+                gather_action_url=gather_url,
+                transfer_to=business.phone,
+                locale=session.locale,
+            ),
             media_type=_TWIML,
         )
     except (OperationalError, RedisError):
@@ -172,7 +182,12 @@ async def twilio_voice_keypress(
         transfer_to = ivr_response.transfer_destination or (business.phone if business else None)
         gather_url = _gather_url(business_id, session_id)
         return Response(
-            content=ivr_to_twiml(ivr_response, gather_action_url=gather_url, transfer_to=transfer_to),
+            content=ivr_to_twiml(
+                ivr_response,
+                gather_action_url=gather_url,
+                transfer_to=transfer_to,
+                locale=session.locale,
+            ),
             media_type=_TWIML,
         )
     except (OperationalError, RedisError):

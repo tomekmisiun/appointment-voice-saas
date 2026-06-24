@@ -27,6 +27,7 @@ class PromptKey(StrEnum):
     TOO_MANY_INVALID_KEYS = "too_many_invalid_keys"
     TOO_MANY_NO_INPUT = "too_many_no_input"
     NO_INPUT_PREFIX = "no_input_prefix"
+    NO_INPUT_GOODBYE = "no_input_goodbye"
     NO_SLOTS = "no_slots"
     NO_SERVICES = "no_services"
     PLEASE_MAKE_A_SELECTION = "please_make_a_selection"
@@ -82,6 +83,7 @@ _PROMPTS: dict[str, dict[PromptKey, str]] = {
             "Please call again to book an appointment."
         ),
         PromptKey.NO_INPUT_PREFIX: "We didn't hear a response. ",
+        PromptKey.NO_INPUT_GOODBYE: "We didn't receive your input. Goodbye.",
         PromptKey.NO_SLOTS: "No slots are available. Please call back later.",
         PromptKey.NO_SERVICES: "Sorry, no services are currently available. Please call back later.",
         PromptKey.PLEASE_MAKE_A_SELECTION: "Please make a selection.",
@@ -165,6 +167,7 @@ _PROMPTS: dict[str, dict[PromptKey, str]] = {
             "Zadzwoń ponownie, aby zarezerwować wizytę."
         ),
         PromptKey.NO_INPUT_PREFIX: "Nie usłyszeliśmy odpowiedzi. ",
+        PromptKey.NO_INPUT_GOODBYE: "Nie otrzymaliśmy żadnej odpowiedzi. Do usłyszenia.",
         PromptKey.NO_SLOTS: "Nie ma dostępnych terminów. Zadzwoń ponownie później.",
         PromptKey.NO_SERVICES: "Przepraszamy, obecnie nie ma dostępnych usług. Zadzwoń ponownie później.",
         PromptKey.PLEASE_MAKE_A_SELECTION: "Proszę wybrać jedną z opcji.",

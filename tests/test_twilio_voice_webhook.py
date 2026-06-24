@@ -51,6 +51,57 @@ def test_twiml_continue_includes_gather():
     assert "Press 1 to book." in xml
 
 
+# P3-009 follow-up: <Say> must carry the right TTS voice for the locale,
+# otherwise a Polish prompt is read aloud by an English voice and is
+# unintelligible -- text language and voice language must always match.
+
+
+def test_twiml_default_locale_uses_english_say_voice():
+    from app.core.ivr import IvrAction, IvrResponse
+    from app.services.twilio_voice_adapter import ivr_to_twiml
+
+    resp = IvrResponse(prompt="Welcome!", action=IvrAction.CONTINUE)
+    xml = ivr_to_twiml(resp, gather_action_url="https://example.com/cb")
+    assert '<Say language="en-US">Welcome!</Say>' in xml
+
+
+def test_twiml_polish_locale_uses_polish_say_voice():
+    from app.core.ivr import IvrAction, IvrResponse
+    from app.services.twilio_voice_adapter import ivr_to_twiml
+
+    resp = IvrResponse(prompt="Witamy!", action=IvrAction.CONTINUE)
+    xml = ivr_to_twiml(resp, gather_action_url="https://example.com/cb", locale="pl")
+    assert '<Say language="pl-PL">Witamy!</Say>' in xml
+
+
+def test_twiml_no_input_fallback_is_localized_and_voiced():
+    from app.core.ivr import IvrAction, IvrResponse
+    from app.services.twilio_voice_adapter import ivr_to_twiml
+
+    resp = IvrResponse(prompt="Witamy!", action=IvrAction.CONTINUE)
+    xml = ivr_to_twiml(resp, gather_action_url="https://example.com/cb", locale="pl")
+    assert '<Say language="pl-PL">Nie otrzymaliśmy żadnej odpowiedzi. Do usłyszenia.</Say>' in xml
+    assert "We didn't receive your input" not in xml
+
+
+def test_twiml_transfer_uses_locale_say_voice():
+    from app.core.ivr import IvrAction, IvrResponse
+    from app.services.twilio_voice_adapter import ivr_to_twiml
+
+    resp = IvrResponse(prompt="Łączymy.", action=IvrAction.TRANSFER)
+    xml = ivr_to_twiml(resp, transfer_to="+48123456789", locale="pl")
+    assert '<Say language="pl-PL">Łączymy.</Say>' in xml
+
+
+def test_twiml_end_uses_locale_say_voice():
+    from app.core.ivr import IvrAction, IvrResponse
+    from app.services.twilio_voice_adapter import ivr_to_twiml
+
+    resp = IvrResponse(prompt="Do usłyszenia.", action=IvrAction.END)
+    xml = ivr_to_twiml(resp, locale="pl")
+    assert '<Say language="pl-PL">Do usłyszenia.</Say>' in xml
+
+
 def test_twiml_end_includes_hangup():
     from app.core.ivr import IvrAction, IvrResponse
     from app.services.twilio_voice_adapter import ivr_to_twiml
@@ -137,6 +188,22 @@ def test_inbound_call_creates_session(domain):
     assert "application/xml" in resp.headers["content-type"]
     assert "<Gather" in resp.text
     assert "Press 1 to book" in resp.text
+
+
+def test_inbound_call_uses_polish_say_voice_for_polish_business(client, db):
+    tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
+    biz = create_business(
+        db, tenant_id=tenant.id, name="Salon PL Webhook", timezone="UTC", language="pl"
+    )
+
+    resp = client.post(
+        f"/api/v1/webhooks/twilio/voice/{biz.id}",
+        data={"CallSid": "CA_test_pl_001", "From": "+48600000009", "To": "+48800000000"},
+    )
+
+    assert resp.status_code == 200
+    assert 'language="pl-PL"' in resp.text
+    assert "Witamy" in resp.text
 
 
 def test_inbound_call_returns_twiml_for_unknown_business(domain):
