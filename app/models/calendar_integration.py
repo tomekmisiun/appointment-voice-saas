@@ -1,10 +1,16 @@
 from datetime import datetime
+from enum import StrEnum
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
 from app.db.base import Base
+
+
+class CalendarVisibility(StrEnum):
+    PUBLIC = "public"
+    PRIVATE = "private"
 
 
 class CalendarIntegration(Base):
@@ -41,6 +47,9 @@ class CalendarIntegration(Base):
     provider: Mapped[str] = mapped_column(String(64), nullable=False)
     calendar_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    visibility: Mapped[str] = mapped_column(
+        String(16), nullable=False, default=CalendarVisibility.PUBLIC
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

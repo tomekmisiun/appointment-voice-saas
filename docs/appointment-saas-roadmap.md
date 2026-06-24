@@ -296,7 +296,7 @@ the task explicitly de-risks the MVP.
 | [ ] | P3-007 | P3 | Add Stripe payment links. | Payment-link creation for selected services. | Stripe Billing subscriptions. | Booking can require/link deposit payment. | Adapter tests. | Payment failures cause bad bookings. |
 | [x] | P3-008 | P3 | Add pending-payment booking state. | Hold expiry and transition rules. | Full checkout. | Pending holds expire safely. | Worker/service tests. | Slots remain locked after abandoned payment. | done: per `docs/adr/0004-deposits-and-payment-holds.md` — `create_pending_payment_hold()` reserves the slot without firing the confirmation SMS/calendar sync (those only fire at `confirm_booking_payment()`'s `PENDING_PAYMENT`→`CONFIRMED` transition, the existing `BOOKING_CONFIRMED` audit action with `source="stripe_webhook"`, idempotent for a duplicate webhook delivery); `expire_pending_payment_hold()` transitions an abandoned hold to `CANCELLED` (no cancellation SMS, distinct `BOOKING_HOLD_EXPIRED` audit action, still escalates the freed slot to the waitlist), swept periodically by `expire_stale_payment_holds()` (new `booking_payment_hold_minutes` setting, default 15) wired into `run_scheduled_maintenance()`; `confirm_booking_payment()`/`expire_pending_payment_hold()`/`cancel_booking()` all take a row lock (`with_for_update()` + `populate_existing()`) on the booking to close the same class of concurrent-transition race PR #45/AVS-TD-030 already had to fix elsewhere; added the manual admin-triggered `refund_booking_payment()` + `POST .../bookings/{id}/refund` endpoint ADR §6 calls for; `Service.deposit_required`/`deposit_minor_units` are now configurable via the service create/update API (validated together with `currency`) — `tests/test_avs_p3008_pending_payment_state.py`, `tests/test_payment_hold_concurrency.py` (real-thread row-lock regression tests), extended `tests/test_availability.py`/`tests/test_worker.py`/`tests/test_services.py` |
 | [x] | P3-009 | P3 | Add multilingual IVR prompt architecture. | Prompt keys/templates per language. | Translation content. | Flow can choose language without logic fork. | IVR tests. | Localization duplicates IVR code. | done: new `app/core/ivr_prompts.py` — `PromptKey` enum (one entry per distinct prompt/label template), `_PROMPTS: dict[locale, dict[PromptKey, str]]` (only `en` populated, by design — translation content is out of scope), `resolve_prompt(key, *, locale, **kwargs)` (falls back to `IVR_DEFAULT_LOCALE` for an unknown locale or a locale missing a specific key, so a partial translation degrades gracefully), `format_option_list()` (centralizes the repeated "press {key} for {label}" join pattern that was previously duplicated at ~7 call sites in `ivr_service.py`); every hardcoded prompt string and static `IvrOption` label in `ivr_service.py` now resolves through these, gated by a single `_session_locale(session)` helper — adding a real locale later means changing that one function plus adding one `_PROMPTS` entry, zero step-handler changes; exact rendered text preserved byte-for-byte, verified by the full existing IVR test suite (99 tests across `test_ivr_e2e.py`, `test_ivr_service.py`, and every `test_avs_p1*/p2*_ivr_*.py`) passing unchanged — `tests/test_avs_p3009_ivr_prompt_keys.py` (new: key/locale resolution, fallback for unknown locale and partially-translated locale, option-list join, and an explicit "adding a second locale requires zero ivr_service.py changes" proof) |
-| [ ] | P3-010 | P3 | Add private staff calendar visibility rules. | Avoid exposing private calendar details. | Calendar UI. | Sync stores busy/free only where needed. | Privacy tests. | Sensitive staff details leak. |
+| [x] | P3-010 | P3 | Add private staff calendar visibility rules. | Avoid exposing private calendar details. | Calendar UI. | Sync stores busy/free only where needed. | Privacy tests. | Sensitive staff details leak. | done: new `CalendarVisibility` enum (`public`/`private`) + `CalendarIntegration.visibility` column (migration `p3010a2b3c4d5e`, `server_default='public'`, preserves all prior outbound-sync behavior unless explicitly opted into); new `_get_calendar_integration()` helper in `calendar_service.py` prefers a staff-specific integration over the business-level one (mirrors the model's existing unique-index precedent), falling back to business-level when no staff-specific row exists; `_build_event_payload()` now takes the resolved `visibility` and returns a generic `"Busy"` title with an empty description when `PRIVATE` — no service name, no staff name — the same busy/free-only data-minimization shape ADR 0005 already committed to for any future *inbound* import; `PUBLIC` (the default) is byte-for-byte the prior detailed-title behavior, verified by a no-integration-configured regression test. No admin API/UI — deliberately out of scope per this row's own "Out: Calendar UI" — `tests/test_calendar_service.py` (busy-only for private staff integration, detail kept for public, business-level fallback, staff-level overriding business-level, no-integration-defaults-to-public regression), `tests/test_calendar_integration.py` (visibility column default/persistence) |
 | [x] | P3-011 | P3 | Add calendar conflict import spike. | Investigate one-way busy import. | Full two-way sync. | ADR documents safe approach. | Docs review. | External conflicts missed. | done: `docs/adr/0005-calendar-conflict-import-spike.md`. Sketches a `get_busy_periods()` addition to `CalendarProvider` (busy/free only, never event details — privacy-minimal by construction, no provider/OAuth implementation), polling not push (push needs domain-verified webhooks, out of scope for a spike); the central scope-creep question is answered directly — an imported `BusyPeriod` must never become a fourth availability-subtraction step alongside `WorkingHours`/`AvailabilityException`/`RecurringStaffBlock`, since that would let external calendar state decide booking eligibility, the exact thing ADR 0002 §1 already ruled out and exactly what P3-014 (not this spike) is scoped to decide deliberately; the only sanctioned use here is an informational, never-authoritative conflict alert (concrete delivery mechanism left undesigned, follow-up work). Decision/sketch only, no code |
 | [x] | P3-012 | P3 | Add manual admin override workflow. | Override booking/cancel with a mandatory reason and a distinct audit trail (does not bypass the DB-level no-overlap safety constraint for a genuine same-staff conflict — see evidence). | Frontend UI; force-overbooking a specific staff member's slot past the no-overlap constraint (would require a migration weakening that Critical-priority safety constraint — out of scope, see evidence). | Overrides are explicit and audited. | API tests. | Support cannot resolve edge cases. | done: `POST /businesses/{business_id}/bookings/override` and `POST /businesses/{business_id}/bookings/{booking_id}/override-cancel`, both admin-only (`require_role("admin")`) with a required, non-blank `reason`; both call the existing `create_booking()`/`cancel_booking()` with a new `override=True` flag, logging the new `AuditAction.BOOKING_OVERRIDE_CREATED`/`BOOKING_OVERRIDE_CANCELLED` (with `source` set to the admin's reason, queryable separately from regular `BOOKING_CREATED`/`BOOKING_CANCELLED`) instead of changing booking mechanics — override-create does **not** bypass the DB-level `no_overlapping_staff_bookings` exclusion constraint for a genuine same-staff conflict (still 409s), a deliberate scope decision recorded in `tests/test_avs_p3012_admin_override.py`'s module docstring; unblocks P1-013's remaining admin-override audit gap — `tests/test_avs_p3012_admin_override.py` |
 | [x] | P3-013 | P3 | Add integration reconciliation job. | Detect stale SMS/calendar outbox records. | Provider-specific repair UI. | Stale records are reported/retried. | Worker tests. | Integration drift accumulates. | done: new `app/services/reconciliation_service.py` (`reconcile_stale_notifications()`, `reconcile_stale_calendar_events()`), wired into the existing `run_scheduled_maintenance()` tick. Closes the gap where the DB commit (outbox/calendar row) and the Redis job enqueue are two separate steps — a crash or transient Redis failure between them left a `PENDING` row with no job ever processing it. Gated on `COALESCE(reconciled_at, created_at)` (new nullable column on both models, migration `p3013a2b3c4d5e`) rather than `created_at` alone — caught by cross-provider review, which flagged a `created_at`-only sweep as re-enqueuing the same stale row on every maintenance tick forever, risking a duplicate SMS/calendar-event send if the original job was still in flight. New `integration_reconciliation_requeued_total{record_type}` metric surfaces ongoing drift, per the roadmap's explicit "Provider-specific repair UI" exclusion — `tests/test_reconciliation_service.py`, extended `tests/test_worker.py`/`tests/test_worker_metrics.py` |
@@ -331,14 +331,17 @@ which described a 2026-06-17 snapshot that predates all of P1, most of P2,
 and all of P3).
 
 **Current summary (see `docs/audits/p3-remaining-backlog-audit.md` for the
-2026-06-22 point-in-time verification; P3-013/006/008/011/014 below post-date
-that audit):** 52 P1–P4 items tracked — 38 fully implemented or covered (all
-of P1, all of P2 except P2-013/014, 12 of 14 P3 items — P3-013 done PR #66,
-P3-006 done as an ADR-only decision, P3-008 done PR #68, P3-011 and P3-014
-done as ADR/spike-only decisions (ADRs 0005/0006) — and P4-005 via duplicate
-coverage by AVS-L004), 4 partially implemented (P4-001/002/003 —
-tenancy-audit related — and P4-004, partially covered by the same AVS-L004
-endpoint), 10 not started (P2-013/014; P3-007/010; P4-006 through P4-011).
+2026-06-22 point-in-time verification; P3-013/006/008/010/011/014 below
+post-date that audit):** 52 P1–P4 items tracked — 39 fully implemented or
+covered (all of P1, all of P2 except P2-013/014, **13 of 14 P3 items** —
+P3-013 done PR #66, P3-006 done as an ADR-only decision, P3-008 done
+PR #68, P3-011 and P3-014 done as ADR/spike-only decisions (ADRs 0005/0006),
+P3-010 done — and P4-005 via duplicate coverage by AVS-L004), 4 partially
+implemented (P4-001/002/003 — tenancy-audit related — and P4-004, partially
+covered by the same AVS-L004 endpoint), 9 not started (P2-013/014; P3-007;
+P4-006 through P4-011). P3-007 (Stripe payment links) is unblocked
+(per P3-008/ADR 0004) but is the one item being **deliberately
+deprioritized** rather than picked up next — see "Next up" below.
 
 **Duplicate found:** P4-005 was accidentally already covered by AVS-L004's
 self-service onboarding API, shipped during EPIC L and never reconciled
@@ -354,7 +357,7 @@ found to be a side-effect duplicate of MVP or other backlog work.
 2. ~~`docs/adr-deposits-architecture`~~ (P3-006) — **done**, `docs/adr/0004-deposits-and-payment-holds.md`. Unblocks P3-007/008.
 3. ~~`docs/adr-calendar-import-spike`~~ (P3-011) — **done** (P3-011 row above).
 4. ~~`docs/adr-two-way-calendar-sync`~~ (P3-014) — **done** (P3-014 row above).
-5. `feat/p3-010-calendar-visibility` — depends on #3, now unblocked.
+5. ~~`feat/p3-010-calendar-visibility`~~ — **done** (P3-010 row above).
 6. ~~`feat/p3-008-pending-payment-state`~~ — **done** (P3-008 row above).
    Was reordered ahead of P3-007 (the original audit-era order had this
    depending on P3-007, the reverse): ADR 0004 §3 concludes the Stripe
@@ -366,11 +369,13 @@ found to be a side-effect duplicate of MVP or other backlog work.
    operational-extensions tier per this file's own tier ordering (P4-005 is
    already done — see that row above).
 
-**Next up:** `feat/p3-010-calendar-visibility` (P3-010), now the only
-remaining unblocked P3 item — visibility-tier field + outbound sync-mode
-logic, per ADR 0005/0006's confirmation that this product's calendar sync
-stays outbound-only. `feat/p3-007-stripe-payment-links` (P3-007) is
-unblocked (per P3-008/ADR 0004) but deliberately deprioritized for now.
+**P3 tier is now fully closed** except `feat/p3-007-stripe-payment-links`
+(P3-007), which is unblocked (per P3-008/ADR 0004) but **deliberately
+deprioritized** for now — this is a portfolio/practice project, not
+something being sold, so real third-party payment integration is not being
+picked up without it coming up again explicitly. **Next up (if continuing
+past P3):** P2-013/014, or the P4 operational-extensions tier
+(P4-001 through P4-011) per this file's own tier ordering.
 
 ## Validation commands
 
