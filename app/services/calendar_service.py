@@ -9,7 +9,7 @@ from app.core.metrics import observe_calendar_provider_request
 from app.models.booking import Booking
 from app.models.business import Business
 from app.models.calendar_event import CalendarEvent, CalendarSyncStatus
-from app.models.calendar_integration import CalendarIntegration
+from app.models.calendar_integration import CalendarIntegration, CalendarVisibility
 from app.models.service import Service
 from app.models.staff import Staff
 from app.services.calendar_provider import CalendarProvider, get_calendar_provider
@@ -34,8 +34,30 @@ def enqueue_cancel_calendar_event_job(event_id: int) -> Job:
     return enqueue_job(CANCEL_CALENDAR_EVENT_JOB, {"event_id": event_id})
 
 
-def _get_provider_name(db: Session, business_id: int, tenant_id: int) -> str:
-    integration = (
+def _get_calendar_integration(
+    db: Session, business_id: int, tenant_id: int, staff_id: int | None
+) -> CalendarIntegration | None:
+    """A staff-specific integration (P3-010: their own calendar, with their
+    own visibility preference) takes precedence over the business-level
+    one, mirroring the unique-index precedent in
+    `app/models/calendar_integration.py` (one row per business, one row per
+    staff member per business, both can coexist). Falls back to the
+    business-level row (`staff_id IS NULL`) when the booking has no staff
+    or no staff-specific integration exists."""
+    if staff_id is not None:
+        staff_integration = (
+            db.query(CalendarIntegration)
+            .filter(
+                CalendarIntegration.business_id == business_id,
+                CalendarIntegration.tenant_id == tenant_id,
+                CalendarIntegration.staff_id == staff_id,
+                CalendarIntegration.is_active.is_(True),
+            )
+            .first()
+        )
+        if staff_integration is not None:
+            return staff_integration
+    return (
         db.query(CalendarIntegration)
         .filter(
             CalendarIntegration.business_id == business_id,
@@ -45,7 +67,6 @@ def _get_provider_name(db: Session, business_id: int, tenant_id: int) -> str:
         )
         .first()
     )
-    return integration.provider if integration is not None else "null"
 
 
 def enqueue_calendar_event(
@@ -54,7 +75,10 @@ def enqueue_calendar_event(
     booking: Booking,
     business: Business,
 ) -> CalendarEvent:
-    provider_name = _get_provider_name(db, business.id, booking.tenant_id)
+    integration = _get_calendar_integration(
+        db, business.id, booking.tenant_id, booking.staff_id
+    )
+    provider_name = integration.provider if integration is not None else "null"
     event = CalendarEvent(
         tenant_id=booking.tenant_id,
         business_id=booking.business_id,
@@ -67,8 +91,22 @@ def enqueue_calendar_event(
 
 
 def _build_event_payload(
-    booking: Booking, service: Service, staff: Staff | None
+    booking: Booking,
+    service: Service,
+    staff: Staff | None,
+    visibility: str = CalendarVisibility.PUBLIC,
 ) -> CalendarEventPayload:
+    """ADR-driven (P3-010): a PRIVATE integration's outbound sync stores
+    busy/free only -- no service name, no staff name, no description --
+    same data-minimization shape ADR 0005 already committed to for any
+    future *inbound* import. PUBLIC (the default, preserving all prior
+    behavior) keeps the existing detailed title."""
+    if visibility == CalendarVisibility.PRIVATE:
+        return CalendarEventPayload(
+            title="Busy",
+            starts_at=booking.starts_at,
+            ends_at=booking.ends_at,
+        )
     title_parts = [service.name]
     if staff is not None:
         title_parts.append(staff.name)
@@ -108,8 +146,12 @@ def sync_calendar_event_in_worker(
         if booking.staff_id is not None
         else None
     )
+    integration = _get_calendar_integration(
+        db, booking.business_id, booking.tenant_id, booking.staff_id
+    )
+    visibility = integration.visibility if integration is not None else CalendarVisibility.PUBLIC
 
-    payload = _build_event_payload(booking, service, staff)
+    payload = _build_event_payload(booking, service, staff, visibility)
     result = calendar_provider.create_event(payload)
     observe_calendar_provider_request(
         provider=event.provider, operation="sync", status="success" if result.success else "failure"

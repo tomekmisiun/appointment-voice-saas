@@ -6,7 +6,7 @@ import pytest
 
 from app.models.booking import Booking, BookingSource, BookingStatus
 from app.models.calendar_event import CalendarEvent, CalendarSyncStatus
-from app.models.calendar_integration import CalendarIntegration
+from app.models.calendar_integration import CalendarIntegration, CalendarVisibility
 from app.models.tenant import Tenant  # used in _setup
 from app.services.booking_service import create_booking
 from app.services.business_service import create_business
@@ -134,6 +134,115 @@ def test_sync_calendar_event_succeeds_with_fake_provider(db):
 
 
 def test_sync_calendar_event_builds_title_with_staff(db):
+    _tenant_id, biz, svc, staff, booking = _setup(db)
+
+    event = db.query(CalendarEvent).filter(CalendarEvent.booking_id == booking.id).one()
+    provider = FakeCalendarProvider()
+
+    sync_calendar_event_in_worker(db, event_id=event.id, calendar_provider=provider)
+
+    assert provider.created[0].title == "Cut – Ola"
+
+
+# P3-010: private staff calendar visibility
+
+
+def test_sync_calendar_event_stores_busy_only_for_private_staff_integration(db):
+    tenant_id, biz, svc, staff, booking = _setup(db)
+    db.add(CalendarIntegration(
+        tenant_id=tenant_id,
+        business_id=biz.id,
+        staff_id=staff.id,
+        provider="fake",
+        visibility=CalendarVisibility.PRIVATE,
+        is_active=True,
+    ))
+    db.commit()
+
+    event = db.query(CalendarEvent).filter(CalendarEvent.booking_id == booking.id).one()
+    provider = FakeCalendarProvider()
+
+    sync_calendar_event_in_worker(db, event_id=event.id, calendar_provider=provider)
+
+    assert provider.created[0].title == "Busy"
+    assert provider.created[0].description == ""
+
+
+def test_sync_calendar_event_keeps_detail_for_public_staff_integration(db):
+    tenant_id, biz, svc, staff, booking = _setup(db)
+    db.add(CalendarIntegration(
+        tenant_id=tenant_id,
+        business_id=biz.id,
+        staff_id=staff.id,
+        provider="fake",
+        visibility=CalendarVisibility.PUBLIC,
+        is_active=True,
+    ))
+    db.commit()
+
+    event = db.query(CalendarEvent).filter(CalendarEvent.booking_id == booking.id).one()
+    provider = FakeCalendarProvider()
+
+    sync_calendar_event_in_worker(db, event_id=event.id, calendar_provider=provider)
+
+    assert provider.created[0].title == "Cut – Ola"
+
+
+def test_sync_calendar_event_falls_back_to_private_business_level_integration(db):
+    """No staff-specific integration exists for this staff member -- the
+    business-level integration's visibility applies instead."""
+    tenant_id, biz, svc, staff, booking = _setup(db)
+    db.add(CalendarIntegration(
+        tenant_id=tenant_id,
+        business_id=biz.id,
+        provider="fake",
+        visibility=CalendarVisibility.PRIVATE,
+        is_active=True,
+    ))
+    db.commit()
+
+    event = db.query(CalendarEvent).filter(CalendarEvent.booking_id == booking.id).one()
+    provider = FakeCalendarProvider()
+
+    sync_calendar_event_in_worker(db, event_id=event.id, calendar_provider=provider)
+
+    assert provider.created[0].title == "Busy"
+
+
+def test_sync_calendar_event_staff_level_visibility_overrides_business_level(db):
+    """The staff member's own integration wins over the business-level one,
+    even when they disagree -- a staff member's privacy preference for
+    their own synced calendar isn't overridden by the salon's default."""
+    tenant_id, biz, svc, staff, booking = _setup(db)
+    db.add(CalendarIntegration(
+        tenant_id=tenant_id,
+        business_id=biz.id,
+        provider="fake",
+        visibility=CalendarVisibility.PUBLIC,
+        is_active=True,
+    ))
+    db.add(CalendarIntegration(
+        tenant_id=tenant_id,
+        business_id=biz.id,
+        staff_id=staff.id,
+        provider="fake",
+        visibility=CalendarVisibility.PRIVATE,
+        is_active=True,
+    ))
+    db.commit()
+
+    event = db.query(CalendarEvent).filter(CalendarEvent.booking_id == booking.id).one()
+    provider = FakeCalendarProvider()
+
+    sync_calendar_event_in_worker(db, event_id=event.id, calendar_provider=provider)
+
+    assert provider.created[0].title == "Busy"
+
+
+def test_sync_calendar_event_no_integration_defaults_to_public(db):
+    """No CalendarIntegration row at all -- existing behavior (detailed
+    title) is unchanged, matching how `provider` already defaults to
+    "null" with no integration configured."""
     _tenant_id, biz, svc, staff, booking = _setup(db)
 
     event = db.query(CalendarEvent).filter(CalendarEvent.booking_id == booking.id).one()

@@ -4,7 +4,7 @@ import pytest
 
 from sqlalchemy.exc import IntegrityError
 
-from app.models.calendar_integration import CalendarIntegration
+from app.models.calendar_integration import CalendarIntegration, CalendarVisibility
 from app.models.tenant import Tenant
 from app.services.business_service import create_business
 from app.services.staff_service import create_staff
@@ -96,6 +96,34 @@ def test_calendar_integration_business_and_staff_level_coexist(db):
         .all()
     )
     assert len(results) == 2
+
+
+def test_calendar_integration_visibility_defaults_to_public(db):
+    tenant_id, biz_id, _staff_id = _setup(db)
+
+    integration = CalendarIntegration(tenant_id=tenant_id, business_id=biz_id, provider="fake")
+    db.add(integration)
+    db.commit()
+    db.refresh(integration)
+
+    assert integration.visibility == CalendarVisibility.PUBLIC
+
+
+def test_calendar_integration_visibility_private_persists(db):
+    tenant_id, biz_id, staff_id = _setup(db)
+
+    integration = CalendarIntegration(
+        tenant_id=tenant_id,
+        business_id=biz_id,
+        staff_id=staff_id,
+        provider="fake",
+        visibility=CalendarVisibility.PRIVATE,
+    )
+    db.add(integration)
+    db.commit()
+    db.refresh(integration)
+
+    assert integration.visibility == CalendarVisibility.PRIVATE
 
 
 def test_calendar_integration_query_scoped_to_tenant(db):
