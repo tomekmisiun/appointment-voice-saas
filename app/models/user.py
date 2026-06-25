@@ -8,6 +8,10 @@ class User(Base):
     __tablename__ = "users"
     __table_args__ = (
         Index("ix_users_tenant_id_email", "tenant_id", "email", unique=True),
+        # Composite FK target for business_memberships (SAC-003): lets a
+        # (tenant_id, user_id) foreign key enforce that a membership's user
+        # actually belongs to its tenant, at the DB level.
+        Index("uix_users_tenant_id_id", "tenant_id", "id", unique=True),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)

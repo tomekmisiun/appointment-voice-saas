@@ -12,6 +12,10 @@ class Staff(Base):
     __table_args__ = (
         Index("ix_staff_tenant_id", "tenant_id"),
         Index("ix_staff_business_id", "business_id"),
+        # Composite FK target for business_memberships (SAC-003): lets a
+        # (business_id, staff_id) foreign key enforce that a membership's
+        # staff link actually belongs to its business, at the DB level.
+        Index("uix_staff_business_id_id", "business_id", "id", unique=True),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)

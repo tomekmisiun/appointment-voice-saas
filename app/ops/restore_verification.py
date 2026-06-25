@@ -6,6 +6,7 @@ CORE_RESTORE_TABLES: tuple[str, ...] = (
     "uploaded_files",
     "idempotency_records",
     "webhook_events",
+    "business_memberships",
 )
 
 

@@ -40,7 +40,13 @@ class BusinessLanguage(StrEnum):
 
 class Business(Base):
     __tablename__ = "businesses"
-    __table_args__ = (Index("ix_businesses_tenant_id", "tenant_id"),)
+    __table_args__ = (
+        Index("ix_businesses_tenant_id", "tenant_id"),
+        # Composite FK target for business_memberships (SAC-003): lets a
+        # (tenant_id, business_id) foreign key enforce that a membership's
+        # business actually belongs to its tenant, at the DB level.
+        Index("uix_businesses_tenant_id_id", "tenant_id", "id", unique=True),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     tenant_id: Mapped[int] = mapped_column(
