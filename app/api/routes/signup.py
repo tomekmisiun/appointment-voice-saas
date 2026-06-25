@@ -17,8 +17,9 @@ router = APIRouter(tags=["signup"])
     summary="Self-service salon signup",
     description=(
         "Public endpoint — no authentication required. Creates a brand new "
-        "tenant and its first admin user in one call; no manually-created "
-        "tenant or platform-admin action needed first. Rate-limited per IP."
+        "tenant, first business, and first admin user in one call; no "
+        "manually-created tenant or platform-admin action needed first. "
+        "Rate-limited per IP."
     ),
     dependencies=[Depends(tenant_signup_rate_limit())],
 )

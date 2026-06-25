@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/Button";
 import { loginRequestSchema, type LoginRequest } from "../schemas";
 
-export function LoginForm() {
+export function LoginForm({ defaultWorkspace = "" }: { defaultWorkspace?: string }) {
   const [serverError, setServerError] = useState<string | null>(null);
   const {
     register,
@@ -14,6 +14,7 @@ export function LoginForm() {
     formState: { errors, isSubmitting },
   } = useForm<LoginRequest>({
     resolver: zodResolver(loginRequestSchema),
+    defaultValues: { workspace: defaultWorkspace },
   });
 
   async function onSubmit(values: LoginRequest) {
@@ -40,7 +41,26 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="workspace" className="block text-sm font-medium text-[#cbd3e2]">
+          Workspace
+        </label>
+        <input
+          id="workspace"
+          autoComplete="organization"
+          placeholder="your-business"
+          aria-invalid={errors.workspace ? "true" : undefined}
+          aria-describedby={errors.workspace ? "workspace-error" : "workspace-hint"}
+          className="mt-1 block w-full rounded-md border border-[#344057] bg-[#0d1421] px-3 py-2.5 text-sm text-white shadow-sm placeholder:text-[#5f6b82] focus-visible:border-indigo-400"
+          {...register("workspace")}
+        />
+        {errors.workspace ? (
+          <p id="workspace-error" className="mt-1 text-sm text-rose-400">{errors.workspace.message}</p>
+        ) : (
+          <p id="workspace-hint" className="mt-1 text-xs text-[#737f97]">Your business URL name. Remembered after signup.</p>
+        )}
+      </div>
+      <div>
+        <label htmlFor="email" className="block text-sm font-medium text-[#cbd3e2]">
           Email
         </label>
         <input
@@ -49,18 +69,18 @@ export function LoginForm() {
           autoComplete="email"
           aria-invalid={errors.email ? "true" : undefined}
           aria-describedby={errors.email ? "email-error" : undefined}
-          className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus-visible:border-blue-500"
+          className="mt-1 block w-full rounded-md border border-[#344057] bg-[#0d1421] px-3 py-2.5 text-sm text-white shadow-sm focus-visible:border-indigo-400"
           {...register("email")}
         />
         {errors.email ? (
-          <p id="email-error" className="mt-1 text-sm text-red-600">
+          <p id="email-error" className="mt-1 text-sm text-rose-400">
             {errors.email.message}
           </p>
         ) : null}
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="password" className="block text-sm font-medium text-[#cbd3e2]">
           Password
         </label>
         <input
@@ -69,23 +89,23 @@ export function LoginForm() {
           autoComplete="current-password"
           aria-invalid={errors.password ? "true" : undefined}
           aria-describedby={errors.password ? "password-error" : undefined}
-          className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus-visible:border-blue-500"
+          className="mt-1 block w-full rounded-md border border-[#344057] bg-[#0d1421] px-3 py-2.5 text-sm text-white shadow-sm focus-visible:border-indigo-400"
           {...register("password")}
         />
         {errors.password ? (
-          <p id="password-error" className="mt-1 text-sm text-red-600">
+          <p id="password-error" className="mt-1 text-sm text-rose-400">
             {errors.password.message}
           </p>
         ) : null}
       </div>
 
       {serverError ? (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-rose-400">
           {serverError}
         </p>
       ) : null}
 
-      <Button type="submit" disabled={isSubmitting} className="w-full">
+      <Button type="submit" variant="brand" disabled={isSubmitting} className="w-full">
         {isSubmitting ? "Signing in…" : "Sign in"}
       </Button>
     </form>

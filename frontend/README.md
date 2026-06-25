@@ -43,6 +43,8 @@ Edit `.env.local`:
 BACKEND_API_URL=http://localhost:8000
 SESSION_SECRET=<paste the generated value>
 APP_ORIGIN=http://localhost:3000
+# Set true only behind a trusted proxy that replaces forwarded IP headers.
+BFF_TRUST_FORWARDED_HEADERS=false
 # TENANT_SLUG=acme   # optional — see .env.example; leave unset for the seeded demo tenant
 ```
 
@@ -50,6 +52,12 @@ There is **no development fallback** for `SESSION_SECRET` — the app fails
 fast and loudly on startup/first use if it's missing, not valid base64, or
 doesn't decode to exactly 32 bytes (AES-256 key length). Generate a fresh
 one per environment; don't share it between dev and anything else.
+
+In production behind a reverse proxy, set `BFF_TRUST_FORWARDED_HEADERS=true`
+only when that proxy replaces client-supplied `X-Forwarded-For` and
+`X-Real-IP`. Also enable the backend's `RATE_LIMIT_TRUST_FORWARDED_HEADERS`;
+the BFF then passes one validated client address to FastAPI so public login
+and signup rate limits are not shared by every visitor.
 
 ## Running
 

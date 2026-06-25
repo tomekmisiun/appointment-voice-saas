@@ -1,4 +1,5 @@
 export const SESSION_COOKIE_NAME = "avs_session";
+export const LOGIN_TENANT_COOKIE_NAME = "avs_login_tenant";
 
 /**
  * Treat an access token as expired this many ms before its literal `exp`,

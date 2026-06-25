@@ -1,14 +1,13 @@
 """P4-004: self-service salon signup.
 
-POST /api/v1/signup creates a brand new tenant and its first admin user in
-one public, unauthenticated call -- the "signup" half AVS-L004's onboarding
-API never covered (that API configures a business profile inside an
-*already-existing* tenant; nothing public created the tenant itself before
-this). Deliberately separate from POST /admin/tenants (provision_tenant()),
-which is for an already-onboarded platform admin to create *another*
-tenant, not for the public to create their first one.
+POST /api/v1/signup creates a brand new tenant, first business, and first
+admin user in one public, unauthenticated call. Deliberately separate from
+POST /admin/tenants (provision_tenant()), which is for an already-onboarded
+platform admin to create *another* tenant, not for the public to create
+their first one.
 """
 from app.models.audit_log import AuditAction, AuditLog
+from app.models.business import Business
 from app.models.tenant import Tenant
 from app.models.user import User
 from tests.database import auth_headers, login_user
@@ -34,8 +33,12 @@ def test_signup_creates_tenant_and_admin_user(db, client):
 
     tenant = db.query(Tenant).filter(Tenant.slug == "glamour-studio").one()
     user = db.query(User).filter(User.email == "owner_signup1@example.com").one()
+    business = db.query(Business).filter(Business.tenant_id == tenant.id).one()
     assert user.tenant_id == tenant.id
     assert user.role == "admin"
+    assert business.name == "Glamour Studio"
+    assert business.timezone == "Europe/Warsaw"
+    assert business.is_active is True
 
 
 def test_signup_with_explicit_slug(db, client):
@@ -125,7 +128,7 @@ def test_signup_logs_self_signup_audit_action(db, client):
     assert log.source == "self_signup"
 
 
-def test_signup_admin_can_log_in_and_manage_their_own_business(client):
+def test_signup_admin_can_log_in_and_see_their_business(client):
     signup_resp = client.post(
         "/api/v1/signup",
         json={
@@ -142,12 +145,51 @@ def test_signup_admin_can_log_in_and_manage_their_own_business(client):
     assert login_resp.status_code == 200
     token = login_resp.json()["access_token"]
 
-    create_resp = client.post(
+    list_resp = client.get(
         "/api/v1/businesses",
-        json={"name": "My Salon", "timezone": "Europe/Warsaw"},
         headers=auth_headers(token, tenant_slug=slug),
     )
-    assert create_resp.status_code == 201
+    assert list_resp.status_code == 200
+    businesses = list_resp.json()
+    assert len(businesses) == 1
+    assert businesses[0]["name"] == "End To End Salon"
+
+
+def test_signup_onboarding_reuses_initial_business(client):
+    signup_resp = client.post(
+        "/api/v1/signup",
+        json={
+            "salon_name": "Reuse Salon",
+            "admin_email": "reuse_owner@example.com",
+            "admin_password": "strong-password-123",
+        },
+    )
+    slug = signup_resp.json()["tenant"]["slug"]
+
+    token = login_user(
+        client, "reuse_owner@example.com", "strong-password-123", tenant_slug=slug
+    ).json()["access_token"]
+    headers = auth_headers(token, tenant_slug=slug)
+
+    onboarding_resp = client.post(
+        "/api/v1/onboarding",
+        json={
+            "business": {"name": "Configured Reuse Salon", "timezone": "Europe/London"},
+            "staff": [{"name": "Alex"}],
+            "services": [{"name": "Haircut", "duration_minutes": 30}],
+            "working_hours": [{"day_of_week": 0, "start_time": "09:00", "end_time": "17:00"}],
+        },
+        headers=headers,
+    )
+
+    assert onboarding_resp.status_code == 201
+    businesses_resp = client.get("/api/v1/businesses", headers=headers)
+    assert businesses_resp.status_code == 200
+    businesses = businesses_resp.json()
+    assert len(businesses) == 1
+    assert businesses[0]["id"] == onboarding_resp.json()["business_id"]
+    assert businesses[0]["name"] == "Configured Reuse Salon"
+    assert businesses[0]["timezone"] == "Europe/London"
 
 
 def test_signup_disabled_returns_403(client, monkeypatch):

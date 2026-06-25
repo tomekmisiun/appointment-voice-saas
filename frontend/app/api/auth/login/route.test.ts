@@ -40,6 +40,7 @@ afterEach(() => {
   delete process.env.APP_ORIGIN;
   delete process.env.BACKEND_API_URL;
   delete process.env.SESSION_SECRET;
+  delete process.env.BFF_TRUST_FORWARDED_HEADERS;
   vi.restoreAllMocks();
 });
 
@@ -156,6 +157,51 @@ describe("POST /api/auth/login", () => {
     delete process.env.TENANT_SLUG;
   });
 
+  it("prefers the submitted workspace over TENANT_SLUG", async () => {
+    process.env.TENANT_SLUG = "deployment-default";
+    const { POST } = await import("./route");
+    let receivedSlug: string | null = null;
+    const exp = Math.floor(Date.now() / 1000) + 1800;
+    server.use(
+      http.post(`${BACKEND_URL}/api/v1/auth/login`, ({ request }) => {
+        receivedSlug = request.headers.get("x-tenant-slug");
+        return HttpResponse.json({
+          access_token: fakeJwt(exp),
+          refresh_token: fakeJwt(exp + 60 * 60 * 24 * 7),
+          token_type: "bearer",
+        });
+      }),
+    );
+
+    await POST(makeRequest({ workspace: "north-studio", email: "owner@example.com", password: "secret123" }));
+
+    expect(receivedSlug).toBe("north-studio");
+    delete process.env.TENANT_SLUG;
+  });
+
+  it("prefers the remembered workspace over TENANT_SLUG when no workspace is submitted", async () => {
+    process.env.TENANT_SLUG = "deployment-default";
+    cookieStore.raw.set("avs_login_tenant", "remembered-studio");
+    const { POST } = await import("./route");
+    let receivedSlug: string | null = null;
+    const exp = Math.floor(Date.now() / 1000) + 1800;
+    server.use(
+      http.post(`${BACKEND_URL}/api/v1/auth/login`, ({ request }) => {
+        receivedSlug = request.headers.get("x-tenant-slug");
+        return HttpResponse.json({
+          access_token: fakeJwt(exp),
+          refresh_token: fakeJwt(exp + 60 * 60 * 24 * 7),
+          token_type: "bearer",
+        });
+      }),
+    );
+
+    await POST(makeRequest({ email: "owner@example.com", password: "secret123" }));
+
+    expect(receivedSlug).toBe("remembered-studio");
+    delete process.env.TENANT_SLUG;
+  });
+
   it("omits X-Tenant-Slug entirely when TENANT_SLUG is not configured, preserving the backend's own default", async () => {
     delete process.env.TENANT_SLUG;
     const { POST } = await import("./route");
@@ -175,5 +221,53 @@ describe("POST /api/auth/login", () => {
     await POST(makeRequest({ email: "owner@example.com", password: "secret123" }));
 
     expect(receivedSlug).toBeNull();
+  });
+
+  it("forwards a validated client IP when trusted proxy headers are enabled", async () => {
+    process.env.BFF_TRUST_FORWARDED_HEADERS = "true";
+    const { POST } = await import("./route");
+    let receivedIp: string | null = null;
+    const exp = Math.floor(Date.now() / 1000) + 1800;
+    server.use(
+      http.post(`${BACKEND_URL}/api/v1/auth/login`, ({ request }) => {
+        receivedIp = request.headers.get("x-forwarded-for");
+        return HttpResponse.json({
+          access_token: fakeJwt(exp),
+          refresh_token: fakeJwt(exp + 60 * 60 * 24 * 7),
+          token_type: "bearer",
+        });
+      }),
+    );
+
+    await POST(
+      makeRequest(
+        { email: "owner@example.com", password: "secret123" },
+        { "x-forwarded-for": "198.51.100.30, 10.0.0.1" },
+      ),
+    );
+
+    expect(receivedIp).toBe("198.51.100.30");
+  });
+
+  it("uses the remembered workspace slug when no deployment tenant is configured", async () => {
+    delete process.env.TENANT_SLUG;
+    cookieStore.raw.set("avs_login_tenant", "north-studio");
+    const { POST } = await import("./route");
+    let receivedSlug: string | null = null;
+    const exp = Math.floor(Date.now() / 1000) + 1800;
+    server.use(
+      http.post(`${BACKEND_URL}/api/v1/auth/login`, ({ request }) => {
+        receivedSlug = request.headers.get("x-tenant-slug");
+        return HttpResponse.json({
+          access_token: fakeJwt(exp),
+          refresh_token: fakeJwt(exp + 60 * 60 * 24 * 7),
+          token_type: "bearer",
+        });
+      }),
+    );
+
+    await POST(makeRequest({ email: "owner@example.com", password: "secret123" }));
+
+    expect(receivedSlug).toBe("north-studio");
   });
 });

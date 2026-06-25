@@ -4,6 +4,9 @@
 - **Date:** June 2026
 - **Roadmap:** P3-014 (ADR only — explicitly rejects implementation; no code
   changes accompany this decision)
+- **Amended by:** ADR 0008. Decision 1's prohibition on availability-blocking
+  busy periods is superseded. External mutation of local bookings and full
+  bidirectional conflict resolution remain rejected.
 
 ## Context
 

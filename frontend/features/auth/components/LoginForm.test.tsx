@@ -95,4 +95,23 @@ describe("LoginForm", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Invalid email or password");
     expect(assignMock).not.toHaveBeenCalled();
   });
+
+  it("submits an explicitly entered workspace slug", async () => {
+    let receivedBody: unknown;
+    server.use(
+      http.post("/api/auth/login", async ({ request }) => {
+        receivedBody = await request.json();
+        return HttpResponse.json({ ok: true });
+      }),
+    );
+    const user = userEvent.setup();
+    render(<LoginForm />);
+
+    await user.type(screen.getByLabelText(/workspace/i), "north-studio");
+    await user.type(screen.getByLabelText(/email/i), "owner@example.com");
+    await user.type(screen.getByLabelText(/password/i), "secret123");
+    await user.click(screen.getByRole("button", { name: /sign in/i }));
+
+    await waitFor(() => expect(receivedBody).toEqual({ workspace: "north-studio", email: "owner@example.com", password: "secret123" }));
+  });
 });

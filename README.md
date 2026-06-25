@@ -88,6 +88,9 @@ remaining-backlog breakdown.
 | [`docs/product-scope.md`](docs/product-scope.md) | Product users, problem, MVP flow, non-goals, and assumptions |
 | [`docs/domain-model.md`](docs/domain-model.md) | Planned Appointment Voice SaaS domain vocabulary |
 | [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md) | Detailed executable product backlog |
+| [`docs/audits/staff-access-calendar-current-state.md`](docs/audits/staff-access-calendar-current-state.md) | Code-verified staff access and calendar audit |
+| [`docs/specs/staff-access-and-calendar.md`](docs/specs/staff-access-and-calendar.md) | Target employee access, RBAC, calendar, ICS, and OAuth architecture |
+| [`docs/product/staff-access-calendar-roadmap.md`](docs/product/staff-access-calendar-roadmap.md) | Planned one-task-per-branch execution cards for the staff/calendar epic |
 | [`PROJECT_STATUS.md`](PROJECT_STATUS.md) | Verified Appointment Voice SaaS status |
 | [`ROADMAP.md`](ROADMAP.md) | High-level Appointment Voice SaaS roadmap |
 | [`TECH_DEBT.md`](TECH_DEBT.md) | Active product technical debt and gaps |

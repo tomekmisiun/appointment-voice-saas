@@ -157,25 +157,32 @@ def signup_tenant(
     admin_password: str,
 ) -> tuple[Tenant, User]:
     """Public self-service signup (P4-004): a new salon owner provisions
-    their own tenant and admin account, with no manually-created tenant or
-    platform-admin action required first -- the gap `provision_tenant()`
-    (admin-only, `POST /admin/tenants`) deliberately does not fill, since
-    that endpoint exists for an already-onboarded platform admin to create
-    *another* tenant, not for the public to create their own first one.
+    their own tenant, first business, and admin account, with no
+    manually-created tenant or platform-admin action required first -- the
+    gap `provision_tenant()` (admin-only, `POST /admin/tenants`) deliberately
+    does not fill, since that endpoint exists for an already-onboarded
+    platform admin to create *another* tenant, not for the public to create
+    their own first one.
 
     Resolves `slug` if not explicitly provided (auto-generated from
     `salon_name`, de-duplicated with a numeric suffix), then creates the
-    tenant and a single admin-role user in it -- admin, not the default
-    "user" role, since they need to immediately manage their own business
-    (staff/services/hours) via the existing `POST /api/v1/onboarding` flow,
-    which is unchanged by this function and not called from here."""
+    tenant, its initial Business record, and a single admin-role user in it
+    -- admin, not the default "user" role, since they need to immediately
+    manage their own business (staff/services/hours)."""
     from app.services.auth_service import create_user  # local: avoids a
     # module-load-time circular import (auth_service -> user_service ->
     # tenant_service), since this function is the only thing in
     # tenant_service.py that needs auth_service at all.
+    from app.services.business_service import create_business
 
     resolved_slug = slug or _unique_slug(db, _slugify(salon_name))
     tenant = create_tenant(db, resolved_slug, salon_name)
+    create_business(
+        db,
+        tenant_id=tenant.id,
+        name=salon_name,
+        timezone="Europe/Warsaw",
+    )
 
     user = create_user(
         db,

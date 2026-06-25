@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { _resetSessionSecretCacheForTests, encryptSession } from "@/lib/auth/session";
+import { PublicShell } from "@/components/marketing/PublicShell";
 
 const cookieStore = vi.hoisted(() => {
   const raw = new Map<string, string>();
@@ -58,7 +59,7 @@ describe("LoginPage", () => {
     const { default: LoginPage } = await import("./page");
 
     const result = await LoginPage();
-    expect(result.type).toBe("main");
+    expect(result.type).toBe(PublicShell);
   });
 
   it("renders the login form (no redirect) when the session's access token looks expired", async () => {
@@ -73,6 +74,6 @@ describe("LoginPage", () => {
     const { default: LoginPage } = await import("./page");
 
     const result = await LoginPage();
-    expect(result.type).toBe("main");
+    expect(result.type).toBe(PublicShell);
   });
 });
