@@ -261,14 +261,23 @@ def test_backfill_does_not_invalidate_any_user_session(db):
     assert admin.token_version == token_version_before
 
 
-def test_report_satisfies_users_with_membership_plus_unresolved_invariant(db):
+def test_report_users_with_membership_reflects_actual_db_state(db):
     tenant = _create_tenant(db, "sac004-invariant")
     _create_business(db, tenant)
     _create_user(db, tenant, _unique_email("admin"), role="admin")
+    _create_user(db, tenant, _unique_email("plain"), role="user")
 
     report = run_membership_backfill(db, tenant_ids=(tenant.id,))
 
-    assert report.users_with_membership + report.users_unresolved == report.users_total
+    # The admin got a membership; the plain user did not. Verify the report's
+    # membership count matches the actual DB row count (not just arithmetic).
+    actual_users_with_membership = (
+        db.query(BusinessMembership.user_id).distinct().count()
+    )
+    assert report.users_with_membership == actual_users_with_membership
+    assert report.users_with_membership >= 1
+    assert report.users_unresolved >= 1  # plain user is unresolved
+    assert report.users_total > report.users_with_membership
 
 
 def test_tenant_ids_scopes_writes_to_only_the_given_tenants(db):

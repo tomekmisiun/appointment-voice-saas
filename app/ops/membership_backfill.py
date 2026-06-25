@@ -251,13 +251,6 @@ def run_membership_backfill(
     )
     users_unresolved = users_total - users_with_membership
 
-    if users_with_membership + users_unresolved != users_total:
-        raise RuntimeError(
-            "membership backfill invariant violated: "
-            f"users_with_membership({users_with_membership}) + "
-            f"users_unresolved({users_unresolved}) != users_total({users_total})"
-        )
-
     user_counts_by_tenant = {
         resolution.tenant_id: resolution.user_count
         for resolution in report.tenant_resolutions
