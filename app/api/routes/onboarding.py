@@ -5,10 +5,8 @@ from app.api.dependencies.auth import require_role
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.onboarding import OnboardingSetupRequest, OnboardingSetupResponse
-from app.services.membership_service import (
-    create_owner_membership,
-    get_active_business_membership,
-)
+from app.models.business_membership import BusinessMembership
+from app.services.membership_service import create_owner_membership
 from app.services.onboarding_service import setup_business_onboarding
 
 router = APIRouter(prefix="/onboarding", tags=["onboarding"])
@@ -38,12 +36,14 @@ def onboarding_setup(
     # signup_salon_owner already creates the OWNER membership when the tenant
     # is self-signed up. For any other path (e.g. platform admin onboarding a
     # new business), create the membership here if one does not already exist.
-    if get_active_business_membership(
-        db,
-        user_id=current_user.id,
+    # Check ANY membership status — the unique index covers (business_id, user_id)
+    # regardless of status, so filtering by ACTIVE only would cause IntegrityError
+    # if a REVOKED/SUSPENDED row already exists.
+    has_any_membership = db.query(BusinessMembership).filter_by(
         business_id=result.business_id,
-        tenant_id=current_user.tenant_id,
-    ) is None:
+        user_id=current_user.id,
+    ).first()
+    if has_any_membership is None:
         create_owner_membership(
             db,
             user_id=current_user.id,

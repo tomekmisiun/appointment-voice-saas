@@ -82,7 +82,7 @@ def test_admin_membership_can_create_service(db, client):
     resp = client.post(
         f"/api/v1/businesses/{biz_id}/services",
         json=_create_service_payload(),
-        headers=admin_token and auth_headers(admin_token),
+        headers=auth_headers(admin_token),
     )
 
     assert resp.status_code == 201

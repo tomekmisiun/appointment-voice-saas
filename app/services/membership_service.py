@@ -62,7 +62,8 @@ def create_owner_membership(
     tenant_id: int,
 ) -> BusinessMembership:
     """Create an OWNER membership for a user who just created a business.
-    Callers must ensure no active membership already exists for this pair."""
+    Callers must ensure no membership of ANY status exists for this
+    (business_id, user_id) pair — the unique index covers all statuses."""
     membership = BusinessMembership(
         tenant_id=tenant_id,
         business_id=business_id,

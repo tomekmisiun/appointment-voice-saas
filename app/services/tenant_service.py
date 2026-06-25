@@ -198,6 +198,7 @@ def signup_tenant(
         business_id=business.id,
         tenant_id=tenant.id,
     )
+    db.commit()
 
     create_audit_log(
         db,
