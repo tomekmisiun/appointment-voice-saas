@@ -22,6 +22,7 @@ from app.ops.membership_backfill import (
     tenant_eligible_for_backfill,
 )
 from app.ops.membership_preflight import (
+    ADMIN_ROLES,
     REASON_DUPLICATE_EMAIL_ACROSS_TENANTS,
     REASON_NO_ADMIN,
     REASON_NO_BUSINESS,
@@ -305,15 +306,23 @@ def test_plain_role_unresolved_count_stays_global_during_a_scoped_run(db):
     _create_user(db, tenant_out_of_scope, _unique_email("plain"), role="user")
 
     scoped_report = run_membership_backfill(db, tenant_ids=(tenant_in_scope.id,))
-    global_report = run_membership_backfill(db)
 
-    # The plain-role decomposition is a global verification count (like
-    # tenants_pending_owner_confirmation), so scoping writes to one tenant
-    # must not omit the other tenant's plain-role user from the count.
-    assert (
-        scoped_report.users_unresolved_plain_role
-        == global_report.users_unresolved_plain_role
+    # The plain-role decomposition is a global verification count -- scoping
+    # writes to one tenant must not omit the other tenant's plain-role user.
+    # We compare against a direct DB read of both test tenants rather than a
+    # second run_membership_backfill call, which would race against concurrent
+    # xdist workers that also commit to the shared database.
+    in_scope_plain = (
+        db.query(User)
+        .filter(User.tenant_id == tenant_in_scope.id, ~User.role.in_(ADMIN_ROLES))
+        .count()
     )
+    out_of_scope_plain = (
+        db.query(User)
+        .filter(User.tenant_id == tenant_out_of_scope.id, ~User.role.in_(ADMIN_ROLES))
+        .count()
+    )
+    assert scoped_report.users_unresolved_plain_role >= in_scope_plain + out_of_scope_plain
 
 
 def test_tenant_pending_owner_confirmation_clears_once_every_business_has_an_owner(db):
