@@ -5,6 +5,7 @@ from app.models.booking import Booking
 from app.models.booking_line_item import BookingLineItem
 from app.models.booking_payment import BookingPayment
 from app.models.business import Business
+from app.models.business_membership import BusinessMembership
 from app.models.calendar_event import CalendarEvent
 from app.models.calendar_integration import CalendarIntegration
 from app.models.customer import Customer
@@ -33,6 +34,7 @@ __all__ = [
     "BookingLineItem",
     "BookingPayment",
     "Business",
+    "BusinessMembership",
     "CalendarEvent",
     "CalendarIntegration",
     "Customer",
