@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 
+from app.models.audit_log import AuditAction, AuditLog
 from app.models.business import Business
 from app.models.service import Service
 from app.models.staff import Staff
@@ -15,23 +16,26 @@ def setup_business_onboarding(
 ) -> OnboardingSetupResponse:
     """Create business + staff + services + working hours in one transaction.
 
-    Builds ORM objects directly and issues a single db.commit() at the end
-    so that a failure on any item rolls back the entire setup.
+    Reuses the empty Business created by self-service signup when present;
+    otherwise builds ORM objects directly and issues a single db.commit() at
+    the end so that a failure on any item rolls back the entire setup.
     """
     biz_spec = request.business
-    business = Business(
-        tenant_id=tenant_id,
-        name=biz_spec.name,
-        timezone=biz_spec.timezone,
-        phone=biz_spec.phone,
-        is_active=True,
-        booking_mode=biz_spec.booking_mode,
-        external_booking_url=biz_spec.external_booking_url,
-        external_booking_label=biz_spec.external_booking_label,
-        external_booking_provider=biz_spec.external_booking_provider,
-        subscription_plan=biz_spec.subscription_plan,
-    )
-    db.add(business)
+    business = _get_reusable_signup_business(db, tenant_id)
+
+    if business is None:
+        business = Business(tenant_id=tenant_id)
+        db.add(business)
+
+    business.name = biz_spec.name
+    business.timezone = biz_spec.timezone
+    business.phone = biz_spec.phone
+    business.is_active = True
+    business.booking_mode = biz_spec.booking_mode
+    business.external_booking_url = biz_spec.external_booking_url
+    business.external_booking_label = biz_spec.external_booking_label
+    business.external_booking_provider = biz_spec.external_booking_provider
+    business.subscription_plan = biz_spec.subscription_plan
     db.flush()  # get business.id before adding dependents
 
     for item in request.staff:
@@ -74,3 +78,29 @@ def setup_business_onboarding(
         service_count=len(request.services),
         working_hours_count=len(request.working_hours),
     )
+
+
+def _get_reusable_signup_business(db: Session, tenant_id: int) -> Business | None:
+    self_signup_audit = (
+        db.query(AuditLog.id)
+        .filter(
+            AuditLog.tenant_id == tenant_id,
+            AuditLog.action == AuditAction.TENANT_CREATED,
+            AuditLog.source == "self_signup",
+        )
+        .first()
+    )
+    if self_signup_audit is None:
+        return None
+
+    businesses = db.query(Business).filter(Business.tenant_id == tenant_id).all()
+    if len(businesses) != 1:
+        return None
+
+    business = businesses[0]
+    has_dependents = any((
+        db.query(Staff.id).filter(Staff.business_id == business.id).first(),
+        db.query(Service.id).filter(Service.business_id == business.id).first(),
+        db.query(WorkingHours.id).filter(WorkingHours.business_id == business.id).first(),
+    ))
+    return None if has_dependents else business

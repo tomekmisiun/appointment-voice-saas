@@ -240,6 +240,25 @@ Remaining work: P1–P4 production expansion backlog.
 
 See `docs/product/owner-acquisition.md` for flow, booking modes, and upgrade path.
 
+### EPIC M - Staff access, scheduling, and calendar integrations
+
+This epic is planned and documentation-backed; no product functionality is
+marked complete. The expanded task cards, dependency graph, MVP/Pilot/
+hardening classification, branch names, acceptance criteria, and tests live in
+[`docs/product/staff-access-calendar-roadmap.md`](product/staff-access-calendar-roadmap.md).
+Architecture is defined in
+[`docs/specs/staff-access-and-calendar.md`](specs/staff-access-and-calendar.md)
+and ADRs [0007](adr/0007-separate-staff-records-from-login-identities.md) and
+[0008](adr/0008-external-busy-periods-as-availability-exclusions.md).
+
+| Status | ID range | Priority | Goal | Scope | Out | Acceptance | Validation | Risk |
+|--------|----------|----------|------|-------|-----|------------|------------|------|
+| [ ] | SAC-001–SAC-005 | P0 | Establish membership and RBAC safely. | Data preflight, migration plan, membership, backfill, authorization context. | Staff features and calendar providers. | Active membership is the tested authorization boundary. | Migration, auth, RBAC, tenant-isolation tests. | Privilege escalation or lockout. |
+| [ ] | SAC-006–SAC-014 | P0 | Manage employees and optional panel access. | Employee lifecycle/services/schedules, invitation, owner/admin UI, staff portal/profile. | Calendar integration. | Staff can exist without login; invited staff is self-scoped. | API, race, security, frontend tests. | IDOR or account takeover. |
+| [ ] | SAC-015–SAC-017 | P0 | Deliver local staff calendar and autonomy. | Calendar read API/UI and own time off. | Drag/drop and booking mutation. | Staff can operate without an external calendar. | Privacy, DST, availability, E2E tests. | Coworker/customer data leak. |
+| [ ] | SAC-018–SAC-021 | P1 | Pilot read-only ICS busy import. | Busy model, encrypted secrets, SSRF-safe connect, polling/reconciliation. | Google and write-back. | Generic fresh busy periods sync safely. | SSRF corpus, worker, redaction tests. | SSRF or secret exposure. |
+| [ ] | SAC-022–SAC-024 | P1 | Add optional Google read-only and harden availability. | OAuth, external-busy subtraction, production security/E2E. | Two-way booking sync. | Local bookings remain authoritative under provider failure. | OAuth, interval, full validation and E2E. | Scheduling conflicts or provider takeover. |
+
 ## Production expansion backlog
 
 Expansion work starts after the first working product. These tasks should not be

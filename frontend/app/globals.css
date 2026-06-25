@@ -10,6 +10,33 @@ body {
   color: #0f172a;
 }
 
+.marketing-surface {
+  color-scheme: dark;
+}
+
+.public-rings {
+  position: relative;
+  isolation: isolate;
+}
+
+.public-rings::before {
+  position: absolute;
+  z-index: -1;
+  top: -30rem;
+  left: 50%;
+  width: 70rem;
+  height: 70rem;
+  transform: translateX(-50%);
+  border: 1px solid rgb(99 102 241 / 18%);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 42px rgb(99 102 241 / 6%),
+    0 0 0 84px rgb(99 102 241 / 5%),
+    0 0 0 126px rgb(99 102 241 / 4%),
+    0 0 110px 80px rgb(79 70 229 / 12%);
+  content: "";
+}
+
 /* Visible focus state for keyboard navigation, kept consistent across
    native interactive elements instead of relying on browser defaults
    that vary (and sometimes disappear) across browsers. */

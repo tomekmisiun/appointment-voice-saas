@@ -5,6 +5,8 @@
 - **Roadmap:** P3-011 (ADR/spike + interface sketch only — no implementation;
   feeds P3-014's two-way-sync ADR and informs, but does not block, P3-010's
   visibility work)
+- **Amended by:** ADR 0008. Its section 2 prohibition on availability
+  subtraction is superseded; privacy-minimal read-only busy import remains.
 
 ## Context
 

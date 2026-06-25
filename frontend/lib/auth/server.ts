@@ -2,12 +2,36 @@ import "server-only";
 import { cookies } from "next/headers";
 import {
   ACCESS_TOKEN_EXPIRY_SAFETY_WINDOW_MS,
+  LOGIN_TENANT_COOKIE_NAME,
   SESSION_COOKIE_NAME,
 } from "./constants";
 import { readJwtExpiry } from "./jwt";
 import { decryptSession, encryptSession, type SessionPayload } from "./session";
 
 const FALLBACK_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
+const LOGIN_TENANT_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365; // 1 year
+const TENANT_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+export async function getLoginTenantSlug(): Promise<string | undefined> {
+  const store = await cookies();
+  const slug = store.get(LOGIN_TENANT_COOKIE_NAME)?.value;
+  return slug && slug.length <= 63 && TENANT_SLUG_PATTERN.test(slug) ? slug : undefined;
+}
+
+export async function setLoginTenantSlug(slug: string): Promise<void> {
+  if (slug.length > 63 || !TENANT_SLUG_PATTERN.test(slug)) {
+    throw new Error("Backend returned an invalid tenant slug.");
+  }
+
+  const store = await cookies();
+  store.set(LOGIN_TENANT_COOKIE_NAME, slug, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: LOGIN_TENANT_COOKIE_MAX_AGE_SECONDS,
+  });
+}
 
 /**
  * Pure read of the current session cookie. Safe to call from Server

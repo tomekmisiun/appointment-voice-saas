@@ -127,6 +127,28 @@ def test_onboarding_service_creates_business_and_entities(db):
     assert db.query(WorkingHours).filter(WorkingHours.business_id == resp.business_id).count() == 2
 
 
+def test_onboarding_service_does_not_reuse_manual_empty_business(db):
+    from app.models.business import Business
+
+    initial_count = db.query(Business).filter(Business.tenant_id == 1).count()
+    manual_business = Business(
+        tenant_id=1,
+        name="Manual Empty Business",
+        timezone="Europe/Warsaw",
+        is_active=True,
+    )
+    db.add(manual_business)
+    db.commit()
+
+    req = OnboardingSetupRequest(**_FULL_SETUP)
+    resp = setup_business_onboarding(db, tenant_id=1, request=req)
+
+    assert resp.business_id != manual_business.id
+    db.refresh(manual_business)
+    assert manual_business.name == "Manual Empty Business"
+    assert db.query(Business).filter(Business.tenant_id == 1).count() == initial_count + 2
+
+
 # ---------------------------------------------------------------------------
 # POST /api/v1/onboarding
 # ---------------------------------------------------------------------------

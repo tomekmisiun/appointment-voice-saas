@@ -6,6 +6,7 @@
 import type { components } from "./schema.gen";
 
 export type Token = components["schemas"]["Token"];
+export type TenantSignupResponse = components["schemas"]["TenantSignupResponse"];
 export type UserRead = components["schemas"]["UserRead"];
 export type BusinessRead = components["schemas"]["BusinessRead"];
 export type StaffRead = components["schemas"]["StaffRead"];
