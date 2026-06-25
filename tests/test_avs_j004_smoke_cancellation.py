@@ -7,8 +7,10 @@ Proves cancel flow works locally:
 import pytest
 
 from app.models.booking import Booking, BookingSource, BookingStatus
+from app.models.business_membership import BusinessMembership, MembershipRole, MembershipStatus
 from app.models.notification_outbox import NotificationOutbox
 from app.models.tenant import Tenant
+from app.models.user import User
 from app.seed_demo_data import DEMO_BUSINESS_NAME, seed_demo
 from app.services.customer_service import get_or_create_customer
 from tests.database import auth_headers, login_user, promote_to_admin, register_user
@@ -29,6 +31,19 @@ def cancel_domain(db, client):
 
     register_user(client, "j004_admin@example.com")
     promote_to_admin(db, "j004_admin@example.com")
+    j004_user = db.query(User).filter(User.email == "j004_admin@example.com").one()
+    has_membership = db.query(BusinessMembership).filter_by(
+        business_id=biz.id, user_id=j004_user.id
+    ).first()
+    if has_membership is None:
+        db.add(BusinessMembership(
+            tenant_id=tenant.id,
+            business_id=biz.id,
+            user_id=j004_user.id,
+            role=MembershipRole.ADMIN,
+            status=MembershipStatus.ACTIVE,
+        ))
+        db.commit()
     token = login_user(client, "j004_admin@example.com").json()["access_token"]
     headers = auth_headers(token)
 

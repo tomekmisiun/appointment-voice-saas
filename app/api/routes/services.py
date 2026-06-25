@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies.auth import get_current_user, require_role
+from app.api.dependencies.auth import get_current_user
+from app.api.dependencies.membership import require_business_member
+from app.models.business_membership import MembershipRole
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.service import ServiceCreate, ServiceRead, ServiceUpdate
@@ -21,7 +23,7 @@ def create_service_endpoint(
     business_id: int,
     body: ServiceCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_business_member(MembershipRole.OWNER, MembershipRole.ADMIN)),
 ):
     return create_service(
         db,
@@ -71,7 +73,7 @@ def delete_service_endpoint(
     business_id: int,
     service_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_business_member(MembershipRole.OWNER, MembershipRole.ADMIN)),
 ):
     delete_service(db, service_id, current_user.tenant_id, business_id=business_id)
 
@@ -82,7 +84,7 @@ def update_service_endpoint(
     service_id: int,
     body: ServiceUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_business_member(MembershipRole.OWNER, MembershipRole.ADMIN)),
 ):
     return update_service(
         db,

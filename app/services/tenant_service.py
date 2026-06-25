@@ -174,10 +174,11 @@ def signup_tenant(
     # tenant_service), since this function is the only thing in
     # tenant_service.py that needs auth_service at all.
     from app.services.business_service import create_business
+    from app.services.membership_service import create_owner_membership
 
     resolved_slug = slug or _unique_slug(db, _slugify(salon_name))
     tenant = create_tenant(db, resolved_slug, salon_name)
-    create_business(
+    business = create_business(
         db,
         tenant_id=tenant.id,
         name=salon_name,
@@ -189,6 +190,13 @@ def signup_tenant(
         UserCreate(email=admin_email, password=admin_password),
         tenant.id,
         role="admin",
+    )
+
+    create_owner_membership(
+        db,
+        user_id=user.id,
+        business_id=business.id,
+        tenant_id=tenant.id,
     )
 
     create_audit_log(

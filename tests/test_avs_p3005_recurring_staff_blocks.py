@@ -11,7 +11,9 @@ from datetime import date, time
 import pytest
 
 from app.core.domain_errors import ConflictError, NotFoundError
+from app.models.business_membership import BusinessMembership, MembershipRole, MembershipStatus
 from app.models.tenant import Tenant
+from app.models.user import User
 from app.services.availability_exception_service import create_availability_exception
 from app.services.availability_service import get_available_slots
 from app.services.business_service import create_business
@@ -24,6 +26,18 @@ from app.services.service_service import create_service
 from app.services.staff_service import create_staff
 from app.services.working_hours_service import create_working_hours, update_working_hours
 from tests.database import auth_headers, login_user, promote_to_admin, register_user
+
+
+def _give_admin_membership(db, email: str, business) -> None:
+    user = db.query(User).filter(User.email == email).one()
+    db.add(BusinessMembership(
+        tenant_id=business.tenant_id,
+        business_id=business.id,
+        user_id=user.id,
+        role=MembershipRole.ADMIN,
+        status=MembershipStatus.ACTIVE,
+    ))
+    db.commit()
 
 _DATE = date(2027, 9, 8)  # Wednesday
 
@@ -370,6 +384,7 @@ def test_create_block_api(db, client):
     promote_to_admin(db, "blocks_admin@example.com")
     token = login_user(client, "blocks_admin@example.com").json()["access_token"]
     business = create_business(db, tenant_id=tenant.id, name="API Blocks Salon", timezone="UTC")
+    _give_admin_membership(db, "blocks_admin@example.com", business)
 
     resp = client.post(
         f"/api/v1/businesses/{business.id}/recurring-staff-blocks",
@@ -402,6 +417,7 @@ def test_create_block_api_rejects_overlap(db, client):
     promote_to_admin(db, "blocks_overlap_admin@example.com")
     token = login_user(client, "blocks_overlap_admin@example.com").json()["access_token"]
     business = create_business(db, tenant_id=tenant.id, name="API Blocks Salon 3", timezone="UTC")
+    _give_admin_membership(db, "blocks_overlap_admin@example.com", business)
 
     first = client.post(
         f"/api/v1/businesses/{business.id}/recurring-staff-blocks",
@@ -424,6 +440,7 @@ def test_get_block_api(db, client):
     promote_to_admin(db, "blocks_get_admin@example.com")
     token = login_user(client, "blocks_get_admin@example.com").json()["access_token"]
     business = create_business(db, tenant_id=tenant.id, name="API Blocks Salon 4", timezone="UTC")
+    _give_admin_membership(db, "blocks_get_admin@example.com", business)
     created = client.post(
         f"/api/v1/businesses/{business.id}/recurring-staff-blocks",
         json={"day_of_week": 2, "start_time": "12:00:00", "end_time": "13:00:00", "reason": "Lunch"},
@@ -446,6 +463,7 @@ def test_list_blocks_api(db, client):
     promote_to_admin(db, "blocks_list_admin@example.com")
     token = login_user(client, "blocks_list_admin@example.com").json()["access_token"]
     business = create_business(db, tenant_id=tenant.id, name="API Blocks Salon 5", timezone="UTC")
+    _give_admin_membership(db, "blocks_list_admin@example.com", business)
     client.post(
         f"/api/v1/businesses/{business.id}/recurring-staff-blocks",
         json={"day_of_week": 2, "start_time": "12:00:00", "end_time": "13:00:00"},
@@ -479,6 +497,7 @@ def test_delete_block_api(db, client):
     promote_to_admin(db, "blocks_delete_admin@example.com")
     token = login_user(client, "blocks_delete_admin@example.com").json()["access_token"]
     business = create_business(db, tenant_id=tenant.id, name="API Blocks Salon 6", timezone="UTC")
+    _give_admin_membership(db, "blocks_delete_admin@example.com", business)
     created = client.post(
         f"/api/v1/businesses/{business.id}/recurring-staff-blocks",
         json={"day_of_week": 2, "start_time": "12:00:00", "end_time": "13:00:00"},
@@ -504,6 +523,7 @@ def test_delete_block_api_requires_admin(db, client):
     promote_to_admin(db, "blocks_delete_admin2@example.com")
     admin_token = login_user(client, "blocks_delete_admin2@example.com").json()["access_token"]
     business = create_business(db, tenant_id=tenant.id, name="API Blocks Salon 7", timezone="UTC")
+    _give_admin_membership(db, "blocks_delete_admin2@example.com", business)
     created = client.post(
         f"/api/v1/businesses/{business.id}/recurring-staff-blocks",
         json={"day_of_week": 2, "start_time": "12:00:00", "end_time": "13:00:00"},

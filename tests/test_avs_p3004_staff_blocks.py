@@ -13,7 +13,9 @@ from datetime import date, time
 import pytest
 
 from app.core.domain_errors import ConflictError, NotFoundError
+from app.models.business_membership import BusinessMembership, MembershipRole, MembershipStatus
 from app.models.tenant import Tenant
+from app.models.user import User
 from app.services.availability_exception_service import create_availability_exception
 from app.services.availability_service import get_available_slots
 from app.services.business_service import create_business
@@ -205,6 +207,15 @@ def test_create_exception_api_rejects_overlap(db, client):
 
     business = create_business(db, tenant_id=tenant.id, name="API Blocks Salon", timezone="UTC")
     staff = create_staff(db, tenant_id=tenant.id, business_id=business.id, name="Anna")
+    user = db.query(User).filter(User.email == "blocks_admin@example.com").one()
+    db.add(BusinessMembership(
+        tenant_id=business.tenant_id,
+        business_id=business.id,
+        user_id=user.id,
+        role=MembershipRole.ADMIN,
+        status=MembershipStatus.ACTIVE,
+    ))
+    db.commit()
 
     first = client.post(
         f"/api/v1/businesses/{business.id}/availability-exceptions",

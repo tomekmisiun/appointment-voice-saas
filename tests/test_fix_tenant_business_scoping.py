@@ -26,6 +26,8 @@ from app.services.recurring_staff_block_service import create_recurring_staff_bl
 from app.services.service_service import create_service
 from app.services.staff_service import create_staff
 from app.services.working_hours_service import create_working_hours
+from app.models.business_membership import BusinessMembership, MembershipRole, MembershipStatus
+from app.models.user import User
 from tests.database import auth_headers, login_user, promote_to_admin, register_user
 
 
@@ -39,6 +41,23 @@ def _two_businesses(db, tenant_id: int):
     biz_a = create_business(db, tenant_id=tenant_id, name="Business A", timezone="UTC")
     biz_b = create_business(db, tenant_id=tenant_id, name="Business B", timezone="UTC")
     return biz_a, biz_b
+
+
+def _give_admin_membership(db, email: str, business) -> None:
+    """Grant the user an ADMIN membership for *business*.
+
+    Needed for mutation tests: SAC-005 requires an active business membership
+    before reaching the service layer that enforces cross-business isolation.
+    """
+    user = db.query(User).filter(User.email == email).one()
+    db.add(BusinessMembership(
+        tenant_id=business.tenant_id,
+        business_id=business.id,
+        user_id=user.id,
+        role=MembershipRole.ADMIN,
+        status=MembershipStatus.ACTIVE,
+    ))
+    db.commit()
 
 
 def test_get_client_rejects_cross_business_access(db, client):
@@ -59,6 +78,7 @@ def test_update_client_rejects_cross_business_access(db, client):
     tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
     token = _admin(db, client, "scope-client-patch@example.com")
     biz_a, biz_b = _two_businesses(db, tenant.id)
+    _give_admin_membership(db, "scope-client-patch@example.com", biz_b)
     client_a = create_client(db, tenant_id=tenant.id, business_id=biz_a.id, name="Client A")
 
     resp = client.patch(
@@ -120,6 +140,7 @@ def test_update_staff_rejects_cross_business_access(db, client):
     tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
     token = _admin(db, client, "scope-staff-patch@example.com")
     biz_a, biz_b = _two_businesses(db, tenant.id)
+    _give_admin_membership(db, "scope-staff-patch@example.com", biz_b)
     staff_a = create_staff(db, tenant_id=tenant.id, business_id=biz_a.id, name="Stylist A")
 
     resp = client.patch(
@@ -167,6 +188,7 @@ def test_cancel_booking_rejects_cross_business_access(db, client):
     tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
     token = _admin(db, client, "scope-booking-cancel@example.com")
     biz_a, biz_b = _two_businesses(db, tenant.id)
+    _give_admin_membership(db, "scope-booking-cancel@example.com", biz_b)
     booking_a = _booking_in_business(db, tenant.id, biz_a, phone="+48770000003")
 
     resp = client.post(
@@ -184,6 +206,7 @@ def test_reschedule_booking_rejects_cross_business_access(db, client):
     tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
     token = _admin(db, client, "scope-booking-reschedule@example.com")
     biz_a, biz_b = _two_businesses(db, tenant.id)
+    _give_admin_membership(db, "scope-booking-reschedule@example.com", biz_b)
     booking_a = _booking_in_business(db, tenant.id, biz_a, phone="+48770000004")
 
     resp = client.post(
@@ -201,6 +224,7 @@ def test_create_booking_rejects_customer_from_another_business(db, client):
     tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
     token = _admin(db, client, "scope-booking-create@example.com")
     biz_a, biz_b = _two_businesses(db, tenant.id)
+    _give_admin_membership(db, "scope-booking-create@example.com", biz_b)
     svc_b = create_service(db, tenant_id=tenant.id, business_id=biz_b.id, name="Cut", duration_minutes=30)
     customer_a = get_or_create_customer(
         db, tenant_id=tenant.id, business_id=biz_a.id, phone="+48770000005"
@@ -223,6 +247,7 @@ def test_create_booking_rejects_staff_from_another_business(db, client):
     tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
     token = _admin(db, client, "scope-booking-create-staff@example.com")
     biz_a, biz_b = _two_businesses(db, tenant.id)
+    _give_admin_membership(db, "scope-booking-create-staff@example.com", biz_b)
     svc_b = create_service(db, tenant_id=tenant.id, business_id=biz_b.id, name="Cut", duration_minutes=30)
     customer_b = get_or_create_customer(
         db, tenant_id=tenant.id, business_id=biz_b.id, phone="+48770000006"
@@ -247,6 +272,7 @@ def test_create_client_rejects_customer_from_another_business(db, client):
     tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
     token = _admin(db, client, "scope-create-client@example.com")
     biz_a, biz_b = _two_businesses(db, tenant.id)
+    _give_admin_membership(db, "scope-create-client@example.com", biz_b)
     customer_a = get_or_create_customer(
         db, tenant_id=tenant.id, business_id=biz_a.id, phone="+48770000007"
     )
@@ -264,6 +290,7 @@ def test_create_booking_rejects_service_from_another_business(db, client):
     tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
     token = _admin(db, client, "scope-booking-create-service@example.com")
     biz_a, biz_b = _two_businesses(db, tenant.id)
+    _give_admin_membership(db, "scope-booking-create-service@example.com", biz_b)
     svc_a = create_service(db, tenant_id=tenant.id, business_id=biz_a.id, name="Cut", duration_minutes=30)
     customer_b = get_or_create_customer(
         db, tenant_id=tenant.id, business_id=biz_b.id, phone="+48770000008"
@@ -300,6 +327,7 @@ def test_update_service_rejects_cross_business_access(db, client):
     tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
     token = _admin(db, client, "scope-service-patch@example.com")
     biz_a, biz_b = _two_businesses(db, tenant.id)
+    _give_admin_membership(db, "scope-service-patch@example.com", biz_b)
     svc_a = create_service(db, tenant_id=tenant.id, business_id=biz_a.id, name="Cut", duration_minutes=30)
 
     resp = client.patch(
@@ -339,6 +367,7 @@ def test_delete_working_hours_rejects_cross_business_access(db, client):
     tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
     token = _admin(db, client, "scope-wh-delete@example.com")
     biz_a, biz_b = _two_businesses(db, tenant.id)
+    _give_admin_membership(db, "scope-wh-delete@example.com", biz_b)
     wh_a = create_working_hours(
         db,
         tenant_id=tenant.id,
@@ -363,6 +392,7 @@ def test_update_working_hours_rejects_cross_business_access(db, client):
     tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
     token = _admin(db, client, "scope-wh-patch@example.com")
     biz_a, biz_b = _two_businesses(db, tenant.id)
+    _give_admin_membership(db, "scope-wh-patch@example.com", biz_b)
     wh_a = create_working_hours(
         db,
         tenant_id=tenant.id,
@@ -412,6 +442,7 @@ def test_delete_availability_exception_rejects_cross_business_access(db, client)
     tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
     token = _admin(db, client, "scope-exc-delete@example.com")
     biz_a, biz_b = _two_businesses(db, tenant.id)
+    _give_admin_membership(db, "scope-exc-delete@example.com", biz_b)
     exc_a = create_availability_exception(
         db,
         tenant_id=tenant.id,
@@ -455,6 +486,7 @@ def test_delete_recurring_staff_block_rejects_cross_business_access(db, client):
     tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
     token = _admin(db, client, "scope-block-delete@example.com")
     biz_a, biz_b = _two_businesses(db, tenant.id)
+    _give_admin_membership(db, "scope-block-delete@example.com", biz_b)
     block_a = create_recurring_staff_block(
         db, tenant_id=tenant.id, business_id=biz_a.id, staff_id=None,
         day_of_week=0, start_time=time(12, 0), end_time=time(13, 0), reason="Lunch",

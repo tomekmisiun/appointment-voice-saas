@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies.auth import get_current_user, require_role
+from app.api.dependencies.membership import require_business_member
+from app.models.business_membership import MembershipRole
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.business import BusinessCreate, BusinessRead, BusinessUpdate
@@ -11,6 +13,7 @@ from app.services.business_service import (
     require_business,
     update_business,
 )
+from app.services.membership_service import create_owner_membership
 
 router = APIRouter(prefix="/businesses", tags=["businesses"])
 
@@ -21,7 +24,7 @@ def create_business_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin")),
 ):
-    return create_business(
+    business = create_business(
         db,
         tenant_id=current_user.tenant_id,
         name=body.name,
@@ -36,6 +39,14 @@ def create_business_endpoint(
         external_booking_provider=body.external_booking_provider,
         subscription_plan=body.subscription_plan,
     )
+    create_owner_membership(
+        db,
+        user_id=current_user.id,
+        business_id=business.id,
+        tenant_id=current_user.tenant_id,
+    )
+    db.commit()
+    return business
 
 
 @router.get("", response_model=list[BusinessRead])
@@ -70,7 +81,7 @@ def update_business_endpoint(
     business_id: int,
     body: BusinessUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_business_member(MembershipRole.OWNER, MembershipRole.ADMIN)),
 ):
     return update_business(
         db,

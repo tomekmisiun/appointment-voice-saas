@@ -8,7 +8,9 @@ adapter only supports create/cancel, not updating an already-synced event.
 from datetime import datetime, timedelta, timezone
 
 from app.models.booking import BookingSource, BookingStatus
+from app.models.business_membership import BusinessMembership, MembershipRole, MembershipStatus
 from app.models.tenant import Tenant
+from app.models.user import User
 from app.services.booking_service import create_booking, reschedule_booking
 from app.services.business_service import create_business
 from app.services.customer_service import get_or_create_customer
@@ -182,6 +184,15 @@ def test_reschedule_booking_api_rejects_naive_datetime(db, client):
     token = login_user(client, "resched_naive@example.com").json()["access_token"]
 
     tenant_id, biz, staff, svc, customer = _setup(db)
+    user = db.query(User).filter(User.email == "resched_naive@example.com").one()
+    db.add(BusinessMembership(
+        tenant_id=biz.tenant_id,
+        business_id=biz.id,
+        user_id=user.id,
+        role=MembershipRole.ADMIN,
+        status=MembershipStatus.ACTIVE,
+    ))
+    db.commit()
     booking = create_booking(
         db,
         tenant_id=tenant_id,
