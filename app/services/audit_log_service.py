@@ -16,6 +16,7 @@ def create_audit_log(
     action: AuditAction,
     target_user_id: int | None = None,
     target_booking_id: int | None = None,
+    target_staff_id: int | None = None,
     source: str | None = None,
     *,
     commit: bool = True,
@@ -26,6 +27,7 @@ def create_audit_log(
         action=action.value,
         target_user_id=target_user_id,
         target_booking_id=target_booking_id,
+        target_staff_id=target_staff_id,
         source=source,
     )
 

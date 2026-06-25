@@ -9,7 +9,9 @@ from app.models.user import User
 from app.schemas.staff import StaffCreate, StaffRead, StaffUpdate
 from app.services.staff_service import (
     create_staff,
+    deactivate_staff,
     list_staff,
+    reactivate_staff,
     require_staff_in_business,
     update_staff,
 )
@@ -30,6 +32,10 @@ def create_staff_endpoint(
         business_id=business_id,
         name=body.name,
         phone=body.phone,
+        contact_email=body.contact_email,
+        position=body.position,
+        accepts_bookings=body.accepts_bookings,
+        is_customer_visible=body.is_customer_visible,
     )
 
 
@@ -71,12 +77,62 @@ def update_staff_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_business_member(MembershipRole.OWNER, MembershipRole.ADMIN)),
 ):
-    return update_staff(
+    # Use model_fields_set so explicit null values clear the DB field while
+    # omitted fields are left untouched.
+    update_data = body.model_dump(include=body.model_fields_set)
+    is_active = update_data.pop("is_active", None)
+
+    if update_data:
+        update_staff(
+            db,
+            staff_id,
+            business_id,
+            current_user.tenant_id,
+            _always_set=update_data,
+        )
+
+    # Route activation changes through the audit-emitting service functions.
+    if is_active is False:
+        return deactivate_staff(
+            db, staff_id, business_id, current_user.tenant_id,
+            actor_id=current_user.id,
+        )
+    if is_active is True:
+        return reactivate_staff(
+            db, staff_id, business_id, current_user.tenant_id,
+            actor_id=current_user.id,
+        )
+
+    return require_staff_in_business(db, staff_id, business_id, current_user.tenant_id)
+
+
+@router.post("/{staff_id}/deactivate", response_model=StaffRead)
+def deactivate_staff_endpoint(
+    business_id: int,
+    staff_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_business_member(MembershipRole.OWNER, MembershipRole.ADMIN)),
+):
+    return deactivate_staff(
         db,
         staff_id,
         business_id,
         current_user.tenant_id,
-        name=body.name,
-        phone=body.phone,
-        is_active=body.is_active,
+        actor_id=current_user.id,
+    )
+
+
+@router.post("/{staff_id}/reactivate", response_model=StaffRead)
+def reactivate_staff_endpoint(
+    business_id: int,
+    staff_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_business_member(MembershipRole.OWNER, MembershipRole.ADMIN)),
+):
+    return reactivate_staff(
+        db,
+        staff_id,
+        business_id,
+        current_user.tenant_id,
+        actor_id=current_user.id,
     )

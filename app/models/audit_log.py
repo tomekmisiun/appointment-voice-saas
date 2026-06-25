@@ -25,6 +25,8 @@ class AuditAction(StrEnum):
     BOOKING_HOLD_EXPIRED = "booking.hold_expired"
     BOOKING_PAYMENT_REFUNDED = "booking.payment_refunded"
     CUSTOMER_ANONYMIZED = "customer.anonymized"
+    STAFF_DEACTIVATED = "staff.deactivated"
+    STAFF_REACTIVATED = "staff.reactivated"
 
 
 class AuditLog(Base):
@@ -36,5 +38,6 @@ class AuditLog(Base):
     action = Column(String, nullable=False, index=True)
     target_user_id = Column(Integer, nullable=True, index=True)
     target_booking_id = Column(Integer, ForeignKey("bookings.id"), nullable=True, index=True)
+    target_staff_id = Column(Integer, ForeignKey("staff.id"), nullable=True, index=True)
     source = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)

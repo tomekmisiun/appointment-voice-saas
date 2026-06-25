@@ -55,9 +55,8 @@ def test_deactivate_staff(db, client):
         headers=auth_headers(token),
     ).json()
 
-    response = client.patch(
-        f"/api/v1/businesses/{biz_id}/staff/{staff['id']}",
-        json={"is_active": False},
+    response = client.post(
+        f"/api/v1/businesses/{biz_id}/staff/{staff['id']}/deactivate",
         headers=auth_headers(token),
     )
 
@@ -72,9 +71,8 @@ def test_inactive_staff_excluded_by_default(db, client):
         json={"name": "Inactive"},
         headers=auth_headers(token),
     ).json()
-    client.patch(
-        f"/api/v1/businesses/{biz_id}/staff/{staff['id']}",
-        json={"is_active": False},
+    client.post(
+        f"/api/v1/businesses/{biz_id}/staff/{staff['id']}/deactivate",
         headers=auth_headers(token),
     )
 
