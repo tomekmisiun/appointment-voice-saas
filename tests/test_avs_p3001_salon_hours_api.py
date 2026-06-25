@@ -18,11 +18,25 @@ from datetime import time
 import pytest
 
 from app.core.domain_errors import NotFoundError
+from app.models.business_membership import BusinessMembership, MembershipRole, MembershipStatus
 from app.models.tenant import Tenant
+from app.models.user import User
 from app.services.business_service import create_business
 from app.services.staff_service import create_staff
 from app.services.working_hours_service import create_working_hours, list_working_hours
 from tests.database import auth_headers, login_user, promote_to_admin, register_user
+
+
+def _give_admin_membership(db, email: str, business) -> None:
+    user = db.query(User).filter(User.email == email).one()
+    db.add(BusinessMembership(
+        tenant_id=business.tenant_id,
+        business_id=business.id,
+        user_id=user.id,
+        role=MembershipRole.ADMIN,
+        status=MembershipStatus.ACTIVE,
+    ))
+    db.commit()
 
 
 @pytest.fixture()
@@ -118,6 +132,7 @@ def test_create_business_wide_hours_api(db, client):
     tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
     token = _admin_token(db, client, "salon-hours-admin@example.com")
     business = create_business(db, tenant_id=tenant.id, name="API Salon", timezone="UTC")
+    _give_admin_membership(db, "salon-hours-admin@example.com", business)
 
     resp = client.post(
         f"/api/v1/businesses/{business.id}/working-hours",
@@ -134,6 +149,7 @@ def test_create_staff_specific_hours_api(db, client):
     token = _admin_token(db, client, "staff-hours-admin@example.com")
     business = create_business(db, tenant_id=tenant.id, name="API Salon 2", timezone="UTC")
     staff = create_staff(db, tenant_id=tenant.id, business_id=business.id, name="Marek")
+    _give_admin_membership(db, "staff-hours-admin@example.com", business)
 
     resp = client.post(
         f"/api/v1/businesses/{business.id}/working-hours",
@@ -156,6 +172,7 @@ def test_create_hours_api_rejects_staff_from_another_business(db, client):
     business_a = create_business(db, tenant_id=tenant.id, name="Biz A", timezone="UTC")
     business_b = create_business(db, tenant_id=tenant.id, name="Biz B", timezone="UTC")
     staff_b = create_staff(db, tenant_id=tenant.id, business_id=business_b.id, name="Staff B")
+    _give_admin_membership(db, "cross-hours-admin@example.com", business_a)
 
     resp = client.post(
         f"/api/v1/businesses/{business_a.id}/working-hours",
@@ -176,6 +193,7 @@ def test_list_hours_api_filters_by_staff_id(db, client):
     token = _admin_token(db, client, "list-hours-admin@example.com")
     business = create_business(db, tenant_id=tenant.id, name="List Salon", timezone="UTC")
     staff = create_staff(db, tenant_id=tenant.id, business_id=business.id, name="Anna")
+    _give_admin_membership(db, "list-hours-admin@example.com", business)
 
     client.post(
         f"/api/v1/businesses/{business.id}/working-hours",

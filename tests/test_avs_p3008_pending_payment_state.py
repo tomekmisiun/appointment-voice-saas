@@ -16,9 +16,11 @@ from app.core.domain_errors import BadRequestError, ConflictError, NotFoundError
 from app.models.audit_log import AuditAction
 from app.models.booking import BookingStatus
 from app.models.booking_payment import BookingPayment, BookingPaymentStatus
+from app.models.business_membership import BusinessMembership, MembershipRole, MembershipStatus
 from app.models.calendar_event import CalendarEvent
 from app.models.notification_outbox import NotificationOutbox, NotificationPurpose
 from app.models.tenant import Tenant
+from app.models.user import User
 from app.models.waitlist_entry import WaitlistEntry, WaitlistEntryStatus
 from app.services.audit_log_service import get_audit_logs
 from app.services.booking_service import (
@@ -530,6 +532,15 @@ def test_refund_booking_payment_api_endpoint(db, client):
     token = login_user(client, "refund_admin@example.com").json()["access_token"]
 
     tenant_id, biz, staff, svc, customer = _setup(db)
+    user = db.query(User).filter(User.email == "refund_admin@example.com").one()
+    db.add(BusinessMembership(
+        tenant_id=biz.tenant_id,
+        business_id=biz.id,
+        user_id=user.id,
+        role=MembershipRole.ADMIN,
+        status=MembershipStatus.ACTIVE,
+    ))
+    db.commit()
     booking = _create_hold(
         db, tenant_id=tenant_id, biz=biz, staff=staff, svc=svc, customer=customer
     )

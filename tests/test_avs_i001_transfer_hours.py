@@ -1,7 +1,9 @@
 """Tests for AVS-I001 transfer hours: CRUD, validation, tenant isolation."""
 import pytest
 
+from app.models.business_membership import BusinessMembership, MembershipRole, MembershipStatus
 from app.models.tenant import Tenant
+from app.models.user import User
 from app.services.business_service import create_business
 from app.services.business_transfer_hours_service import (
     create_transfer_hours,
@@ -11,6 +13,18 @@ from app.services.business_transfer_hours_service import (
 from tests.database import auth_headers, login_user, promote_to_admin, register_user
 
 
+def _give_admin_membership(db, email: str, business) -> None:
+    user = db.query(User).filter(User.email == email).one()
+    db.add(BusinessMembership(
+        tenant_id=business.tenant_id,
+        business_id=business.id,
+        user_id=user.id,
+        role=MembershipRole.ADMIN,
+        status=MembershipStatus.ACTIVE,
+    ))
+    db.commit()
+
+
 @pytest.fixture()
 def domain(db, client):
     register_user(client, "th_admin@example.com")
@@ -18,6 +32,7 @@ def domain(db, client):
     token = login_user(client, "th_admin@example.com").json()["access_token"]
     tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
     biz = create_business(db, tenant_id=tenant.id, name="Transfer Hours Salon", timezone="UTC")
+    _give_admin_membership(db, "th_admin@example.com", biz)
     return {
         "client": client,
         "headers": auth_headers(token),
@@ -141,6 +156,7 @@ def test_delete_wrong_business_returns_404(domain, db):
     tenant_id = domain["tenant_id"]
 
     biz_b = create_business(db, tenant_id=tenant_id, name="Other Biz B", timezone="UTC")
+    _give_admin_membership(db, "th_admin@example.com", biz_b)
 
     entry_id = client.post(
         f"/api/v1/businesses/{biz_a_id}/transfer-hours",

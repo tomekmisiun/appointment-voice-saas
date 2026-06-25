@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies.auth import get_current_user, require_role
+from app.api.dependencies.auth import get_current_user
+from app.api.dependencies.membership import require_business_member
+from app.models.business_membership import MembershipRole
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.booking import BookingRead
@@ -22,7 +24,7 @@ def create_client_endpoint(
     business_id: int,
     body: ClientCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_business_member(MembershipRole.OWNER, MembershipRole.ADMIN)),
 ):
     return create_client(
         db,
@@ -90,7 +92,7 @@ def update_client_endpoint(
     client_id: int,
     body: ClientUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_business_member(MembershipRole.OWNER, MembershipRole.ADMIN)),
 ):
     return update_client(
         db,

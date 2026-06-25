@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies.auth import get_current_user, require_role
+from app.api.dependencies.auth import get_current_user
+from app.api.dependencies.membership import require_business_member
+from app.models.business_membership import MembershipRole
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.business_transfer_hours import BusinessTransferHoursCreate, BusinessTransferHoursRead
@@ -22,7 +24,7 @@ def create_transfer_hours_endpoint(
     business_id: int,
     body: BusinessTransferHoursCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_business_member(MembershipRole.OWNER, MembershipRole.ADMIN)),
 ):
     return create_transfer_hours(
         db,
@@ -58,6 +60,6 @@ def delete_transfer_hours_endpoint(
     business_id: int,
     entry_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_business_member(MembershipRole.OWNER, MembershipRole.ADMIN)),
 ):
     delete_transfer_hours(db, entry_id, business_id, current_user.tenant_id)

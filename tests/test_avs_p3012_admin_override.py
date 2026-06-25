@@ -14,7 +14,9 @@ from datetime import datetime, timezone
 from app.core.domain_errors import BadRequestError
 from app.models.audit_log import AuditAction
 from app.models.booking import BookingStatus
+from app.models.business_membership import BusinessMembership, MembershipRole, MembershipStatus
 from app.models.tenant import Tenant
+from app.models.user import User
 from app.services.audit_log_service import get_audit_logs
 from app.services.booking_service import cancel_booking, create_booking
 from app.services.business_service import create_business
@@ -22,6 +24,18 @@ from app.services.customer_service import get_or_create_customer
 from app.services.service_service import create_service
 from app.services.staff_service import create_staff
 from tests.database import auth_headers, login_user, promote_to_admin, register_user
+
+
+def _give_admin_membership(db, email: str, biz) -> None:
+    user = db.query(User).filter(User.email == email).one()
+    db.add(BusinessMembership(
+        tenant_id=biz.tenant_id,
+        business_id=biz.id,
+        user_id=user.id,
+        role=MembershipRole.ADMIN,
+        status=MembershipStatus.ACTIVE,
+    ))
+    db.commit()
 
 
 def _dt(year: int, month: int, day: int, hour: int) -> datetime:
@@ -263,6 +277,7 @@ def test_override_create_api_rejects_missing_reason(db, client):
     token = login_user(client, "override_noreason@example.com").json()["access_token"]
 
     tenant_id, biz, staff, svc, customer = _setup(db)
+    _give_admin_membership(db, "override_noreason@example.com", biz)
     resp = client.post(
         f"/api/v1/businesses/{biz.id}/bookings/override",
         json={
@@ -281,6 +296,7 @@ def test_override_cancel_api_endpoint(db, client):
     token = login_user(client, "override_cancel_admin@example.com").json()["access_token"]
 
     tenant_id, biz, staff, svc, customer = _setup(db)
+    _give_admin_membership(db, "override_cancel_admin@example.com", biz)
     booking = create_booking(
         db,
         tenant_id=tenant_id,
@@ -329,6 +345,7 @@ def test_override_cancel_api_rejects_blank_reason(db, client):
     token = login_user(client, "override_cancel_blank@example.com").json()["access_token"]
 
     tenant_id, biz, staff, svc, customer = _setup(db)
+    _give_admin_membership(db, "override_cancel_blank@example.com", biz)
     booking = create_booking(
         db,
         tenant_id=tenant_id,

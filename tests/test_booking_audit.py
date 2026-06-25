@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 
 from app.models.audit_log import AuditAction
 from app.models.booking import BookingSource
+from app.models.business_membership import BusinessMembership, MembershipRole, MembershipStatus
 from app.models.tenant import Tenant
 from app.models.user import User
 from app.services.audit_log_service import get_audit_logs
@@ -198,6 +199,11 @@ def test_api_create_booking_records_actor(db, client):
     staff = create_staff(db, tenant_id=tenant.id, business_id=biz.id, name="Kasia")
     svc = create_service(db, tenant_id=tenant.id, business_id=biz.id, name="Trim", duration_minutes=30)
     customer = get_or_create_customer(db, tenant_id=tenant.id, business_id=biz.id, phone="+48600700600")
+    db.add(BusinessMembership(
+        tenant_id=biz.tenant_id, business_id=biz.id, user_id=actor.id,
+        role=MembershipRole.ADMIN, status=MembershipStatus.ACTIVE,
+    ))
+    db.commit()
 
     resp = client.post(
         f"/api/v1/businesses/{biz.id}/bookings",
@@ -236,6 +242,11 @@ def test_api_cancel_booking_records_actor(db, client):
     staff = create_staff(db, tenant_id=tenant.id, business_id=biz.id, name="Tomek")
     svc = create_service(db, tenant_id=tenant.id, business_id=biz.id, name="Shave", duration_minutes=30)
     customer = get_or_create_customer(db, tenant_id=tenant.id, business_id=biz.id, phone="+48600500400")
+    db.add(BusinessMembership(
+        tenant_id=biz.tenant_id, business_id=biz.id, user_id=actor.id,
+        role=MembershipRole.ADMIN, status=MembershipStatus.ACTIVE,
+    ))
+    db.commit()
 
     booking = create_booking(
         db,
