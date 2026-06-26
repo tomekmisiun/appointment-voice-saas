@@ -1,220 +1,574 @@
-# Appointment Voice SaaS
+<div align="center">
 
-Appointment Voice SaaS is a planned mini SaaS for barbers and other local
-service businesses that miss calls while serving customers. The target product
-answers a business phone number with IVR, lets the caller choose a service and
-available slot, creates the booking in the backend, syncs it to a calendar,
-sends SMS notifications, and later supports cancellation, reschedule, and call
-transfer to staff.
+# 📞 VoxSlot
 
-## Current Status
+### Voice-first booking automation for appointment-based businesses
 
-See **[`PROJECT_STATUS.md`](PROJECT_STATUS.md)** (verified section) and
-**[`docs/learning/00-current-state-audit.md`](docs/learning/00-current-state-audit.md)**
-for code-verified state. Do not trust this README's high-level bullets alone.
+VoxSlot answers missed calls, guides customers through an IVR flow, creates appointments, sends SMS notifications and keeps business operations synchronized.
 
-- **Implemented:** full MVP foundation (Epics A–L) — appointment domain, availability
-  engine, booking engine, notification outbox, calendar adapter, IVR
-  simulation, real Twilio voice/SMS providers, call transfer, demo/smoke
-  tests, owner lead intake. Plus all 13 P1 items and 12 of 14 P2
-  production-expansion items (reminder SMS, reschedule, CRM, preferred
-  staff, multi-service bookings, waitlist — P2-013/P2-014 owner
-  metrics/CSV export not yet started) and 7 of 14 P3 operational-extension
-  items (salon hours/intersection/closures/staff blocks incl. recurring
-  blocks, admin override, multilingual IVR prompt architecture).
-- **Planned:** owner metrics/CSV export (P2-013/014), deposits/Stripe
-  payments, calendar privacy/two-way-sync ADRs, integration reconciliation
-  job (remaining P3), billing and phone provisioning (P4), frontend.
+<br />
 
-## What Exists Today
+[![Live Demo](https://img.shields.io/badge/LIVE_DEMO-OPEN_VOXSLOT-2ea44f?style=for-the-badge&logo=railway&logoColor=white)](https://voxslot.up.railway.app/)
+[![Project Status](https://img.shields.io/badge/PROJECT_STATUS-VIEW-1f6feb?style=for-the-badge&logo=github&logoColor=white)](PROJECT_STATUS.md)
+[![Roadmap](https://img.shields.io/badge/ROADMAP-VIEW-8a2be2?style=for-the-badge&logo=githubprojects&logoColor=white)](ROADMAP.md)
 
-Inherited foundation capabilities available for reuse:
+<br />
 
-- FastAPI application structure with versioned API routing.
-- PostgreSQL, SQLAlchemy, Alembic migrations, and database session patterns.
-- Redis-backed rate limiting, caching, job queue, and idempotency patterns.
-- Worker patterns with retries, delayed jobs, failed-job handling, and
-  maintenance jobs.
-- Auth/users/tenant foundation with JWT auth, RBAC, user management, and tenant
-  scoping patterns.
-- Webhook verification and idempotency patterns.
-- Observability, request IDs, structured logging, health checks, and Prometheus
-  metrics.
-- Docker Compose local stack, production Docker examples, CI, tests, and policy
-  guards.
-- AI workflow rules in `.ai-rules/`, with optional agents and commands.
+[![CI](https://github.com/tomekmisiun/appointment-voice-saas/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tomekmisiun/appointment-voice-saas/actions/workflows/ci.yml)
+[![Deploy](https://github.com/tomekmisiun/appointment-voice-saas/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/tomekmisiun/appointment-voice-saas/actions/workflows/deploy.yml)
+[![Last commit](https://img.shields.io/github/last-commit/tomekmisiun/appointment-voice-saas?style=flat-square)](https://github.com/tomekmisiun/appointment-voice-saas/commits/main)
+[![Repository size](https://img.shields.io/github/repo-size/tomekmisiun/appointment-voice-saas?style=flat-square)](https://github.com/tomekmisiun/appointment-voice-saas)
+[![Open issues](https://img.shields.io/github/issues/tomekmisiun/appointment-voice-saas?style=flat-square)](https://github.com/tomekmisiun/appointment-voice-saas/issues)
 
-## What Is Implemented
+<br />
 
-Full MVP foundation (Epics A–L) plus P1/P2 production-expansion backlog and
-part of P3 — see `PROJECT_STATUS.md` for the verified, evidence-backed list.
-Highlights:
+![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-Frontend-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-Queue_%26_Cache-DC382D?style=for-the-badge&logo=redis&logoColor=white)
 
-- **Appointment domain**: business, staff, service, working hours, availability
-  exceptions, recurring staff blocks, availability engine (incl. salon/staff
-  hours intersection), bookings with double-booking protection.
-- **Notification outbox**: fake SMS provider for tests; real Twilio provider wired.
-- **Calendar adapter**: fake calendar provider; real Google Calendar provider wired.
-- **IVR simulation**: `/api/v1/ivr/simulate/*` — start call, press keys, select
-  service/staff/slot, book or transfer; multilingual prompt-key architecture
-  (English populated, adding a locale needs no flow-logic changes).
-- **Call transfer**: press 2 in IVR → resolves to business phone or eligible staff.
-- **CRM/personalization**: clients, returning-caller greeting, preferred/last
-  staff suggestion, GDPR anonymization, waitlist with offer/timeout/escalation.
-- **Admin override**: reasoned, audited override-create/override-cancel for
-  support edge cases (does not bypass the DB-level no-overlap constraint).
-- **Demo seed**: `make seed-demo` seeds a deterministic demo scenario (Glamour Studio Demo).
-- **Smoke tests**: J001–J004 prove manual booking, IVR booking, cancellation, and demo seed locally.
+![Twilio](https://img.shields.io/badge/Twilio-Voice_%26_SMS-F22F46?style=for-the-badge&logo=twilio&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Containers-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI%2FCD-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
+![Railway](https://img.shields.io/badge/Railway-Deployment-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)
 
-## What Does Not Exist Yet
+</div>
 
-- Owner metrics dashboard / CSV export (P2-013/P2-014).
-- Booking-failure and IVR-failure-specific metrics/alerts (AVS-TD-016) —
-  SMS/calendar provider failures and the worker DLQ backlog are already
-  monitored, but not booking- or IVR-level failures specifically.
-- Deposits/prepayments, Stripe payment links, pending-payment booking state (P3-006/007/008).
-- Calendar privacy rules, two-way calendar sync (P3-010/011/014), integration reconciliation job (P3-013).
-- True self-serve tenant/account signup, phone provisioning, Stripe Billing/subscriptions, plan limits (P4) — the staff/service/hours setup half of self-service onboarding already exists (`POST /api/v1/onboarding`).
-- Frontend.
+---
 
-See `docs/audits/p3-remaining-backlog-audit.md` for the full verified
-remaining-backlog breakdown.
+## Table of contents
 
-## Product Documentation Map
+- [About](#about)
+- [Problem](#problem)
+- [How it works](#how-it-works)
+- [Key features](#key-features)
+- [Architecture](#architecture)
+- [Technology stack](#technology-stack)
+- [Quick start](#quick-start)
+- [Local demo](#local-demo)
+- [Testing and validation](#testing-and-validation)
+- [Security and reliability](#security-and-reliability)
+- [Project status](#project-status)
+- [Roadmap](#roadmap)
+- [Repository structure](#repository-structure)
+- [Documentation](#documentation)
+- [Development workflow](#development-workflow)
+- [Author](#author)
 
-| Document | Purpose |
-|----------|---------|
-| [`docs/learning/`](docs/learning/) | Code-verified mental maps and interview defense (start here to learn the repo) |
-| [`docs/product-scope.md`](docs/product-scope.md) | Product users, problem, MVP flow, non-goals, and assumptions |
-| [`docs/domain-model.md`](docs/domain-model.md) | Planned Appointment Voice SaaS domain vocabulary |
-| [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md) | Detailed executable product backlog |
-| [`docs/audits/staff-access-calendar-current-state.md`](docs/audits/staff-access-calendar-current-state.md) | Code-verified staff access and calendar audit |
-| [`docs/specs/staff-access-and-calendar.md`](docs/specs/staff-access-and-calendar.md) | Target employee access, RBAC, calendar, ICS, and OAuth architecture |
-| [`docs/product/staff-access-calendar-roadmap.md`](docs/product/staff-access-calendar-roadmap.md) | Planned one-task-per-branch execution cards for the staff/calendar epic |
-| [`PROJECT_STATUS.md`](PROJECT_STATUS.md) | Verified Appointment Voice SaaS status |
-| [`ROADMAP.md`](ROADMAP.md) | High-level Appointment Voice SaaS roadmap |
-| [`TECH_DEBT.md`](TECH_DEBT.md) | Active product technical debt and gaps |
+---
 
-## Inherited Foundation References
+## About
 
-The foundation docs are still useful, but they are reference material for the
-backend inherited from the template, not the active product roadmap/status.
+**VoxSlot** is a multi-tenant SaaS platform for salons, barbers, clinics and other appointment-based businesses that lose calls while employees are serving customers.
 
-| Document | Purpose |
-|----------|---------|
-| [`docs/foundation/`](docs/foundation/) | Archived foundation status, roadmap, debt, and freeze checklist |
-| [`docs/template-onboarding.md`](docs/template-onboarding.md) | Historical clone/fork onboarding guide for the foundation |
-| [`docs/template-usage.md`](docs/template-usage.md) | Historical quick reference for using the foundation |
-| [`docs/commands.md`](docs/commands.md) | Makefile command reference |
-| [`docs/production-deployment.md`](docs/production-deployment.md) | Deployment model inherited from the foundation |
-| [`docs/worker-reliability.md`](docs/worker-reliability.md) | Worker reliability patterns |
-| [`docs/webhook-idempotency.md`](docs/webhook-idempotency.md) | Webhook verification/idempotency patterns |
-| [`docs/tenant-isolation.md`](docs/tenant-isolation.md) | Tenant isolation foundation guidance |
-| [`docs/observability-production.md`](docs/observability-production.md) | Observability foundation guidance |
+The system combines:
 
-## Local Development
+- a phone IVR,
+- an appointment scheduling engine,
+- SMS communication,
+- calendar synchronization,
+- an owner-facing web dashboard,
+- production-oriented backend infrastructure.
 
-These commands run the full app (foundation + appointment product routes):
+A caller can book, cancel or reschedule an appointment without waiting for the business owner to answer the phone.
 
-Requirements: Python 3.13+, `uv`, Docker, Docker Compose, Make.
+### Operating modes
 
-```bash
-cp .env.example .env    # set a strong SECRET_KEY
-make bootstrap          # compose up, migrate, seed, smoke the foundation app
-make validate           # ruff + pytest with coverage floor
+| Mode | Description |
+|---|---|
+| **Internal booking** | VoxSlot manages services, staff availability and bookings directly. |
+| **External booking link** | The caller receives an SMS link to an external booking platform such as Booksy. |
+
+### At a glance
+
+| Area | Current state |
+|---|---|
+| Backend domain and scheduling | ✅ Implemented |
+| Twilio voice and SMS | ✅ Implemented |
+| Calendar integration | ✅ Implemented |
+| Local IVR simulation | ✅ Implemented |
+| Owner authentication | ✅ Implemented |
+| Owner dashboard | 🟡 Functional and expanding |
+| Controlled pilot | ✅ Supported |
+| Full self-service SaaS | 🟡 In progress |
+| Billing and phone provisioning | 🧭 Planned |
+
+---
+
+## Problem
+
+Appointment-based businesses often miss phone calls because staff cannot interrupt a service to answer the phone.
+
+A missed call can mean:
+
+- a lost appointment,
+- repeated interruptions,
+- manual follow-up,
+- unnecessary administrative work,
+- a poor customer experience.
+
+VoxSlot moves the first stage of booking from the business owner to an automated voice flow while keeping the final booking data inside one operational system.
+
+---
+
+## How it works
+
+```mermaid
+sequenceDiagram
+    participant Caller
+    participant Twilio
+    participant API as FastAPI / IVR
+    participant DB as PostgreSQL
+    participant Queue as Redis worker
+    participant SMS as SMS provider
+    participant Calendar as Calendar provider
+    participant Owner as Next.js dashboard
+
+    Caller->>Twilio: Calls the business number
+    Twilio->>API: Sends a signed voice webhook
+    API->>DB: Loads business configuration and availability
+    API-->>Caller: Presents IVR options
+
+    alt Internal booking
+        Caller->>API: Selects service, staff and slot
+        API->>DB: Creates the booking atomically
+        API->>Queue: Enqueues notifications and calendar sync
+        Queue->>SMS: Sends confirmation
+        Queue->>Calendar: Creates calendar event
+    else External booking link
+        Caller->>API: Requests booking link
+        API->>Queue: Enqueues SMS with external URL
+        Queue->>SMS: Sends booking link
+    end
+
+    Owner->>API: Manages the business through the dashboard
 ```
 
-Useful commands:
+### Typical caller flow
 
-| Command | Purpose |
-|---------|---------|
-| `make docker-up` / `make docker-down` | Start or stop the local Compose stack |
-| `make migration-upgrade` | Apply inherited foundation migrations |
-| `make seed-tenant` / `make seed` | Seed default tenant and development users |
-| `make seed-demo` | Seed the Glamour Studio Demo scenario (idempotent) |
-| `make smoke` | Smoke test the inherited foundation API |
-| `make validate-ai-workflows` | Validate AI workflow file presence |
-| `make policy-guards` | Run CI policy guard scripts |
-| `make validate` | Run foundation lint/tests/coverage |
-
-Local URLs after startup:
-
-| Resource | URL |
-|----------|-----|
-| API | http://localhost:8000 |
-| OpenAPI / Swagger | http://localhost:8000/docs |
-| Health | http://localhost:8000/health/ready |
-
-Default inherited development login after seed:
-`admin@example.local` / `devpassword123`. Change before shared environments.
-
-## Project Structure
-
-The current code structure inherits the foundation's layout and is already
-extended with the Appointment Voice SaaS product modules listed below
-(business, staff, service, booking, availability, IVR, notification,
-calendar, waitlist, CRM, etc. — see `app/models/`, `app/services/`,
-`app/api/routes/` for the full current list).
-
-| Path | Purpose |
-|------|---------|
-| [`app/api/`](app/api/) | FastAPI routes, dependencies, OpenAPI helpers |
-| [`app/services/`](app/services/) | Service layer and domain errors |
-| [`app/models/`](app/models/) | SQLAlchemy models |
-| [`app/schemas/`](app/schemas/) | Pydantic schemas |
-| [`app/core/`](app/core/) | Config, security, middleware, metrics |
-| [`app/worker.py`](app/worker.py) | Background job consumer |
-| [`alembic/`](alembic/) | Database migrations |
-| [`tests/`](tests/) | Inherited foundation test suite |
-| [`docs/`](docs/) | Product docs plus inherited foundation references |
-| [`.ai-rules/`](.ai-rules/) | Binding AI/project rules |
-
-## Demo Scenario (local)
-
-```bash
-# 1. Start stack and migrate
-make docker-up migration-upgrade
-
-# 2. Seed users + demo business (Glamour Studio Demo, 3 staff, 3 services, Mon–Sat hours)
-make seed-tenant seed seed-demo
-
-# 3. Log in
-curl -s -X POST http://localhost:8000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.local","password":"devpassword123"}' | python3 -m json.tool
-
-# 4. Simulate an IVR call (replace TOKEN and BUSINESS_ID)
-curl -s -X POST http://localhost:8000/api/v1/ivr/simulate/call \
-  -H "Authorization: Bearer TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"business_id": BUSINESS_ID, "caller_phone": "+48600000001"}' | python3 -m json.tool
-
-# 5. Press 1 to book, then 1 to select service, then 0 for any available
-#    staff (the demo's 3 staff have no individual schedule, so they follow
-#    the salon's hours and are all offered — press 1-3 to pick one by name
-#    instead if you'd rather), then 1 to pick a slot (creates the booking)
-curl -s -X POST http://localhost:8000/api/v1/ivr/simulate/press \
-  -H "Authorization: Bearer TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"session_id": SESSION_ID, "key": "1"}' | python3 -m json.tool
-
-# 6. Or press 2 to transfer → returns action=TRANSFER + transfer_destination=+48100200300
+```text
+Incoming call
+    ↓
+Business greeting
+    ↓
+[1] Book an appointment
+[2] Connect to the business
+    ↓
+Choose service
+    ↓
+Choose preferred staff or any available employee
+    ↓
+Choose an available time slot
+    ↓
+Booking created
+    ↓
+SMS confirmation + calendar synchronization
 ```
 
-Expected outputs:
-- Booking created with `source=ivr`, `status=confirmed`.
-- SMS notification in `notification_outbox` (fake provider logs to stdout).
-- IVR transfer returns `{"action":"transfer","transfer_destination":"+48100200300"}`.
+---
 
-See `tests/test_avs_j001_seed_demo.py` through `test_avs_j004_smoke_cancellation.py`
-for automated smoke assertions.
+## Key features
 
-## Next Implementation Step
+| Area | Capabilities |
+|---|---|
+| **📞 Voice and IVR** | Twilio voice webhooks<br>Signature verification and idempotency<br>Keypad-based navigation<br>Service, staff and slot selection<br>Booking, cancellation and rescheduling<br>Call transfer<br>External booking-link delivery<br>Local IVR simulation |
+| **📅 Scheduling** | Business and staff working hours<br>Availability exceptions and closures<br>Recurring staff blocks<br>Timezone and DST handling<br>Multi-service bookings<br>Database-level overlap protection<br>Waitlist offers and escalation |
+| **💬 Communication** | Transactional notification outbox<br>Twilio SMS and fake local providers<br>Confirmations, reminders and cancellations<br>Inbound SMS commands<br>Google Calendar adapter<br>Retries, backoff and reconciliation |
+| **🖥️ Owner application** | Landing page<br>Registration and authentication<br>Protected dashboard<br>Business setup overview<br>Booking and staff management<br>Typed OpenAPI contract<br>Next.js Backend-for-Frontend<br>Encrypted HttpOnly session |
+| **🏢 SaaS platform** | Multi-tenant data model<br>Tenant-scoped authorization<br>Business memberships<br>Role-based access control<br>Audit logging<br>Public and protected endpoint policies |
+| **⚙️ Operations** | Redis queues, cache and rate limiting<br>Alembic migrations<br>MinIO / S3-compatible storage<br>Health and readiness checks<br>Prometheus metrics<br>Structured logging and Sentry<br>Docker Compose<br>CI/CD and security workflows |
 
-See [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md)
-for the full backlog and
-[`docs/audits/p3-remaining-backlog-audit.md`](docs/audits/p3-remaining-backlog-audit.md)
-for the current recommended order. Next up: P3-013 (integration
-reconciliation job), then P3-006 (deposits/prepayments ADR), followed by
-the rest of the P3 operational-extensions tier, then
-P2-013/014 and P4 (billing, onboarding, scale).
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+    Caller[Phone caller] --> Twilio[Twilio Voice]
+    Twilio --> API[FastAPI API]
+
+    Browser[Owner browser] --> Next[Next.js BFF]
+    Next --> API
+
+    API --> Postgres[(PostgreSQL)]
+    API --> Redis[(Redis)]
+    API --> Storage[(MinIO / S3)]
+
+    Redis --> Worker[Background worker]
+    Worker --> SMS[Twilio SMS]
+    Worker --> Calendar[Google Calendar]
+    Worker --> Postgres
+
+    API --> Metrics[Prometheus metrics]
+    Worker --> Metrics
+    Metrics --> Observability[Grafana / Alertmanager]
+```
+
+### Main design decisions
+
+| Area | Approach |
+|---|---|
+| **API** | Versioned FastAPI routes with thin controllers and a service layer |
+| **Frontend** | Next.js App Router using a Backend-for-Frontend pattern |
+| **Authentication** | Backend JWTs remain server-side inside an encrypted frontend session |
+| **Persistence** | PostgreSQL with SQLAlchemy 2.0 and Alembic |
+| **Concurrency** | Transactional operations and database-level overlap protection |
+| **Async work** | Redis queues with delayed jobs, retries and failed-job handling |
+| **Integrations** | Provider interfaces with fake and production adapters |
+| **Notifications** | Transactional outbox preserves delivery intent |
+| **Tenancy** | Tenant and business scope enforced throughout domain services |
+| **API contract** | Frontend TypeScript types generated from backend OpenAPI |
+| **Observability** | Health checks, structured logs, metrics and alerts |
+
+---
+
+## Technology stack
+
+### Backend
+
+<p>
+<img src="https://img.shields.io/badge/Python_3.13-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python" />
+<img src="https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI" />
+<img src="https://img.shields.io/badge/Pydantic-E92063?style=flat-square&logo=pydantic&logoColor=white" alt="Pydantic" />
+<img src="https://img.shields.io/badge/SQLAlchemy-D71F00?style=flat-square&logo=sqlalchemy&logoColor=white" alt="SQLAlchemy" />
+<img src="https://img.shields.io/badge/Alembic-6BA81E?style=flat-square" alt="Alembic" />
+</p>
+
+### Frontend
+
+<p>
+<img src="https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=nextdotjs&logoColor=white" alt="Next.js" />
+<img src="https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB" alt="React" />
+<img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
+<img src="https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS" />
+<img src="https://img.shields.io/badge/TanStack_Query-FF4154?style=flat-square&logo=reactquery&logoColor=white" alt="TanStack Query" />
+<img src="https://img.shields.io/badge/React_Hook_Form-EC5990?style=flat-square&logo=reacthookform&logoColor=white" alt="React Hook Form" />
+<img src="https://img.shields.io/badge/Zod-3E67B1?style=flat-square&logo=zod&logoColor=white" alt="Zod" />
+</p>
+
+### Infrastructure and integrations
+
+<p>
+<img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+<img src="https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white" alt="Redis" />
+<img src="https://img.shields.io/badge/Twilio-F22F46?style=flat-square&logo=twilio&logoColor=white" alt="Twilio" />
+<img src="https://img.shields.io/badge/Google_Calendar-4285F4?style=flat-square&logo=googlecalendar&logoColor=white" alt="Google Calendar" />
+<img src="https://img.shields.io/badge/MinIO-C72E49?style=flat-square&logo=minio&logoColor=white" alt="MinIO" />
+<img src="https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker" />
+<img src="https://img.shields.io/badge/Railway-0B0D0E?style=flat-square&logo=railway&logoColor=white" alt="Railway" />
+</p>
+
+### Quality and observability
+
+<p>
+<img src="https://img.shields.io/badge/pytest-0A9EDC?style=flat-square&logo=pytest&logoColor=white" alt="pytest" />
+<img src="https://img.shields.io/badge/Vitest-6E9F18?style=flat-square&logo=vitest&logoColor=white" alt="Vitest" />
+<img src="https://img.shields.io/badge/Ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black" alt="Ruff" />
+<img src="https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white" alt="GitHub Actions" />
+<img src="https://img.shields.io/badge/Prometheus-E6522C?style=flat-square&logo=prometheus&logoColor=white" alt="Prometheus" />
+<img src="https://img.shields.io/badge/Grafana-F46800?style=flat-square&logo=grafana&logoColor=white" alt="Grafana" />
+<img src="https://img.shields.io/badge/Sentry-362D59?style=flat-square&logo=sentry&logoColor=white" alt="Sentry" />
+</p>
+
+---
+
+## Quick start
+
+### Requirements
+
+- Docker and Docker Compose
+- Python 3.13+
+- [`uv`](https://docs.astral.sh/uv/)
+- Node.js 20+
+- [`pnpm`](https://pnpm.io/)
+- Make
+
+### 1. Clone and configure the repository
+
+```bash
+git clone https://github.com/tomekmisiun/appointment-voice-saas.git
+cd appointment-voice-saas
+
+cp .env.example .env
+```
+
+Set a strong development secret in `.env`:
+
+```env
+SECRET_KEY=replace-with-a-strong-random-secret
+```
+
+### 2. Start the backend stack
+
+```bash
+make bootstrap
+make seed-demo
+```
+
+### 3. Configure and start the frontend
+
+```bash
+cd frontend
+
+pnpm install
+cp .env.example .env.local
+openssl rand -base64 32
+```
+
+Set the generated value in `frontend/.env.local`:
+
+```env
+BACKEND_API_URL=http://localhost:8000
+SESSION_SECRET=<generated-base64-secret>
+APP_ORIGIN=http://localhost:3000
+BFF_TRUST_FORWARDED_HEADERS=false
+```
+
+Start the frontend:
+
+```bash
+pnpm dev
+```
+
+### Local services
+
+| Service | Address |
+|---|---|
+| Frontend | http://localhost:3000 |
+| Backend API | http://localhost:8000 |
+| Swagger UI | http://localhost:8000/docs |
+| Readiness check | http://localhost:8000/health/ready |
+| MinIO console | http://localhost:9001 |
+
+### Local development account
+
+```text
+Email:    admin@example.local
+Password: devpassword123
+```
+
+> [!WARNING]
+> These credentials are intended only for local development. Never use them in a shared or production environment.
+
+---
+
+## Local demo
+
+Create deterministic demo data:
+
+```bash
+make seed-demo
+```
+
+The seed creates a sample business with staff, services and working hours.
+
+The IVR can be tested without a real Twilio phone number:
+
+```text
+POST /api/v1/ivr/simulate/call
+POST /api/v1/ivr/simulate/press
+```
+
+This makes it possible to exercise the booking flow locally while using fake SMS and calendar providers.
+
+---
+
+## Testing and validation
+
+### Backend
+
+Run the main validation suite:
+
+```bash
+make validate
+```
+
+Run tests only:
+
+```bash
+make test
+```
+
+Run tests in parallel:
+
+```bash
+make test-parallel
+```
+
+### Frontend
+
+```bash
+cd frontend
+
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+```
+
+Verify that generated frontend types match the backend OpenAPI schema:
+
+```bash
+pnpm api:check
+```
+
+---
+
+## Security and reliability
+
+VoxSlot includes production-oriented safeguards across the API, frontend and asynchronous workers.
+
+| Area | Safeguard |
+|---|---|
+| **Frontend session** | Encrypted, HttpOnly session cookie |
+| **CSRF** | Origin checks for state-changing frontend requests |
+| **Authorization** | Tenant and business-level data isolation |
+| **Scheduling** | Database-level booking overlap prevention |
+| **Webhooks** | Twilio signature verification and idempotency |
+| **Notifications** | Transactional outbox |
+| **Public endpoints** | Redis-backed rate limiting |
+| **Async jobs** | Retries, backoff and failed-job handling |
+| **Operations** | Health checks, readiness checks and metrics |
+| **Auditability** | Structured audit logs |
+| **Supply chain** | Dependency review and secret scanning |
+| **Recovery** | Scheduled backups and restore rehearsals |
+
+---
+
+## Project status
+
+| Area | Status |
+|---|---|
+| Backend domain and scheduling engine | ✅ Available |
+| Voice IVR and Twilio adapters | ✅ Available |
+| SMS and calendar integrations | ✅ Available |
+| Local end-to-end demo | ✅ Available |
+| Owner registration and authentication | ✅ Available |
+| Owner dashboard | 🟡 Functional, actively expanding |
+| Controlled pilot deployment | ✅ Supported |
+| Full self-service SaaS operations | 🟡 In progress |
+| Public read-only product demo | 🟡 In progress |
+| Subscription billing | 🧭 Planned |
+| Automated phone provisioning | 🧭 Planned |
+
+> [!NOTE]
+> The repository is suitable as a portfolio project, complete local demo and controlled pilot. It is not yet presented as a finished, generally available commercial SaaS.
+
+See [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for the evidence-backed implementation status.
+
+---
+
+## Roadmap
+
+Current development areas:
+
+- completing owner dashboard management screens,
+- public read-only demo access,
+- staff accounts and business permissions,
+- owner metrics and CSV exports,
+- payment and deposit workflows,
+- subscription billing and plan enforcement,
+- automated phone-number provisioning,
+- deeper calendar synchronization,
+- operational integration reconciliation.
+
+More details:
+
+- [`ROADMAP.md`](ROADMAP.md)
+- [`TECH_DEBT.md`](TECH_DEBT.md)
+- [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md)
+
+---
+
+## Repository structure
+
+```text
+.
+├── app/
+│   ├── api/             # FastAPI routes and dependencies
+│   ├── core/            # Configuration, security, middleware and metrics
+│   ├── models/          # SQLAlchemy domain models
+│   ├── schemas/         # Pydantic request and response schemas
+│   ├── services/        # Domain logic and provider abstractions
+│   └── worker.py        # Redis background worker
+│
+├── frontend/
+│   ├── app/             # Next.js pages and BFF endpoints
+│   ├── components/      # Shared UI and marketing components
+│   ├── features/        # Auth, dashboard, bookings and staff
+│   ├── lib/             # API contract, session and validation
+│   └── tests/           # Frontend test utilities and mocks
+│
+├── alembic/             # Database migrations
+├── tests/               # Backend unit, integration and smoke tests
+├── docs/                # Product documentation, audits and runbooks
+├── observability/       # Prometheus, Grafana and alert configuration
+├── perf/                # Load-test baselines
+├── scripts/             # Deployment, backup, CI and operational scripts
+└── .github/workflows/   # CI, deploy, backup, release and security workflows
+```
+
+---
+
+## Documentation
+
+| Document | Purpose |
+|---|---|
+| [`PROJECT_STATUS.md`](PROJECT_STATUS.md) | Verified implementation and readiness status |
+| [`ROADMAP.md`](ROADMAP.md) | High-level product roadmap |
+| [`TECH_DEBT.md`](TECH_DEBT.md) | Known gaps and technical debt |
+| [`docs/product-scope.md`](docs/product-scope.md) | Product problem, users and scope |
+| [`docs/domain-model.md`](docs/domain-model.md) | Domain terminology and relationships |
+| [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md) | Detailed implementation backlog |
+| [`docs/mvp-pilot-deployment-checklist.md`](docs/mvp-pilot-deployment-checklist.md) | Pilot deployment checklist |
+| [`docs/twilio-provider-runbook.md`](docs/twilio-provider-runbook.md) | Twilio integration runbook |
+| [`docs/learning/`](docs/learning/) | Codebase mental maps and learning notes |
+
+---
+
+## Development workflow
+
+The repository follows these rules:
+
+- one task per branch,
+- Conventional Commits,
+- targeted tests before broad validation,
+- full validation before merge,
+- CI policy guards,
+- cross-provider AI-assisted review rules.
+
+Read these files before making automated changes:
+
+- [`AGENTS.md`](AGENTS.md)
+- [`CLAUDE.md`](CLAUDE.md)
+- [`.ai-rules/`](.ai-rules/)
+
+---
+
+## Author
+
+<div align="center">
+
+### Tomasz Misiun
+
+[![GitHub](https://img.shields.io/badge/GitHub-tomekmisiun-181717?style=for-the-badge&logo=github)](https://github.com/tomekmisiun)
+[![VoxSlot](https://img.shields.io/badge/VoxSlot-Live_application-2ea44f?style=for-the-badge&logo=railway&logoColor=white)](https://voxslot.up.railway.app/)
+
+<br />
+
+Built as a production-oriented portfolio project and evolving SaaS product.
+
+</div>
+
+---
+
+<div align="center">
+
+**This repository is under active development.**
+
+No open-source license is currently included.
+
+[Back to top](#-voxslot)
+
+</div>
