@@ -339,16 +339,22 @@ jobs:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
       - name: Deploy API to production (waits for migrations)
-        run: railway up --service=api --config railway.api.toml --ci
+        run: |
+          cp railway.api.toml railway.toml
+          railway up --service=api --ci
+          rm -f railway.toml
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
       - name: Deploy worker to production
-        run: railway up --service=worker --config railway.worker.toml --ci --detach
+        run: |
+          cp railway.worker.toml railway.toml
+          railway up --service=worker --ci --detach
+          rm -f railway.toml
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
       - name: Deploy frontend to production
-        run: railway up --service=frontend --config frontend/railway.toml --ci --detach
+        run: railway up frontend/ --path-as-root --service=frontend --ci --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

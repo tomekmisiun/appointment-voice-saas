@@ -18,11 +18,11 @@ No manual step is required after merge to `main`. If any required CI job fails, 
 
 ## Railway services
 
-| Service | URL | Config file | Builder | Start command | Migrations |
+| Service | URL | Config source | Builder | Start command | Migrations |
 |---|---|---|---|---|---|
-| `api` | `api-production-52a1.up.railway.app` | `railway.api.toml` | Dockerfile (`target: production`) | `uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers` | `alembic upgrade head` (preDeployCommand) |
-| `worker` | — (internal) | `railway.worker.toml` | Dockerfile (`target: production`) | `python -m app.worker` | none |
-| `frontend` | `voxslot.up.railway.app` | `frontend/railway.toml` | Nixpacks (auto-detects Next.js from `frontend/`) | `pnpm start` | none |
+| `api` | `api-production-52a1.up.railway.app` | `railway.api.toml` → `railway.toml` at deploy time | Dockerfile (`target: production`) | `uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers` | `alembic upgrade head` (preDeployCommand) |
+| `worker` | — (internal) | `railway.worker.toml` → `railway.toml` at deploy time | Dockerfile (`target: production`) | `python -m app.worker` | none |
+| `frontend` | `voxslot.up.railway.app` | `frontend/railway.toml` (uploaded as archive root via `--path-as-root`) | Nixpacks (auto-detects Next.js from `package.json`) | `pnpm start` | none |
 | `Postgres` | — | — | Railway plugin | — | — |
 | `Redis` | — | — | Railway plugin | — | — |
 
@@ -64,15 +64,15 @@ These settings must be configured manually in the Railway dashboard once and do 
 
 | Service | Root Directory | Config File Path |
 |---|---|---|
-| `api` | `.` (repository root) | `railway.api.toml` |
-| `worker` | `.` (repository root) | `railway.worker.toml` |
-| `frontend` | `frontend` | *(leave blank — config passed via `--config` in CLI)* |
+| `api` | `.` (repository root) | *(leave blank — CI copies `railway.api.toml` → `railway.toml` before upload)* |
+| `worker` | `.` (repository root) | *(leave blank — CI copies `railway.worker.toml` → `railway.toml` before upload)* |
+| `frontend` | `frontend` | *(leave blank — CI uses `--path-as-root`, uploading `frontend/` as archive root so `frontend/railway.toml` becomes `railway.toml`)* |
 
-**Why `frontend` Root Directory = `frontend`:** Railway uses this as the Nixpacks build context. Nixpacks detects Next.js from `frontend/package.json` and builds correctly. The `frontend/railway.toml` config file is passed explicitly via `--config` in the CLI deploy command and is not auto-discovered by Railway.
+**How Railway v5 CLI reads config:** Railway CLI v5 removed the `--config` flag. Instead, each deploy step copies the service-specific toml to `railway.toml` in the working directory (for api/worker) or uses `railway up frontend/ --path-as-root` (for frontend, where `frontend/railway.toml` appears as `railway.toml` at the archive root). After upload, `railway.toml` is deleted from the workspace.
 
-**Why config files use non-default names (`railway.api.toml`, `railway.worker.toml`):** Railway auto-discovers `railway.toml` at the Root Directory. Using non-default names prevents Railway from accidentally applying the wrong service config when auto-deploy is re-enabled or a manual deploy is triggered from the dashboard.
+**Why config files use non-default names (`railway.api.toml`, `railway.worker.toml`):** Prevents Railway's git-based auto-discover from picking up the wrong config if Auto Deploy is ever re-enabled from the dashboard.
 
-> If you re-enable Railway's GitHub integration in the future, you must also set Config File Path in the dashboard for each service.
+> If you re-enable Railway's GitHub integration in the future, set Config File Path in the dashboard to `railway.api.toml`, `railway.worker.toml`, and *(blank for frontend, Root Directory = `frontend`)* respectively.
 
 ---
 
@@ -94,7 +94,9 @@ Railway runs this command inside the new API container before traffic is shifted
 
 | Command | Effect |
 |---|---|
-| `railway up --service=<name> --ci --detach` | Uploads source, triggers Railway build and deploy, returns immediately |
+| `railway up --service=<name> --ci` | Uploads source + `railway.toml`, triggers build, streams logs, waits for deploy (api) |
+| `railway up --service=<name> --ci --detach` | Uploads source, triggers build and deploy, returns immediately (worker, frontend) |
+| `railway up <path>/ --path-as-root --service=<name> --ci --detach` | Uploads `<path>/` as archive root — used for frontend so `frontend/railway.toml` is found as `railway.toml` |
 | Railway **redeploy** (dashboard button) | Re-deploys the last uploaded source without rebuilding |
 | Railway **restart** (dashboard button) | Restarts the running container without any build step |
 
