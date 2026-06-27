@@ -19,7 +19,7 @@ export default function HomePage() {
             A phone receptionist that handles booking calls and keeps your appointment book moving.
           </p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-            <Link href="/register" className="rounded-md bg-indigo-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-400">Start free</Link>
+            <Link href="/demo" className="rounded-md bg-indigo-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-400">Try demo</Link>
             <Link href="/about" className="rounded-md border border-[#303b50] bg-[#182131] px-5 py-3 text-sm font-medium text-[#dde3ef] transition-colors hover:bg-[#202b3d]">See how it works</Link>
           </div>
         </div>

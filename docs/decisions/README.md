@@ -17,6 +17,7 @@ ADRs live in **`docs/adr/`**, not in this directory.
 | [0006](../adr/0006-two-way-calendar-sync.md) | Two-way calendar sync | Accepted |
 | [0007](../adr/0007-separate-staff-records-from-login-identities.md) | Separate staff records from login identities | Accepted |
 | [0008](../adr/0008-external-busy-periods-as-availability-exclusions.md) | External busy periods as availability exclusions | Accepted |
+| [0009](../adr/0009-public-readonly-demo.md) | Public read-only demo | Accepted |
 
 Index: [docs/adr/README.md](../adr/README.md)
 

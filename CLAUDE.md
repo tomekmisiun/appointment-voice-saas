@@ -32,6 +32,7 @@ selection.
 - `documentation.md` — README, docs, tracking files
 - `git.md` — branches, commits (no AI attribution trailers), push/merge approval
 - `anti-overengineering.md` — avoid unnecessary abstractions, files, dependencies
+- `public-demo.md` — permanent public demo contract (auth, middleware, PII, tests)
 
 ### Workflow (how to work)
 - `agent-orchestration.md` — start every task here

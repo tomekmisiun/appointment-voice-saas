@@ -20,6 +20,20 @@ router = APIRouter(
     dependencies=[Depends(require_demo_business_access)],
 )
 
+_MASKED_PHONE = "***"
+_MASKED_EMAIL = "***@***.***"
+
+
+def _mask_client(client: ClientRead, is_demo: bool) -> ClientRead:
+    if not is_demo:
+        return client
+    return client.model_copy(
+        update={
+            "phone": _MASKED_PHONE if client.phone else client.phone,
+            "email": _MASKED_EMAIL if client.email else client.email,
+        }
+    )
+
 
 @router.post(
     "",
@@ -54,13 +68,9 @@ def list_clients_endpoint(
     current_user: User = Depends(get_current_user),
 ):
     skip = (page - 1) * size
-    return list_clients(
-        db,
-        business_id,
-        current_user.tenant_id,
-        skip=skip,
-        limit=size,
-    )
+    rows = list_clients(db, business_id, current_user.tenant_id, skip=skip, limit=size)
+    parsed = [ClientRead.model_validate(r) for r in rows]
+    return [_mask_client(c, current_user.is_demo_user) for c in parsed]
 
 
 @router.get("/{client_id}", response_model=ClientRead)
@@ -70,7 +80,8 @@ def get_client_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return require_client_in_business(db, client_id, business_id, current_user.tenant_id)
+    row = require_client_in_business(db, client_id, business_id, current_user.tenant_id)
+    return _mask_client(ClientRead.model_validate(row), current_user.is_demo_user)
 
 
 @router.get("/{client_id}/bookings", response_model=list[BookingRead])

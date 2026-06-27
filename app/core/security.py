@@ -44,6 +44,8 @@ def create_access_token(
     tenant_id: int,
     token_version: int,
     expires_delta: timedelta | None = None,
+    *,
+    is_public_demo: bool = False,
 ) -> str:
     expire = datetime.now(timezone.utc) + (
         expires_delta
@@ -59,6 +61,8 @@ def create_access_token(
         "type": "access",
         "jti": str(uuid7()),
     }
+    if is_public_demo:
+        payload["is_public_demo"] = True
 
     return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
 

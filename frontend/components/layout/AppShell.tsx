@@ -70,9 +70,9 @@ export function AppShell({
         <div
           role="banner"
           aria-label="Demo mode"
-          className="sticky top-0 z-40 flex items-center justify-center bg-amber-50 border-b border-amber-200 px-4 py-2 text-sm font-medium text-amber-800"
+          className="sticky top-0 z-40 flex items-center justify-center gap-2 bg-amber-50 border-b border-amber-200 px-4 py-2 text-sm font-medium text-amber-800"
         >
-          Public demo — read only
+          <span>Public demo — browse the platform and test the phone number. Data changes are disabled.</span>
         </div>
       ) : null}
 
