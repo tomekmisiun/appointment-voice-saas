@@ -41,7 +41,7 @@ def request_password_reset(
 ) -> str:
     user = get_user_by_email(db, str(reset_request.email), tenant_id)
 
-    if user is None or not user.is_active:
+    if user is None or not user.is_active or user.is_demo_user:
         logger.info("password_reset_request_ignored")
         return PASSWORD_RESET_RESPONSE_MESSAGE
 
@@ -119,9 +119,9 @@ def create_password_reset_token_and_send_email(
 
     user = db.query(User).filter(User.id == user_id).first()
 
-    if user is None or not user.is_active:
+    if user is None or not user.is_active or user.is_demo_user:
         logger.info(
-            "password_reset_email_job_skipped reason=inactive_or_missing_user user_id=%s",
+            "password_reset_email_job_skipped reason=inactive_missing_or_demo_user user_id=%s",
             user_id,
         )
         return
@@ -213,7 +213,7 @@ def confirm_password_reset(db: Session, reset_confirm: PasswordResetConfirm) -> 
 
     user = db.query(User).filter(User.id == reset_token.user_id).first()
 
-    if user is None or not user.is_active:
+    if user is None or not user.is_active or user.is_demo_user:
         logger.warning(
             "password_reset_confirm_rejected reason=inactive_or_missing_user token_id=%s",
             reset_token.id,
