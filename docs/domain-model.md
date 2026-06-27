@@ -1,9 +1,8 @@
 # Domain Model
 
-Planned domain vocabulary for **Appointment Voice SaaS**. These are product
-planning concepts, not database models implemented in the repository today.
-Runtime implementation is not done yet unless verified by code and tests in
-`PROJECT_STATUS.md`.
+Domain vocabulary for **Appointment Voice SaaS**. All models below are
+implemented in the repository. For the verified runtime state, see
+`PROJECT_STATUS.md` and `docs/CURRENT_STATE.md`.
 
 ## Business
 
@@ -96,19 +95,20 @@ Key responsibilities:
   inputs.
 - Can represent transfer intent when the caller requests staff transfer.
 
-## SMSMessage
+## NotificationOutbox
 
-Notification intent and delivery record for SMS communication.
+Outbox record for notification delivery (table `notification_outbox`; ORM
+`app/models/notification_outbox.py`). Note: `app/core/sms.py::SmsMessage` is
+a provider payload dataclass, not a persistent entity.
 
 Key responsibilities:
 
-- Belongs to a Business.
-- Tracks recipient, purpose, provider, provider message identifier, status, and
-  error details.
-- Supports customer confirmations, business notifications, and later reminders.
-- Should be written before provider delivery is attempted.
-- Should represent booking, cancellation, and reschedule message intents before
-  any real provider send attempt.
+- Belongs to a Business; optionally linked to a Booking.
+- Tracks channel (currently SMS only), purpose, recipient phone, body, status,
+  attempt count, provider message identifier, and last error.
+- Purposes: booking confirmation, booking cancellation, booking reminder,
+  external booking link, waitlist offer.
+- Written before provider delivery is attempted (outbox pattern).
 
 ## CalendarEvent
 

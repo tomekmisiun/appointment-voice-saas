@@ -280,7 +280,7 @@ flowchart LR
 - Docker and Docker Compose
 - Python 3.13+
 - [`uv`](https://docs.astral.sh/uv/)
-- Node.js 20+
+- Node.js 22.x (≥ 22.13.0)
 - [`pnpm`](https://pnpm.io/)
 - Make
 
@@ -461,17 +461,19 @@ See [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for the evidence-backed implementat
 
 ## Roadmap
 
-Current development areas:
+Immediate priorities:
 
-- completing owner dashboard management screens,
-- public read-only demo access,
-- staff accounts and business permissions,
-- owner metrics and CSV exports,
-- payment and deposit workflows,
-- subscription billing and plan enforcement,
-- automated phone-number provisioning,
-- deeper calendar synchronization,
-- operational integration reconciliation.
+- repair production API (currently 502 Bad Gateway),
+- add `/demo` CTA to the landing page.
+
+Next development areas:
+
+- phone-number-based IVR routing (BusinessPhoneNumber model, Twilio routing by `To` field),
+- SMS localization (locale-aware messages per business language),
+- public booking management link (HMAC-tokenized cancel/reschedule URL),
+- staff accounts and per-business RBAC (SAC-005 membership cutover),
+- completing owner dashboard configuration screens,
+- owner metrics and CSV exports.
 
 More details:
 

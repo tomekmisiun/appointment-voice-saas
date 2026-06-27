@@ -16,16 +16,30 @@ business cancellation/reschedule plus optional call transfer to staff.
 
 ## Current State
 
-See [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for the verified, evidence-backed
-current state and
-[`docs/audits/p3-remaining-backlog-audit.md`](docs/audits/p3-remaining-backlog-audit.md)
-for what's left. Summary: the full MVP foundation (phases 1–9 below), all of
-the P1 backlog, all of P2 except owner metrics/CSV export (P2-013/014), and
-7 of 14 P3 operational-extension items are implemented and tested. Remaining
-work is the rest of phase 11
-(deposits/billing, calendar privacy/two-way-sync ADRs, integration
-reconciliation, dashboard metrics/CSV export, self-service onboarding) — see
-phase 11 below and the backlog file for task-level detail.
+Audit conducted 2026-06-27. All MVP foundation epics A–L are done. All P1
+items are done. All P2 items are done except P2-013/014 (owner metrics, CSV
+export). All P3 items are done except P3-007 (Stripe payment links, deliberately
+deferred — not a priority for this portfolio project). P4-004 (self-service
+signup) is done. P4-001/002/003 (systematic per-route tenancy audit/CI guard)
+remain partially open.
+
+A recovery audit on 2026-06-26 identified that telephony features
+(`BusinessPhoneNumber` model, phone-number-based IVR routing, `telephony_status`
+column), SAC-009 staff invitations, and SAC-006/007/008 staff lifecycle items
+were developed on a contaminated branch and never merged to `main`. These are
+tracked as new work — see Next Recommended Execution Order below. The production
+database **may** have received the SAC-009 migration directly (unverified —
+run `alembic current` against Railway to confirm before implementing SAC-009);
+a no-op stub (`alembic/versions/sac009_staff_inv.py`) bridges the Alembic chain
+regardless of outcome.
+
+**Production (2026-06-27):** API returns 502 Bad Gateway — active blocker for
+all production demos and pilot testing.
+
+See [`docs/CURRENT_STATE.md`](docs/CURRENT_STATE.md) for the full audit
+snapshot and
+[`docs/audits/AUDIT_CURRENT_REPO_STATE.md`](docs/audits/AUDIT_CURRENT_REPO_STATE.md)
+for the 2026-06-27 audit report.
 
 ## MVP Definition Of Done
 
@@ -120,21 +134,49 @@ The first working product is done when:
 
 ## Next Recommended Execution Order
 
-Phases 1–9 (foundation through call transfer) and most of phase 11 (product
-expansion) are done — see `PROJECT_STATUS.md`. Remaining work, per
-`docs/audits/p3-remaining-backlog-audit.md` §6:
+Updated 2026-06-27 to reflect completed P1–P3 work and recovery audit
+findings. P3 is fully closed except P3-007 (deliberately deferred).
 
-1. `feat/p3-013-reconciliation-job` — no dependency on any other remaining
-   item; can land in parallel with the deposits track.
-2. `docs/adr-deposits-architecture` (P3-006) — ADR only, unblocks P3-007/008.
-3. `docs/adr-calendar-import-spike` (P3-011) — ADR/spike only.
-4. `docs/adr-two-way-calendar-sync` (P3-014) — depends on #3.
-5. `feat/p3-010-calendar-visibility` — depends on #3.
-6. `feat/p3-007-stripe-payment-links` — depends on #2.
-7. `feat/p3-008-pending-payment-state` — depends on #6.
-8. P2-013/014 (owner metrics, CSV export) and P4-001 through P4-011
-   (tenancy hardening, onboarding, billing) remain sequenced after the P3
-   operational-extensions tier.
+**Immediate blockers:**
+1. Repair production API (502 Bad Gateway) — investigate Railway service logs.
+2. Add `/demo` CTA to landing page (`frontend/src/app/page.tsx`).
+
+**Required for real telephony (new work, extracted from recovery audit):**
+3. `TELEPHONY-T1/T2` — `telephony_status` column on Business +
+   `BusinessPhoneNumber` model and migration (from current head).
+4. `TELEPHONY-T3` — Composite FK isolation for `BusinessPhoneNumber`.
+5. `TELEPHONY-T4` — Seed demo phone number.
+6. `TELEPHONY-T5` — Operator API (assign phone to business).
+7. `TELEPHONY-T9` — Phone-number-based IVR routing (route Twilio webhooks
+   by `To` field, not URL-embedded `business_id`).
+8. `TELEPHONY-T6` — Telephony status card (frontend dashboard component).
+
+**Independent tracks:**
+9. `feat/sms-localization` — SMS messages are EN-only hardcoded; add
+   locale-aware rendering per `business.language` (P3-009 IVR prompt
+   architecture is the model).
+10. `feat/public-booking-management-link` — HMAC-tokenized cancel/reschedule
+    URL included in confirmation SMS.
+11. `SAC-005` — Wire `BusinessMembership.role` into the authorization layer
+    (currently `User.role` only; per-business RBAC is unimplemented).
+
+**Staff lifecycle recovery (from backup snapshot — see recovery audit):**
+12. `SAC-006` — Staff profile lifecycle (clean commit `a7bf6a1` in snapshot;
+    extract after SAC-005 merges).
+13. `SAC-007` / `SAC-008b` — Staff service assignments + composite FK
+    isolation (extract after SAC-006 merges).
+14. `SAC-009` — Staff invitations (HTTP routes do not yet exist; must not
+    ship until `app/api/routes/staff_invitations.py` is added; verify
+    production schema state with `alembic current` before migrating).
+    See [`docs/audits/MIXED_WORK_RECOVERY_AUDIT_2026-06-26.md`](docs/audits/MIXED_WORK_RECOVERY_AUDIT_2026-06-26.md)
+    for the full extraction plan.
+
+**Backlog (post-pilot):**
+15. P2-013, P2-014 — Owner metrics API and CSV export.
+16. Frontend configuration screens for services, working hours, recurring
+    blocks, and availability exceptions.
+17. P4-001/002/003 — Systematic per-route tenancy audit and CI guard.
+18. P4-012 — Per-business IVR prompt customization.
 
 ## Detailed Backlog
 

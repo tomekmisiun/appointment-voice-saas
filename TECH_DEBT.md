@@ -66,6 +66,57 @@ Historical inherited foundation debt is preserved in
 | AVS-TD-026 | No SaaS onboarding. | Salon setup and phone provisioning remain manual. | Add self-service salon onboarding, wizard APIs, and phone provisioning workflow. | Future | P4-004 to P4-006 | L | Open |
 | AVS-TD-027 | No Stripe Billing/subscriptions. | The SaaS cannot enforce paid plans or subscription limits. | Add billing model, webhooks, plans, limits, and compatibility checklist after product MVP. | Future | P4-007 to P4-011 | L | Open |
 
+## 2026-06-27 Audit Findings
+
+New items identified in the 2026-06-27 repository state audit. These use the
+SEC/ARCH/TEST/OPS/UX naming scheme to distinguish them from earlier AVS-TD-*
+items above. Full detail in
+[`docs/audits/AUDIT_CURRENT_REPO_STATE.md`](docs/audits/AUDIT_CURRENT_REPO_STATE.md)
+and [`docs/CURRENT_STATE.md`](docs/CURRENT_STATE.md).
+
+### Security
+
+| ID | Issue | Risk | Priority | Status |
+|----|-------|------|----------|--------|
+| SEC-001 | `BusinessMembership.role` not enforced — all auth decisions use `User.role` only; per-business RBAC (`BusinessMembership`) is stored but never read. `app/api/dependencies/auth.py`, migration `sac003a2b3c4d5e6`. | A user with `User.role=admin` has admin access to all businesses regardless of their membership role. | High | Open — blocked on SAC-005 |
+| SEC-002 | SMS injection risk when templates become user-editable (latent). Hardcoded EN-only f-strings are safe now; per-business template editing (future) without placeholder validation allows arbitrary content injection. | Reputational and compliance risk; not exploitable until template editing is implemented. | Medium | Latent — not actionable until SMS templates feature |
+| SEC-003 | `staff_invitations` table applied directly to production DB outside `main` workflow. A no-op stub `alembic/versions/sac009_staff_inv.py` bridges the Alembic chain. Fresh DBs from `main` do not have the table. Real SAC-009 migration must use `IF NOT EXISTS` guards. | Schema divergence between production and fresh DB until SAC-009 is properly implemented. | Medium | Mitigated — stub in place; monitor when SAC-009 is extracted |
+| SEC-004 | Per-route tenant isolation not systematically enforced in CI. P4-001/002/003 (systematic query audit, guard abstraction, per-route coverage) remain partially open. | A new endpoint without the isolation pattern could merge without detection. | Low | Partially open — P4-001/002/003 |
+
+### Architectural
+
+| ID | Issue | Risk | Priority | Status |
+|----|-------|------|----------|--------|
+| ARCH-001 | IVR webhook routes by `business_id` in URL, not by phone number. Real telephony requires routing by the `To` field in Twilio webhook. `app/api/routes/twilio_voice.py`. | Cannot support the real product flow where a customer dials a business phone number. | High | Open — TELEPHONY-T9 |
+| ARCH-002 | `BusinessPhoneNumber` model does not exist on `main`. Developed in backup snapshot branch, never merged. | Blocks ARCH-001 (phone-number routing). | High | Open — TELEPHONY-T1/T2 |
+| ARCH-003 | SMS messages are EN-only hardcoded f-strings. No `business.language` field, no locale-aware rendering, no `SmsTemplate` model. | Cannot serve non-English-speaking businesses; no per-business customization. | Medium | Open — `feat/sms-localization` |
+| ARCH-004 | Landing page does not link to `/demo`. `frontend/src/app/page.tsx` links to `/register` and `/about` only. | Zero organic traffic to the demo; reduces portfolio value. < 30 min fix. | Low | Open — FIX-002 |
+| ARCH-005 | `CalendarIntegration` model and fake provider exist; no active OAuth flow, no frontend setup screen, no external calendar sync in production. ADRs 0005/0006 scope future use as informational-only. | Adds schema surface area without current production value. | Low | Accepted — ADRs 0005/0006 define safe future scope |
+| ARCH-006 | No public booking management link. Customers cannot cancel or reschedule without calling the business. | High support burden; poor customer UX; common requirement for any booking system. | Medium | Open — `feat/public-booking-management-link` |
+
+### Test Debt
+
+| ID | Issue | Risk | Priority | Status |
+|----|-------|------|----------|--------|
+| TEST-001 | No post-deploy smoke test against production. CI deploys to Railway but does not hit `/health/live` after deploy to confirm the API is healthy. | A successful deploy can result in a broken production API (as observed: 502 on 2026-06-27). | Medium | Open |
+| TEST-002 | No browser-driven E2E tests. Frontend tests are Vitest unit/component tests (164 passing). No Playwright or Cypress coverage for the critical user path (login → dashboard → cancel booking). | Frontend integration paths are not automatically verified. | Medium | Open |
+
+### Operational
+
+| ID | Issue | Risk | Priority | Status |
+|----|-------|------|----------|--------|
+| OPS-001 | Production API is 502 Bad Gateway (2026-06-27). All production functionality unavailable. | Active incident — pilot and portfolio demo blocked. | Critical | Active — investigate Railway logs |
+| OPS-002 | No `.nvmrc` or `.node-version` file. `package.json` engines specifies `^22.13.0`; local dev may use a different Node version. | Builds that pass locally may differ on Railway. | Low | Open |
+
+### UX Debt
+
+| ID | Issue | Priority | Status |
+|----|-------|----------|--------|
+| UX-001 | Services, working hours, recurring staff blocks, availability exceptions all have backend APIs but no frontend screens. Business owners must use API tools to configure. | High | Open — multiple frontend screens needed |
+| UX-002 | No customer-facing booking management. Customers cannot cancel or reschedule without calling. See ARCH-006. | High | Open — `feat/public-booking-management-link` |
+| UX-003 | No dashboard metrics. Owner dashboard shows bookings but no aggregate metrics (totals, cancellation rate, revenue). | Medium | Open — P2-013 |
+| UX-004 | IVR simulator has no frontend UI. The backend simulator endpoint exists; no frontend interface. | Low | Open |
+
 ## Update Rules
 
 - Keep this file focused on Appointment Voice SaaS product gaps.
