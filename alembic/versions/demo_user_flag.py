@@ -1,14 +1,14 @@
 """add is_demo_user flag to users
 
 Revision ID: demo_user_flag_a1b2c3d4
-Revises: p3005a2b3c4d5e
+Revises: sac003a2b3c4d5e6
 Create Date: 2026-06-26
 """
 from alembic import op
 import sqlalchemy as sa
 
 revision = "demo_user_flag_a1b2c3d4"
-down_revision = "p3005a2b3c4d5e"
+down_revision = "sac003a2b3c4d5e6"
 branch_labels = None
 depends_on = None
 
