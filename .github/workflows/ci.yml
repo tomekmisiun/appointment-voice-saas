@@ -355,6 +355,6 @@ jobs:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
       - name: Deploy frontend to production
-        run: railway up frontend/ --path-as-root --service=frontend --ci --detach
+        run: railway up --service=frontend --ci --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
