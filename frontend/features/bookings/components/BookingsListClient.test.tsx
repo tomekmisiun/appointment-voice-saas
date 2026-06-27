@@ -19,6 +19,7 @@ const business: BusinessRead = {
   timezone: "Europe/Warsaw",
   phone: null,
   is_active: true,
+  language: "en",
   transfer_enabled: false,
   transfer_destination_policy: "business_phone",
   booking_mode: "internal_booking",
@@ -44,6 +45,8 @@ const services: ServiceRead[] = [
     is_active: true,
     price_minor_units: null,
     currency: null,
+    deposit_minor_units: null,
+    deposit_required: false,
     created_at: "",
   },
 ];

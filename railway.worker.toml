@@ -1,0 +1,9 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+buildTarget = "production"
+
+[deploy]
+startCommand = "python -m app.worker"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3

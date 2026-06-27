@@ -538,6 +538,8 @@ The repository follows these rules:
 - CI policy guards,
 - cross-provider AI-assisted review rules.
 
+Merging to `main` with a green CI automatically deploys all production services (API, worker, frontend) to Railway. See [`.github/DEPLOY.md`](.github/DEPLOY.md) for the full deployment flow, service list, and manual setup checklist.
+
 Read these files before making automated changes:
 
 - [`AGENTS.md`](AGENTS.md)
