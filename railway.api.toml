@@ -4,7 +4,7 @@ dockerfilePath = "Dockerfile"
 buildTarget = "production"
 
 [deploy]
-startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers"
+startCommand = 'sh -c "uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers"'
 healthcheckPath = "/health/live"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
