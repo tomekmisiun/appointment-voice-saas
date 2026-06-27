@@ -11,6 +11,7 @@ All fake providers (SMS, calendar) are configured via environment variables;
 no provider objects need to be seeded here.
 """
 
+import logging
 from datetime import time
 
 from app.core.config import settings
@@ -23,6 +24,8 @@ from app.models.staff import Staff
 from app.models.user import User
 from app.models.working_hours import WorkingHours
 from app.services.tenant_seed_service import ensure_default_tenant
+
+logger = logging.getLogger(__name__)
 
 DEMO_BUSINESS_NAME = "Glamour Studio Demo"
 DEMO_USER_EMAIL = "demo@voxslot.demo"
@@ -178,21 +181,29 @@ def main() -> None:
     if settings.environment not in ("development", "production"):
         raise SystemExit("seed_demo_data only runs when ENVIRONMENT=development or production")
 
+    logger.info("[seed] starting demo data seed")
     db = SessionLocal()
     try:
         tenant = ensure_default_tenant(db, commit=True)
+        logger.info("[seed] tenant: id=%d slug=%s", tenant.id, tenant.slug)
         results = seed_demo(db)
         user_results = seed_demo_user(db, tenant.id)
         results.update(user_results)
     except ValueError as exc:
+        logger.error("[seed] configuration error: %s", exc)
         db.close()
         raise SystemExit(f"[demo_user] ERROR: {exc}") from exc
+    except Exception as exc:
+        logger.error("[seed] unexpected error: %s: %s", type(exc).__name__, exc)
+        db.close()
+        raise SystemExit(f"[seed] FAILED: {type(exc).__name__}: {exc}") from exc
     finally:
         db.close()
 
     for section, items in results.items():
         for item in items:
-            print(f"[{section}] {item}")
+            logger.info("[seed] [%s] %s", section, item)
+    logger.info("[seed] done")
 
 
 if __name__ == "__main__":
