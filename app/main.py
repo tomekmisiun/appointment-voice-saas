@@ -13,6 +13,7 @@ from app.core.exception_handlers import (
 )
 from app.core.error_tracking import initialize_error_tracking
 from app.core.logging import configure_logging
+from app.core.demo_guard import DemoReadOnlyMiddleware
 from app.core.middleware import RequestContextMiddleware
 from app.api.legacy import legacy_api_router
 from app.api.openapi import configure_openapi
@@ -46,6 +47,7 @@ app = FastAPI(
 )
 configure_openapi(app)
 
+app.add_middleware(DemoReadOnlyMiddleware)
 app.add_middleware(RequestContextMiddleware)
 configure_runtime_middleware(app, settings)
 app.add_exception_handler(DomainError, domain_error_handler)

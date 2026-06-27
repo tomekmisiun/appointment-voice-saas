@@ -54,8 +54,8 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
             <Link href="/login" className="rounded-md border border-[#2b364a] bg-[#202939] px-3 py-2 text-sm text-[#dbe1ec] transition-colors hover:bg-[#293449]">
               Sign in
             </Link>
-            <Link href="/register" className="rounded-md bg-indigo-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-400">
-              Register
+            <Link href="/demo" className="rounded-md bg-indigo-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-400">
+              Try demo
             </Link>
           </div>
           <button
@@ -77,7 +77,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
             ))}
             <div className="mt-2 grid grid-cols-2 gap-2 border-t border-[#283246] pt-3">
               <Link href="/login" className="rounded-md border border-[#303a4d] px-3 py-2 text-center text-sm">Sign in</Link>
-              <Link href="/register" className="rounded-md bg-indigo-500 px-3 py-2 text-center text-sm font-medium">Register</Link>
+              <Link href="/demo" className="rounded-md bg-indigo-500 px-3 py-2 text-center text-sm font-medium">Try demo</Link>
             </div>
           </nav>
         ) : null}

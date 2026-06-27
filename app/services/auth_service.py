@@ -104,6 +104,7 @@ def create_demo_session(db: Session) -> tuple[str, str]:
         subject=str(user.id),
         tenant_id=user.tenant_id,
         token_version=user.token_version,
+        is_public_demo=True,
     )
     refresh_token = create_refresh_token(
         subject=str(user.id),
@@ -142,6 +143,7 @@ def rotate_refresh_token(db: Session, refresh_token: str) -> tuple[str, str]:
         subject=str(user.id),
         tenant_id=user.tenant_id,
         token_version=user.token_version,
+        is_public_demo=user.is_demo_user,
     )
     new_refresh_token = create_refresh_token(
         subject=str(user.id),

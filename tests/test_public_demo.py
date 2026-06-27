@@ -3,11 +3,14 @@
 Covers:
 - POST /auth/demo session creation (enabled / disabled / misconfigured)
 - Read-only enforcement: demo user blocked from all mutation categories
+- Central DemoReadOnlyMiddleware blocks unlisted mutations
+- is_public_demo JWT claim present on demo access tokens
 - Owner of the same business is NOT blocked
 - GET endpoints work for demo user
 - Shared data: owner update visible to demo user
 - Demo user cannot access other tenants/businesses
 - Webhooks and IVR simulation not blocked
+- PII masking: client phone/email masked for demo users
 - seed_demo_user idempotency
 """
 
@@ -590,3 +593,213 @@ def test_demo_user_reset_token_confirm_rejected(client, db):
         json={"token": raw_token, "new_password": "NewPassword123!"},
     )
     assert resp.status_code == 400
+
+
+# ── is_public_demo JWT claim ──────────────────────────────────────────────────
+
+def test_demo_access_token_carries_is_public_demo_claim(client, db):
+    """Access token returned by /auth/demo must include is_public_demo=True."""
+    from jose import jwt as jose_jwt
+    from app.core.config import settings
+
+    tenant_id, biz_id, _ = _admin_setup(db, client)
+    _make_demo_user(db, tenant_id)
+
+    with patch("app.services.auth_service.settings") as ms:
+        ms.public_demo_enabled = True
+        ms.public_demo_user_email = DEMO_USER_EMAIL
+        ms.public_demo_business_id = biz_id
+        resp = client.post("/api/v1/auth/demo")
+
+    assert resp.status_code == 200
+    access_token = resp.json()["access_token"]
+    payload = jose_jwt.decode(access_token, settings.secret_key, algorithms=[settings.algorithm])
+    assert payload.get("is_public_demo") is True
+
+
+def test_demo_access_token_retains_is_public_demo_after_refresh(client, db):
+    """Refreshed demo access token must still carry is_public_demo=True."""
+    from jose import jwt as jose_jwt
+    from app.core.config import settings
+
+    tenant_id, biz_id, _ = _admin_setup(db, client)
+    _make_demo_user(db, tenant_id)
+
+    with patch("app.services.auth_service.settings") as ms:
+        ms.public_demo_enabled = True
+        ms.public_demo_user_email = DEMO_USER_EMAIL
+        ms.public_demo_business_id = biz_id
+        resp = client.post("/api/v1/auth/demo")
+
+    assert resp.status_code == 200
+    refresh_token = resp.json()["refresh_token"]
+
+    refresh_resp = client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token})
+    assert refresh_resp.status_code == 200
+
+    new_access_token = refresh_resp.json()["access_token"]
+    payload = jose_jwt.decode(new_access_token, settings.secret_key, algorithms=[settings.algorithm])
+    assert payload.get("is_public_demo") is True, "Refreshed demo token must retain is_public_demo"
+
+
+def test_middleware_still_blocks_after_token_refresh(client, db):
+    """Central middleware must block mutations with a refreshed demo token."""
+    tenant_id, biz_id, _ = _admin_setup(db, client)
+    _make_demo_user(db, tenant_id)
+
+    with patch("app.services.auth_service.settings") as ms:
+        ms.public_demo_enabled = True
+        ms.public_demo_user_email = DEMO_USER_EMAIL
+        ms.public_demo_business_id = biz_id
+        resp = client.post("/api/v1/auth/demo")
+
+    refresh_token = resp.json()["refresh_token"]
+    refresh_resp = client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token})
+    assert refresh_resp.status_code == 200
+
+    new_headers = {"Authorization": f"Bearer {refresh_resp.json()['access_token']}"}
+    mutation_resp = client.post(
+        "/api/v1/owner-leads",
+        json={"name": "Test", "email": "t@t.com", "phone": "+48600000001"},
+        headers=new_headers,
+    )
+    assert mutation_resp.status_code == 403
+
+
+def test_normal_access_token_has_no_is_public_demo_claim(client, db):
+    """Regular login must not produce a token with is_public_demo."""
+    from jose import jwt as jose_jwt
+    from app.core.config import settings
+
+    register_user(client, "regular2@test.com")
+    resp = login_user(client, "regular2@test.com")
+    assert resp.status_code == 200
+    payload = jose_jwt.decode(
+        resp.json()["access_token"], settings.secret_key, algorithms=[settings.algorithm]
+    )
+    assert "is_public_demo" not in payload
+
+
+# ── central middleware ────────────────────────────────────────────────────────
+
+def test_middleware_blocks_unlisted_mutation_for_demo_user(client, db):
+    """Central middleware must block a POST that has no require_non_demo_user guard.
+
+    /api/v1/owner-leads accepts POST without require_non_demo_user, but the
+    middleware must still reject it for a demo session.
+    """
+    tenant_id, biz_id, _ = _admin_setup(db, client)
+    demo_hdrs = _demo_headers(client, db, tenant_id, biz_id)
+
+    resp = client.post(
+        "/api/v1/owner-leads",
+        json={"name": "Test Lead", "email": "lead@test.com", "phone": "+48600000001"},
+        headers=demo_hdrs,
+    )
+    assert resp.status_code == 403
+    assert "demo" in resp.json()["detail"].lower()
+
+
+def test_middleware_does_not_block_normal_user(client, db):
+    """Central middleware must NOT block mutations made by non-demo users."""
+    tenant_id, biz_id, owner_headers = _admin_setup(db, client)
+
+    resp = client.patch(
+        f"/api/v1/businesses/{biz_id}",
+        json={"name": "Normal User Update"},
+        headers=owner_headers,
+    )
+    assert resp.status_code == 200
+
+
+def test_middleware_does_not_block_unauthenticated_request(client, db):
+    """Requests without an Authorization header must pass through the middleware."""
+    resp = client.post("/api/v1/webhooks/inbound", json={})
+    # Any response except 403 is acceptable (likely 401 or 400).
+    assert resp.status_code != 403
+
+
+def test_middleware_allows_demo_logout(client, db):
+    """Demo user must be able to call POST /auth/logout despite the middleware."""
+    tenant_id, biz_id, _ = _admin_setup(db, client)
+    _make_demo_user(db, tenant_id)
+
+    with patch("app.services.auth_service.settings") as ms:
+        ms.public_demo_enabled = True
+        ms.public_demo_user_email = DEMO_USER_EMAIL
+        ms.public_demo_business_id = biz_id
+        resp = client.post("/api/v1/auth/demo")
+
+    refresh_token = resp.json()["refresh_token"]
+    logout_resp = client.post(
+        "/api/v1/auth/logout",
+        json={"refresh_token": refresh_token},
+        headers={"Authorization": f"Bearer {resp.json()['access_token']}"},
+    )
+    assert logout_resp.status_code == 204
+
+
+# ── PII masking in clients endpoint ──────────────────────────────────────────
+
+def test_demo_client_list_masks_phone_and_email(client, db):
+    """GET /clients must return masked phone/email for demo users."""
+    tenant_id, biz_id, owner_headers = _admin_setup(db, client)
+
+    client.post(
+        f"/api/v1/businesses/{biz_id}/clients",
+        json={"name": "Real Person", "phone": "+48123456789", "email": "real@person.com"},
+        headers=owner_headers,
+    )
+
+    demo_hdrs = _demo_headers(client, db, tenant_id, biz_id)
+    with patch("app.api.dependencies.auth.settings") as ms:
+        ms.public_demo_business_id = biz_id
+        resp = client.get(f"/api/v1/businesses/{biz_id}/clients", headers=demo_hdrs)
+
+    assert resp.status_code == 200
+    for record in resp.json():
+        if record["phone"] is not None:
+            assert record["phone"] == "***", f"Phone not masked: {record['phone']}"
+        if record["email"] is not None:
+            assert "@" not in record["email"] or record["email"] == "***@***.***", (
+                f"Email not masked: {record['email']}"
+            )
+
+
+def test_demo_client_get_single_masks_phone_and_email(client, db):
+    """GET /clients/{id} must return masked phone/email for demo users."""
+    tenant_id, biz_id, owner_headers = _admin_setup(db, client)
+
+    create_resp = client.post(
+        f"/api/v1/businesses/{biz_id}/clients",
+        json={"name": "Real Person 2", "phone": "+48987654321", "email": "real2@person.com"},
+        headers=owner_headers,
+    )
+    assert create_resp.status_code == 201
+    client_id = create_resp.json()["id"]
+
+    demo_hdrs = _demo_headers(client, db, tenant_id, biz_id)
+    with patch("app.api.dependencies.auth.settings") as ms:
+        ms.public_demo_business_id = biz_id
+        resp = client.get(f"/api/v1/businesses/{biz_id}/clients/{client_id}", headers=demo_hdrs)
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["phone"] == "***"
+    assert data["email"] == "***@***.***"
+
+
+def test_owner_client_list_returns_real_phone(client, db):
+    """Non-demo users must still receive unmasked PII."""
+    tenant_id, biz_id, owner_headers = _admin_setup(db, client)
+
+    client.post(
+        f"/api/v1/businesses/{biz_id}/clients",
+        json={"name": "Owner Client", "phone": "+48111222333"},
+        headers=owner_headers,
+    )
+    resp = client.get(f"/api/v1/businesses/{biz_id}/clients", headers=owner_headers)
+    assert resp.status_code == 200
+    for record in resp.json():
+        if record.get("phone"):
+            assert record["phone"] != "***", "Owner must see real phone"
