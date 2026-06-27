@@ -4,6 +4,12 @@ This template is a reusable FastAPI backend foundation. It is not tied to one
 business domain or one hosting provider. Adapt the deployment target to the
 project, but keep the operational contract below.
 
+> **VoxSlot deployment:** This project uses Railway. The active deployment
+> flow (automatic Railway deploy after green CI on `main`) is documented in
+> [`.github/DEPLOY.md`](../.github/DEPLOY.md). The generic manual
+> workflow described below (`deploy.yml` + GHCR + SSH/hook promote) is
+> retained as a template reference and emergency fallback.
+
 ## Supported Deployment Shape
 
 The production runtime should provide these independently managed services:
