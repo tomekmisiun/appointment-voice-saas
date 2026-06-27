@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies.auth import require_role
+from app.api.dependencies.auth import require_non_demo_user, require_role
 from app.api.dependencies.rate_limit import rate_limit
 from app.db.session import get_db
 from app.models.owner_lead import LeadStatus
@@ -87,6 +87,7 @@ def get_lead(
     "/{lead_id}/status",
     response_model=OwnerLeadAdminRead,
     summary="Update lead status (admin)",
+    dependencies=[Depends(require_non_demo_user)],
 )
 def patch_lead_status(
     lead_id: int,

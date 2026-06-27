@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies.auth import get_current_user, require_role
+from app.api.dependencies.auth import get_current_user, require_demo_business_access, require_non_demo_user, require_role
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.staff import StaffCreate, StaffRead, StaffUpdate
@@ -12,10 +12,19 @@ from app.services.staff_service import (
     update_staff,
 )
 
-router = APIRouter(prefix="/businesses/{business_id}/staff", tags=["staff"])
+router = APIRouter(
+    prefix="/businesses/{business_id}/staff",
+    tags=["staff"],
+    dependencies=[Depends(require_demo_business_access)],
+)
 
 
-@router.post("", response_model=StaffRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=StaffRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_non_demo_user)],
+)
 def create_staff_endpoint(
     business_id: int,
     body: StaffCreate,
@@ -61,7 +70,11 @@ def get_staff_endpoint(
     return require_staff_in_business(db, staff_id, business_id, current_user.tenant_id)
 
 
-@router.patch("/{staff_id}", response_model=StaffRead)
+@router.patch(
+    "/{staff_id}",
+    response_model=StaffRead,
+    dependencies=[Depends(require_non_demo_user)],
+)
 def update_staff_endpoint(
     business_id: int,
     staff_id: int,

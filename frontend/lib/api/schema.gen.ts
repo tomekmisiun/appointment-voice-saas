@@ -166,6 +166,26 @@ export interface paths {
         patch: operations["patch_tenant_api_v1_admin_tenants__tenant_id__patch"];
         trace?: never;
     };
+    "/api/v1/auth/demo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a public demo session
+         * @description Returns short-lived JWT tokens for the pre-configured read-only demo user. Requires PUBLIC_DEMO_ENABLED=true and correct PUBLIC_DEMO_USER_EMAIL / PUBLIC_DEMO_BUSINESS_ID configuration. The demo user cannot perform any mutation.
+         */
+        post: operations["demo_login_api_v1_auth_demo_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -1208,6 +1228,27 @@ export interface paths {
         put?: never;
         /** Twilio Voice Keypress */
         post: operations["twilio_voice_keypress_api_v1_webhooks_twilio_voice__business_id___session_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/demo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a public demo session
+         * @deprecated
+         * @description Returns short-lived JWT tokens for the pre-configured read-only demo user. Requires PUBLIC_DEMO_ENABLED=true and correct PUBLIC_DEMO_USER_EMAIL / PUBLIC_DEMO_BUSINESS_ID configuration. The demo user cannot perform any mutation.
+         */
+        post: operations["demo_login_auth_demo_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2859,6 +2900,8 @@ export interface components {
             id: number;
             /** Is Active */
             is_active: boolean;
+            /** Is Demo User */
+            is_demo_user: boolean;
             /** Role */
             role: string;
         };
@@ -3668,6 +3711,53 @@ export interface operations {
             };
             /** @description Request validation failed. */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    demo_login_api_v1_auth_demo_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Token"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limit exceeded. */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6623,6 +6713,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    demo_login_auth_demo_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Token"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limit exceeded. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies.auth import require_role
+from app.api.dependencies.auth import require_non_demo_user, require_role
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.onboarding import OnboardingSetupRequest, OnboardingSetupResponse
@@ -20,6 +20,7 @@ router = APIRouter(prefix="/onboarding", tags=["onboarding"])
         "hours in a single request. Requires admin role. All entities are scoped "
         "to the authenticated user's tenant."
     ),
+    dependencies=[Depends(require_non_demo_user)],
 )
 def onboarding_setup(
     body: OnboardingSetupRequest,

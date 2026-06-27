@@ -111,6 +111,14 @@ def auth_logout_rate_limit():
     )
 
 
+def auth_demo_rate_limit():
+    return rate_limit(
+        limit=settings.auth_demo_rate_limit_limit,
+        window_seconds=settings.auth_demo_rate_limit_window_seconds,
+        key_prefix="rate_limit:auth_demo",
+    )
+
+
 def password_reset_rate_limit(request: Request):
     client_ip = get_client_ip(request)
     body = request.scope.get("_json")

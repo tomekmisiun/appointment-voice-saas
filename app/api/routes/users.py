@@ -3,7 +3,7 @@ from enum import Enum
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies.auth import get_current_user, require_permission
+from app.api.dependencies.auth import get_current_user, require_non_demo_user, require_permission
 from app.api.openapi import ADMIN_ERROR_RESPONSES, PROTECTED_ERROR_RESPONSES
 from app.core.permissions import Permission
 from app.db.session import get_db
@@ -170,6 +170,7 @@ def get_user(
         "can update only their own safe profile fields."
     ),
     responses=PROTECTED_ERROR_RESPONSES,
+    dependencies=[Depends(require_non_demo_user)],
 )
 def patch_user(
     user_id: int,
@@ -217,6 +218,7 @@ def patch_user(
     response_model=UserRead,
     summary="Deactivate a user",
     responses=ADMIN_ERROR_RESPONSES,
+    dependencies=[Depends(require_non_demo_user)],
 )
 def deactivate_user_endpoint(
     user_id: int,
@@ -253,6 +255,7 @@ def deactivate_user_endpoint(
     response_model=UserRead,
     summary="Activate a user",
     responses=ADMIN_ERROR_RESPONSES,
+    dependencies=[Depends(require_non_demo_user)],
 )
 def activate_user_endpoint(
     user_id: int,
@@ -289,6 +292,7 @@ def activate_user_endpoint(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a user",
     responses=ADMIN_ERROR_RESPONSES,
+    dependencies=[Depends(require_non_demo_user)],
 )
 def remove_user(
     user_id: int,

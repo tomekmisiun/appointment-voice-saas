@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies.auth import get_current_user, require_permission
+from app.api.dependencies.auth import get_current_user, require_non_demo_user, require_permission
 from app.api.openapi import PROTECTED_ERROR_RESPONSES
 from app.core.permissions import Permission
 from app.db.session import get_db
@@ -33,6 +33,7 @@ router = APIRouter(prefix="/files", tags=["files"])
         "S3-compatible storage."
     ),
     responses=PROTECTED_ERROR_RESPONSES,
+    dependencies=[Depends(require_non_demo_user)],
 )
 def upload_file(
     file: UploadFile = File(...),
@@ -54,6 +55,7 @@ def upload_file(
         "Returns a short-lived private PUT URL for direct client-side uploads."
     ),
     responses=PROTECTED_ERROR_RESPONSES,
+    dependencies=[Depends(require_non_demo_user)],
 )
 def create_presigned_upload(
     upload_request: PresignedUploadRequest,
@@ -78,6 +80,7 @@ def create_presigned_upload(
     status_code=status.HTTP_201_CREATED,
     summary="Register a presigned upload",
     responses=PROTECTED_ERROR_RESPONSES,
+    dependencies=[Depends(require_non_demo_user)],
 )
 def complete_presigned_upload(
     upload_complete: PresignedUploadCompleteRequest,
@@ -133,6 +136,7 @@ def get_download_url(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete an uploaded file",
     responses=PROTECTED_ERROR_RESPONSES,
+    dependencies=[Depends(require_non_demo_user)],
 )
 def delete_file(
     file_id: int,

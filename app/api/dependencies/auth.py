@@ -3,6 +3,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.permissions import Permission
 from app.core.security import decode_token
 from app.core.tenant_context import tenant_id_var, tenant_slug_var
@@ -102,3 +103,30 @@ def require_role(required_role: str):
         return current_user
 
     return checker
+
+
+def require_non_demo_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    if current_user.is_demo_user:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This action is not available in the public demo.",
+        )
+    return current_user
+
+
+def require_demo_business_access(
+    business_id: int,
+    current_user: User = Depends(get_current_user),
+) -> None:
+    """Block demo users from accessing business resources outside the configured demo business."""
+    if (
+        current_user.is_demo_user
+        and settings.public_demo_business_id > 0
+        and business_id != settings.public_demo_business_id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not found.",
+        )

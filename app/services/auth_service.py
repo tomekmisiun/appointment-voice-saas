@@ -1,7 +1,8 @@
 from jose import JWTError
 from sqlalchemy.orm import Session
 
-from app.core.domain_errors import BadRequestError, UnauthorizedError
+from app.core.config import settings
+from app.core.domain_errors import BadRequestError, NotFoundError, UnauthorizedError
 from app.core.redis import is_refresh_token_revoked, revoke_refresh_token
 from app.core.security import (
     create_access_token,
@@ -10,6 +11,7 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
+from app.models.business import Business
 from app.models.user import User
 from app.services.tenant_membership_service import assert_active_tenant_membership
 from app.schemas.auth import UserCreate, UserLogin
@@ -62,6 +64,54 @@ def authenticate_user(db: Session, login_data: UserLogin, tenant_id: int) -> Use
         raise UnauthorizedError("Inactive user")
 
     return user
+
+
+def create_demo_session(db: Session) -> tuple[str, str]:
+    """Return (access_token, refresh_token) for the public demo user.
+
+    Validates all demo preconditions: feature flag, user existence,
+    is_demo_user flag, and demo business reachability. Raises if anything
+    is misconfigured so the caller can return a controlled 503.
+    """
+    if not settings.public_demo_enabled:
+        raise NotFoundError("Public demo is not enabled")
+
+    email = settings.public_demo_user_email.strip()
+    if not email:
+        raise NotFoundError("Demo is not configured: PUBLIC_DEMO_USER_EMAIL is not set")
+
+    business_id = settings.public_demo_business_id
+    if business_id <= 0:
+        raise NotFoundError("Demo is not configured: PUBLIC_DEMO_BUSINESS_ID is not set")
+
+    user = (
+        db.query(User)
+        .filter(User.email == email, User.is_demo_user.is_(True), User.is_active.is_(True))
+        .first()
+    )
+    if user is None:
+        raise NotFoundError("Demo user not found or not configured")
+
+    business = (
+        db.query(Business)
+        .filter(Business.id == business_id, Business.tenant_id == user.tenant_id)
+        .first()
+    )
+    if business is None:
+        raise NotFoundError("Demo business not found or not accessible to demo user")
+
+    access_token = create_access_token(
+        subject=str(user.id),
+        tenant_id=user.tenant_id,
+        token_version=user.token_version,
+    )
+    refresh_token = create_refresh_token(
+        subject=str(user.id),
+        tenant_id=user.tenant_id,
+        token_version=user.token_version,
+    )
+
+    return access_token, refresh_token
 
 
 def login_user(db: Session, login_data: UserLogin, tenant_id: int) -> tuple[str, str]:

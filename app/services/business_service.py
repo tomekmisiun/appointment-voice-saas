@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.domain_errors import NotFoundError
 from app.models.business import Business
 
@@ -68,10 +69,13 @@ def list_businesses(
     include_inactive: bool = False,
     skip: int = 0,
     limit: int = 100,
+    demo_user: bool = False,
 ) -> list[Business]:
     query = db.query(Business).filter(Business.tenant_id == tenant_id)
     if not include_inactive:
         query = query.filter(Business.is_active.is_(True))
+    if demo_user and settings.public_demo_business_id > 0:
+        query = query.filter(Business.id == settings.public_demo_business_id)
     return query.order_by(Business.id.asc()).offset(skip).limit(limit).all()
 
 

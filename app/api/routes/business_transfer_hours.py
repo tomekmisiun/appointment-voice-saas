@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies.auth import get_current_user, require_role
+from app.api.dependencies.auth import get_current_user, require_demo_business_access, require_non_demo_user, require_role
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.business_transfer_hours import BusinessTransferHoursCreate, BusinessTransferHoursRead
@@ -13,11 +13,18 @@ from app.services.business_transfer_hours_service import (
 )
 
 router = APIRouter(
-    prefix="/businesses/{business_id}/transfer-hours", tags=["transfer-hours"]
+    prefix="/businesses/{business_id}/transfer-hours",
+    tags=["transfer-hours"],
+    dependencies=[Depends(require_demo_business_access)],
 )
 
 
-@router.post("", response_model=BusinessTransferHoursRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=BusinessTransferHoursRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_non_demo_user)],
+)
 def create_transfer_hours_endpoint(
     business_id: int,
     body: BusinessTransferHoursCreate,
@@ -53,7 +60,11 @@ def get_transfer_hours_endpoint(
     return require_transfer_hours(db, entry_id, business_id, current_user.tenant_id)
 
 
-@router.delete("/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{entry_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_non_demo_user)],
+)
 def delete_transfer_hours_endpoint(
     business_id: int,
     entry_id: int,

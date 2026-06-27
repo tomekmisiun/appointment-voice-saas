@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies.auth import get_current_user, require_role
+from app.api.dependencies.auth import get_current_user, require_demo_business_access, require_non_demo_user, require_role
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.recurring_staff_block import (
@@ -18,11 +18,15 @@ from app.services.recurring_staff_block_service import (
 router = APIRouter(
     prefix="/businesses/{business_id}/recurring-staff-blocks",
     tags=["recurring-staff-blocks"],
+    dependencies=[Depends(require_demo_business_access)],
 )
 
 
 @router.post(
-    "", response_model=RecurringStaffBlockRead, status_code=status.HTTP_201_CREATED
+    "",
+    response_model=RecurringStaffBlockRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_non_demo_user)],
 )
 def create_recurring_staff_block_endpoint(
     business_id: int,
@@ -81,7 +85,11 @@ def get_recurring_staff_block_endpoint(
     )
 
 
-@router.delete("/{block_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{block_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_non_demo_user)],
+)
 def delete_recurring_staff_block_endpoint(
     business_id: int,
     block_id: int,
