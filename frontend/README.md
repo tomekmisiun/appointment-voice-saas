@@ -19,7 +19,7 @@ exact refresh/redirect flow.
 
 ## Prerequisites
 
-- Node.js 20+ (developed against Node 26)
+- Node.js 22.x (≥ 22.13.0) — see `frontend/package.json` engines
 - pnpm (`npm install -g pnpm` if not already available — there's no
   corepack-free alternative bundled with this repo)
 - The backend running locally (see repo root `README.md`): `make bootstrap`

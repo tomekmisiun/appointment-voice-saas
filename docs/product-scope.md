@@ -1,8 +1,8 @@
 # Product Scope
 
-Product planning scope for **Appointment Voice SaaS**. This document describes
-intended product direction only. Runtime implementation is not done yet unless
-verified by code and tests in `PROJECT_STATUS.md`.
+Product scope for **Appointment Voice SaaS**. The MVP is implemented. For the
+current verified runtime state, see `PROJECT_STATUS.md` and
+`docs/CURRENT_STATE.md`.
 
 ## Target Users
 
@@ -33,8 +33,8 @@ customer wants a same-day or next-day slot and calls the next available provider
    admin experience.
 10. The business can cancel or reschedule the appointment in later MVP/pilot
     tasks, which sends SMS updates and updates the calendar adapter/outbox.
-11. If call transfer is enabled, the caller can press 2 to request transfer to
-    staff; transfer remains planned work, not current runtime behavior.
+11. If the caller presses 2, the system emits a transfer intent and connects to
+    staff; call transfer is implemented (EPIC I).
 
 ## Non-Goals
 

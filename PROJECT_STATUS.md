@@ -1,10 +1,29 @@
 # Project Status — Appointment Voice SaaS
 
-Verified as of 2026-06-22.
+> **This file records the 2026-06-22 verified state.** For the current
+> full audit snapshot (2026-06-27), see
+> [`docs/CURRENT_STATE.md`](docs/CURRENT_STATE.md).
 
-## Current Status
+Verified as of 2026-06-22 (last full test run / CI green at that date).
 
-All MVP foundation epics (A–K) and full Epic L (L001–L004, owner acquisition + onboarding) implemented. Production expansion backlog P1-001 through P1-013 and P2-001 through P2-012 (CRM, preferred staff, multi-service bookings, waitlist with offer/timeout/escalation) done. Both pilot-blocking gaps found in the pre-P3 audit (cross-business tenant isolation, waitlist offer concurrency) are fixed, plus a related cross-business gap found independently in working-hours/availability-exceptions (GAP-014/AVS-TD-032) — also fixed. P3-012 (manual admin override), P3-009 (multilingual IVR prompt architecture), P3-004 (staff time block overlap validation), P3-001 (salon opening hours API — found and closed a real gap: staff-specific working hours had no API path at all), P3-002 (salon/staff hours intersection — found and fixed a related gap: staff with no individual schedule used to get zero availability instead of falling back to the salon's hours, which had silently neutered IVR per-staff selection in the demo data), P3-003 (salon closures API clarity + precedence/isolation tests), and P3-005 (recurring staff blocks — new `RecurringStaffBlock` model per ADR 0003, subtracted from generated slots as a third precedence step after `WorkingHours`/`AvailabilityException`, verified to stay correct when working hours change later) are done. 974 tests collected and passing. CI green.
+## Post-June-22 Additions (not verified below, but merged and passing CI)
+
+- **P3-013** — integration reconciliation job (stale outbox/calendar-event sweep)
+- **P3-008** — pending payment hold (PENDING_PAYMENT status, hold expiry, refund)
+- **P3-010** — private staff calendar visibility (`CalendarIntegration.visibility`)
+- **P3-014** — two-way calendar sync ADR (ADR 0006, decision only)
+- **P3-006** — deposits/payment holds ADR (ADR 0004, decision only)
+- **P3-011** — calendar conflict import spike ADR (ADR 0005, decision only)
+- **P4-004** — self-service signup (`POST /api/v1/signup`, public, rate-limited)
+- **sac009_staff_inv** — no-op stub migration bridging Alembic chain (production DB)
+- **demo_user_flag** — `is_demo_user` column on users; public demo mode
+
+**Production status (2026-06-27):** API returns 502 Bad Gateway — active blocker.
+See `docs/CURRENT_STATE.md` §Infrastructure for details.
+
+## Current Status (as of 2026-06-22)
+
+All MVP foundation epics (A–K) and full Epic L (L001–L004, owner acquisition + onboarding) implemented. Production expansion backlog P1-001 through P1-013 and P2-001 through P2-012 (CRM, preferred staff, multi-service bookings, waitlist with offer/timeout/escalation) done. Both pilot-blocking gaps found in the pre-P3 audit (cross-business tenant isolation, waitlist offer concurrency) are fixed, plus a related cross-business gap found independently in working-hours/availability-exceptions (GAP-014/AVS-TD-032) — also fixed. P3-012 (manual admin override), P3-009 (multilingual IVR prompt architecture), P3-004 (staff time block overlap validation), P3-001 (salon opening hours API — found and closed a real gap: staff-specific working hours had no API path at all), P3-002 (salon/staff hours intersection — found and fixed a related gap: staff with no individual schedule used to get zero availability instead of falling back to the salon's hours, which had silently neutered IVR per-staff selection in the demo data), P3-003 (salon closures API clarity + precedence/isolation tests), and P3-005 (recurring staff blocks — new `RecurringStaffBlock` model per ADR 0003, subtracted from generated slots as a third precedence step after `WorkingHours`/`AvailabilityException`, verified to stay correct when working hours change later) are done.
 
 The product can be fully demonstrated locally using fake SMS and fake calendar
 providers. Real Twilio voice and SMS providers are wired and configured via env

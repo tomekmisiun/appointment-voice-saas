@@ -1,7 +1,6 @@
 # MVP Demo Flow — Appointment Voice SaaS
 
 Local simulated call-to-booking-to-notification-to-calendar scenario.
-This document defines the target demo flow for AVS-A003.
 
 No real Twilio, SMS provider, or Google Calendar account is required.
 All providers are faked locally.
@@ -10,7 +9,7 @@ All providers are faked locally.
 
 1. Docker Compose stack running: `docker compose up -d`
 2. Migrations applied: `make migrate`
-3. Demo seed data loaded: `python -m app.seed_demo` (created in AVS-J001)
+3. Demo seed data loaded: `make seed-demo`
 
 ## Demo Actors
 
@@ -28,7 +27,7 @@ The IVR simulation endpoint accepts a caller phone number and business ID and
 starts a `VoiceSession`.
 
 ```
-POST /api/v1/ivr/simulate/incoming
+POST /api/v1/ivr/simulate/call
 {
   "business_id": "<demo-business-id>",
   "caller_phone": "+48600000001"
@@ -43,7 +42,7 @@ POST /api/v1/ivr/simulate/incoming
 ## Step 2 — Select Service (Keypad 1 = Haircut)
 
 ```
-POST /api/v1/ivr/simulate/input
+POST /api/v1/ivr/simulate/press
 {
   "session_id": "<session-id>",
   "key": "1"
@@ -58,7 +57,7 @@ POST /api/v1/ivr/simulate/input
 ## Step 3 — Select Slot (Keypad 1 = First Available)
 
 ```
-POST /api/v1/ivr/simulate/input
+POST /api/v1/ivr/simulate/press
 {
   "session_id": "<session-id>",
   "key": "1"
@@ -72,7 +71,7 @@ POST /api/v1/ivr/simulate/input
 ## Step 4 — Confirm Booking (Keypad 1)
 
 ```
-POST /api/v1/ivr/simulate/input
+POST /api/v1/ivr/simulate/press
 {
   "session_id": "<session-id>",
   "key": "1"
@@ -173,14 +172,15 @@ If all slots are taken for the day, the IVR returns:
 - No `Booking` is created.
 - `VoiceSession` status = `no_slots`.
 
-## Transfer Branch (Planned, Not Demo'd)
+## Transfer Branch
 
 If the caller presses 2 at the main menu, the system emits a transfer intent.
-Real call transfer is out of scope for the local demo; the simulation returns:
+The simulation returns:
 
 > "Transfer requested. Connecting to staff."
 
-with a placeholder response. Real Twilio transfer is implemented in EPIC I.
+Call transfer is implemented (EPIC I). Twilio live-call transfer requires a
+real phone number and is not exercisable in the local IVR simulator.
 
 ## Demo Assumptions
 
