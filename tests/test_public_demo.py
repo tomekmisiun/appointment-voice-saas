@@ -132,7 +132,7 @@ def test_demo_endpoint_returns_503_when_business_id_not_set(client, db):
 
 def test_demo_endpoint_returns_503_when_demo_user_missing(client, db):
     # Use an email that is guaranteed not to be seeded in the DB.
-    absent_email = "never-seeded-demo@voxslot.test"
+    absent_email = "never-seeded-demo@example.com"
     _, biz_id, _ = _admin_setup(db, client)
 
     with patch("app.services.auth_service.settings") as ms:
@@ -146,7 +146,7 @@ def test_demo_endpoint_returns_503_when_demo_user_missing(client, db):
 def test_demo_endpoint_returns_503_when_demo_user_not_is_demo_user(client, db):
     """Regular (non-demo) user with matching email is not accepted."""
     # Use a unique email so a previously seeded is_demo_user record doesn't interfere.
-    non_demo_email = "regular-only@voxslot.test"
+    non_demo_email = "regular-only@example.com"
     register_user(client, non_demo_email)
     _, biz_id, _ = _admin_setup(db, client)
 
@@ -178,10 +178,9 @@ def test_demo_user_can_read_businesses(client, db):
     headers = _demo_headers(client, db,
         db.query(Tenant).filter(Tenant.slug == "default").one().id,
         biz_id)
-    resp = client.get("/api/v1/businesses", headers=headers)
+    resp = client.get(f"/api/v1/businesses/{biz_id}", headers=headers)
     assert resp.status_code == 200
-    ids = [b["id"] for b in resp.json()]
-    assert biz_id in ids
+    assert resp.json()["id"] == biz_id
 
 
 def test_demo_user_only_sees_configured_business(client, db):
@@ -504,11 +503,12 @@ def test_seed_demo_user_sets_is_demo_user_flag(db):
 
 def test_seed_demo_user_raises_if_existing_user_not_is_demo_user(client, db):
     """seed_demo_user must fail loudly when the email belongs to a non-demo user."""
+    from app.core.ids import uuid7
     from app.core.security import hash_password
     import secrets
 
     tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
-    non_demo_email = "conflict-seed@voxslot.test"
+    non_demo_email = f"conflict-seed-{uuid7().hex}@example.com"
     regular_user = User(
         tenant_id=tenant.id,
         email=non_demo_email,
