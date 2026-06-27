@@ -15,14 +15,17 @@ from datetime import time
 
 from app.core.config import settings
 from app.core.logging import configure_logging
+from app.core.security import hash_password
 from app.db.session import SessionLocal
 from app.models.business import Business, TransferDestinationPolicy
 from app.models.service import Service
 from app.models.staff import Staff
+from app.models.user import User
 from app.models.working_hours import WorkingHours
 from app.services.tenant_seed_service import ensure_default_tenant
 
 DEMO_BUSINESS_NAME = "Glamour Studio Demo"
+DEMO_USER_EMAIL = "demo@voxslot.demo"
 
 # Mon=0 … Fri=4, Sat=5
 WEEKDAY_HOURS = [(d, time(9, 0), time(17, 0)) for d in range(5)]
@@ -40,6 +43,47 @@ DEMO_SERVICES = [
     {"name": "Coloring", "duration_minutes": 90, "price_minor_units": 15000, "currency": "PLN"},
     {"name": "Manicure", "duration_minutes": 45, "price_minor_units": 7000, "currency": "PLN"},
 ]
+
+
+def seed_demo_user(db, tenant_id: int) -> dict:
+    """Idempotently create the public demo user.
+
+    Email is taken from PUBLIC_DEMO_USER_EMAIL (settings.public_demo_user_email),
+    falling back to DEMO_USER_EMAIL if the env var is not set. This keeps the
+    seeded user in sync with the address that create_demo_session looks up.
+    The password is a random placeholder — the demo session endpoint uses
+    is_demo_user for lookup, not password authentication.
+    """
+    email = settings.public_demo_user_email or DEMO_USER_EMAIL
+
+    existing = (
+        db.query(User)
+        .filter(User.email == email, User.tenant_id == tenant_id)
+        .first()
+    )
+    if existing is not None:
+        if not existing.is_demo_user:
+            raise ValueError(
+                f"User '{email}' already exists with is_demo_user=False. "
+                f"Either change PUBLIC_DEMO_USER_EMAIL to a different address, "
+                f"or manually set is_demo_user=True on the existing user."
+            )
+        return {"demo_user": [f"skipped: {email} (already exists)"]}
+
+    import secrets as _secrets
+    placeholder_password = hash_password(_secrets.token_urlsafe(32))
+    user = User(
+        tenant_id=tenant_id,
+        email=email,
+        hashed_password=placeholder_password,
+        is_active=True,
+        role="user",
+        is_demo_user=True,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return {"demo_user": [f"created: {email} (id={user.id})"]}
 
 
 def seed_demo(db) -> dict:
@@ -131,12 +175,18 @@ def seed_demo(db) -> dict:
 def main() -> None:
     configure_logging()
 
-    if settings.environment != "development":
-        raise SystemExit("seed_demo_data only runs when ENVIRONMENT=development")
+    if settings.environment not in ("development", "production"):
+        raise SystemExit("seed_demo_data only runs when ENVIRONMENT=development or production")
 
     db = SessionLocal()
     try:
+        tenant = ensure_default_tenant(db, commit=True)
         results = seed_demo(db)
+        user_results = seed_demo_user(db, tenant.id)
+        results.update(user_results)
+    except ValueError as exc:
+        db.close()
+        raise SystemExit(f"[demo_user] ERROR: {exc}") from exc
     finally:
         db.close()
 

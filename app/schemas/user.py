@@ -19,6 +19,7 @@ class UserRead(BaseModel):
     email: EmailStr
     is_active: bool
     role: str
+    is_demo_user: bool
 
     model_config = {
         "from_attributes": True,

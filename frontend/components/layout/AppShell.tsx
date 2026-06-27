@@ -66,6 +66,16 @@ export function AppShell({
         Skip to content
       </a>
 
+      {user.is_demo_user ? (
+        <div
+          role="banner"
+          aria-label="Demo mode"
+          className="sticky top-0 z-40 flex items-center justify-center bg-amber-50 border-b border-amber-200 px-4 py-2 text-sm font-medium text-amber-800"
+        >
+          Public demo — read only
+        </div>
+      ) : null}
+
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 md:px-6">
         <div className="flex items-center gap-3">
           <button

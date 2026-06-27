@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies.auth import get_current_user, require_role
+from app.api.dependencies.auth import get_current_user, require_demo_business_access, require_non_demo_user, require_role
 from app.db.session import get_db
 from app.models.user import User
 from app.models.booking import BookingStatus
@@ -23,10 +23,19 @@ from app.services.booking_service import (
     reschedule_booking,
 )
 
-router = APIRouter(prefix="/businesses/{business_id}/bookings", tags=["bookings"])
+router = APIRouter(
+    prefix="/businesses/{business_id}/bookings",
+    tags=["bookings"],
+    dependencies=[Depends(require_demo_business_access)],
+)
 
 
-@router.post("", response_model=BookingRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=BookingRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_non_demo_user)],
+)
 def create_booking_endpoint(
     business_id: int,
     body: BookingCreate,
@@ -46,7 +55,12 @@ def create_booking_endpoint(
     )
 
 
-@router.post("/override", response_model=BookingRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/override",
+    response_model=BookingRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_non_demo_user)],
+)
 def override_create_booking_endpoint(
     business_id: int,
     body: BookingOverrideCreateRequest,
@@ -105,7 +119,11 @@ def get_booking_endpoint(
     return require_booking_in_business(db, booking_id, business_id, current_user.tenant_id)
 
 
-@router.post("/{booking_id}/cancel", response_model=BookingRead)
+@router.post(
+    "/{booking_id}/cancel",
+    response_model=BookingRead,
+    dependencies=[Depends(require_non_demo_user)],
+)
 def cancel_booking_endpoint(
     business_id: int,
     booking_id: int,
@@ -123,7 +141,11 @@ def cancel_booking_endpoint(
     )
 
 
-@router.post("/{booking_id}/override-cancel", response_model=BookingRead)
+@router.post(
+    "/{booking_id}/override-cancel",
+    response_model=BookingRead,
+    dependencies=[Depends(require_non_demo_user)],
+)
 def override_cancel_booking_endpoint(
     business_id: int,
     booking_id: int,
@@ -166,7 +188,11 @@ def refund_booking_payment_endpoint(
     )
 
 
-@router.post("/{booking_id}/reschedule", response_model=BookingRead)
+@router.post(
+    "/{booking_id}/reschedule",
+    response_model=BookingRead,
+    dependencies=[Depends(require_non_demo_user)],
+)
 def reschedule_booking_endpoint(
     business_id: int,
     booking_id: int,

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies.auth import get_current_user, require_role
+from app.api.dependencies.auth import get_current_user, require_demo_business_access, require_non_demo_user, require_role
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.service import ServiceCreate, ServiceRead, ServiceUpdate
@@ -13,10 +13,19 @@ from app.services.service_service import (
     update_service,
 )
 
-router = APIRouter(prefix="/businesses/{business_id}/services", tags=["services"])
+router = APIRouter(
+    prefix="/businesses/{business_id}/services",
+    tags=["services"],
+    dependencies=[Depends(require_demo_business_access)],
+)
 
 
-@router.post("", response_model=ServiceRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=ServiceRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_non_demo_user)],
+)
 def create_service_endpoint(
     business_id: int,
     body: ServiceCreate,
@@ -66,7 +75,11 @@ def get_service_endpoint(
     return require_service_in_business(db, service_id, business_id, current_user.tenant_id)
 
 
-@router.delete("/{service_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{service_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_non_demo_user)],
+)
 def delete_service_endpoint(
     business_id: int,
     service_id: int,
@@ -76,7 +89,11 @@ def delete_service_endpoint(
     delete_service(db, service_id, current_user.tenant_id, business_id=business_id)
 
 
-@router.patch("/{service_id}", response_model=ServiceRead)
+@router.patch(
+    "/{service_id}",
+    response_model=ServiceRead,
+    dependencies=[Depends(require_non_demo_user)],
+)
 def update_service_endpoint(
     business_id: int,
     service_id: int,

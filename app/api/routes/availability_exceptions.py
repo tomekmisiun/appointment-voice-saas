@@ -3,7 +3,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies.auth import get_current_user, require_role
+from app.api.dependencies.auth import get_current_user, require_demo_business_access, require_non_demo_user, require_role
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.availability_exception import (
@@ -20,11 +20,15 @@ from app.services.availability_exception_service import (
 router = APIRouter(
     prefix="/businesses/{business_id}/availability-exceptions",
     tags=["availability-exceptions"],
+    dependencies=[Depends(require_demo_business_access)],
 )
 
 
 @router.post(
-    "", response_model=AvailabilityExceptionRead, status_code=status.HTTP_201_CREATED
+    "",
+    response_model=AvailabilityExceptionRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_non_demo_user)],
 )
 def create_exception_endpoint(
     business_id: int,
@@ -94,7 +98,11 @@ def get_exception_endpoint(
     )
 
 
-@router.delete("/{exception_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{exception_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_non_demo_user)],
+)
 def delete_exception_endpoint(
     business_id: int,
     exception_id: int,

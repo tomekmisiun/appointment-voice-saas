@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies.auth import require_permission
+from app.api.dependencies.auth import require_non_demo_user, require_permission
 from app.api.openapi import ADMIN_ERROR_RESPONSES
 from app.core.permissions import Permission
 from app.db.session import get_db
@@ -24,6 +24,7 @@ router = APIRouter(prefix="/admin/tenants", tags=["admin", "tenants"])
     status_code=status.HTTP_201_CREATED,
     summary="Provision a new tenant",
     responses=ADMIN_ERROR_RESPONSES,
+    dependencies=[Depends(require_non_demo_user)],
 )
 def create_tenant(
     tenant_data: TenantCreate,
@@ -89,6 +90,7 @@ def get_tenant(
     response_model=TenantRead,
     summary="Update tenant metadata or lifecycle state",
     responses=ADMIN_ERROR_RESPONSES,
+    dependencies=[Depends(require_non_demo_user)],
 )
 def patch_tenant(
     tenant_id: int,

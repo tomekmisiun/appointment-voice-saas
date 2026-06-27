@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies.auth import get_current_user, require_role
+from app.api.dependencies.auth import get_current_user, require_demo_business_access, require_non_demo_user, require_role
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.booking import BookingRead
@@ -14,10 +14,19 @@ from app.services.client_service import (
     update_client,
 )
 
-router = APIRouter(prefix="/businesses/{business_id}/clients", tags=["clients"])
+router = APIRouter(
+    prefix="/businesses/{business_id}/clients",
+    tags=["clients"],
+    dependencies=[Depends(require_demo_business_access)],
+)
 
 
-@router.post("", response_model=ClientRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=ClientRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_non_demo_user)],
+)
 def create_client_endpoint(
     business_id: int,
     body: ClientCreate,
@@ -84,7 +93,11 @@ def get_client_bookings_endpoint(
     )
 
 
-@router.patch("/{client_id}", response_model=ClientRead)
+@router.patch(
+    "/{client_id}",
+    response_model=ClientRead,
+    dependencies=[Depends(require_non_demo_user)],
+)
 def update_client_endpoint(
     business_id: int,
     client_id: int,

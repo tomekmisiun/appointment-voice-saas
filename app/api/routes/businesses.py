@@ -1,7 +1,12 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies.auth import get_current_user, require_role
+from app.api.dependencies.auth import (
+    get_current_user,
+    require_demo_business_access,
+    require_non_demo_user,
+    require_role,
+)
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.business import BusinessCreate, BusinessRead, BusinessUpdate
@@ -15,7 +20,12 @@ from app.services.business_service import (
 router = APIRouter(prefix="/businesses", tags=["businesses"])
 
 
-@router.post("", response_model=BusinessRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=BusinessRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_non_demo_user)],
+)
 def create_business_endpoint(
     body: BusinessCreate,
     db: Session = Depends(get_db),
@@ -53,10 +63,15 @@ def list_businesses_endpoint(
         include_inactive=include_inactive,
         skip=skip,
         limit=size,
+        demo_user=current_user.is_demo_user,
     )
 
 
-@router.get("/{business_id}", response_model=BusinessRead)
+@router.get(
+    "/{business_id}",
+    response_model=BusinessRead,
+    dependencies=[Depends(require_demo_business_access)],
+)
 def get_business_endpoint(
     business_id: int,
     db: Session = Depends(get_db),
@@ -65,7 +80,11 @@ def get_business_endpoint(
     return require_business(db, business_id, current_user.tenant_id)
 
 
-@router.patch("/{business_id}", response_model=BusinessRead)
+@router.patch(
+    "/{business_id}",
+    response_model=BusinessRead,
+    dependencies=[Depends(require_non_demo_user)],
+)
 def update_business_endpoint(
     business_id: int,
     body: BusinessUpdate,

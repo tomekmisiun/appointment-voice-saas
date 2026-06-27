@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { PublicShell } from "@/components/marketing/PublicShell";
 import { LoginForm } from "@/features/auth/components/LoginForm";
 import { getLoginTenantSlug, getSession, isAccessTokenExpired } from "@/lib/auth/server";
@@ -25,6 +25,15 @@ export default async function LoginPage({
           {params.registered === "1" ? <p className="mb-5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">Workspace created. Sign in to continue.</p> : null}
           <LoginForm defaultWorkspace={loginTenantSlug} />
           <p className="mt-5 text-center text-sm text-[#7f8ba3]">New to VoxSlot? <Link href="/register" className="text-indigo-300 hover:text-indigo-200">Create an account</Link></p>
+          <div className="mt-4 text-center">
+            <p className="text-sm text-[#7f8ba3]">Want to explore first?</p>
+            <Link
+              href="/demo"
+              className="mt-2 inline-flex items-center justify-center rounded-md border border-[#303b50] bg-[#1a2539] px-4 py-2 text-sm font-medium text-[#a8b4cc] hover:bg-[#1f2d42]"
+            >
+              Try demo
+            </Link>
+          </div>
         </div>
       </section>
     </PublicShell>

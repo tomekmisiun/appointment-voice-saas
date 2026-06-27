@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies.auth import get_current_user, require_role
+from app.api.dependencies.auth import get_current_user, require_demo_business_access, require_non_demo_user, require_role
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.working_hours import WorkingHoursCreate, WorkingHoursRead, WorkingHoursUpdate
@@ -14,11 +14,18 @@ from app.services.working_hours_service import (
 )
 
 router = APIRouter(
-    prefix="/businesses/{business_id}/working-hours", tags=["working-hours"]
+    prefix="/businesses/{business_id}/working-hours",
+    tags=["working-hours"],
+    dependencies=[Depends(require_demo_business_access)],
 )
 
 
-@router.post("", response_model=WorkingHoursRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=WorkingHoursRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_non_demo_user)],
+)
 def create_working_hours_endpoint(
     business_id: int,
     body: WorkingHoursCreate,
@@ -73,7 +80,11 @@ def get_working_hours_endpoint(
     return require_working_hours_in_business(db, wh_id, business_id, current_user.tenant_id)
 
 
-@router.patch("/{wh_id}", response_model=WorkingHoursRead)
+@router.patch(
+    "/{wh_id}",
+    response_model=WorkingHoursRead,
+    dependencies=[Depends(require_non_demo_user)],
+)
 def update_working_hours_endpoint(
     business_id: int,
     wh_id: int,
@@ -89,7 +100,11 @@ def update_working_hours_endpoint(
     )
 
 
-@router.delete("/{wh_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{wh_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_non_demo_user)],
+)
 def delete_working_hours_endpoint(
     business_id: int,
     wh_id: int,

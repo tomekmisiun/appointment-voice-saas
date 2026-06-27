@@ -3223,6 +3223,10 @@
             "title": "Is Active",
             "type": "boolean"
           },
+          "is_demo_user": {
+            "title": "Is Demo User",
+            "type": "boolean"
+          },
           "role": {
             "title": "Role",
             "type": "string"
@@ -3232,7 +3236,8 @@
           "id",
           "email",
           "is_active",
-          "role"
+          "role",
+          "is_demo_user"
         ],
         "title": "UserRead",
         "type": "object"
@@ -4580,6 +4585,58 @@
         "tags": [
           "admin",
           "tenants"
+        ]
+      }
+    },
+    "/api/v1/auth/demo": {
+      "post": {
+        "description": "Returns short-lived JWT tokens for the pre-configured read-only demo user. Requires PUBLIC_DEMO_ENABLED=true and correct PUBLIC_DEMO_USER_EMAIL / PUBLIC_DEMO_BUSINESS_ID configuration. The demo user cannot perform any mutation.",
+        "operationId": "demo_login_api_v1_auth_demo_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authentication required or credentials are invalid."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Rate limit exceeded."
+          }
+        },
+        "summary": "Start a public demo session",
+        "tags": [
+          "auth"
         ]
       }
     },
@@ -9482,6 +9539,59 @@
         "summary": "Twilio Voice Keypress",
         "tags": [
           "twilio-voice"
+        ]
+      }
+    },
+    "/auth/demo": {
+      "post": {
+        "deprecated": true,
+        "description": "Returns short-lived JWT tokens for the pre-configured read-only demo user. Requires PUBLIC_DEMO_ENABLED=true and correct PUBLIC_DEMO_USER_EMAIL / PUBLIC_DEMO_BUSINESS_ID configuration. The demo user cannot perform any mutation.",
+        "operationId": "demo_login_auth_demo_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authentication required or credentials are invalid."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Rate limit exceeded."
+          }
+        },
+        "summary": "Start a public demo session",
+        "tags": [
+          "auth"
         ]
       }
     },

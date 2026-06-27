@@ -165,6 +165,12 @@ class Settings(BaseSettings):
     twilio_sms_inbound_rate_limit_limit: int = Field(default=300, gt=0)
     twilio_sms_inbound_rate_limit_window_seconds: int = Field(default=60, gt=0)
 
+    public_demo_enabled: bool = False
+    public_demo_user_email: str = ""
+    public_demo_business_id: int = Field(default=0, ge=0)
+    auth_demo_rate_limit_limit: int = Field(default=20, gt=0)
+    auth_demo_rate_limit_window_seconds: int = Field(default=60, gt=0)
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     test_database_url: str = Field(
