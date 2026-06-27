@@ -18,11 +18,11 @@ No manual step is required after merge to `main`. If any required CI job fails, 
 
 ## Railway services
 
-| Service | URL | Config file | Dockerfile | Start command | Migrations |
+| Service | URL | Config file | Builder | Start command | Migrations |
 |---|---|---|---|---|---|
-| `api` | `api-production-52a1.up.railway.app` | `railway.toml` | `Dockerfile` target `production` | `uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers` | `alembic upgrade head` (preDeployCommand) |
-| `worker` | — (internal) | `railway.worker.toml` | `Dockerfile` target `production` | `python -m app.worker` | none |
-| `frontend` | `voxslot.up.railway.app` | `frontend/railway.toml` | `frontend/Dockerfile` | `node_modules/.bin/next start` | none |
+| `api` | `api-production-52a1.up.railway.app` | `railway.api.toml` | Dockerfile (`target: production`) | `uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers` | `alembic upgrade head` (preDeployCommand) |
+| `worker` | — (internal) | `railway.worker.toml` | Dockerfile (`target: production`) | `python -m app.worker` | none |
+| `frontend` | `voxslot.up.railway.app` | `frontend/railway.toml` | Nixpacks (auto-detects Next.js from `frontend/`) | `pnpm start` | none |
 | `Postgres` | — | — | Railway plugin | — | — |
 | `Redis` | — | — | Railway plugin | — | — |
 
@@ -64,17 +64,21 @@ These settings must be configured manually in the Railway dashboard once and do 
 
 | Service | Root Directory | Config File Path |
 |---|---|---|
-| `api` | `.` (repository root) | `railway.toml` |
+| `api` | `.` (repository root) | `railway.api.toml` |
 | `worker` | `.` (repository root) | `railway.worker.toml` |
-| `frontend` | `.` (repository root) | `frontend/railway.toml` |
+| `frontend` | `frontend` | *(leave blank — config passed via `--config` in CLI)* |
 
-> `railway up --config <path>` overrides dashboard build settings for CLI-triggered deployments. The dashboard **Config File Path** is used by Railway's GitHub integration (which should be disabled). Both must agree if you re-enable GitHub integration in the future.
+**Why `frontend` Root Directory = `frontend`:** Railway uses this as the Nixpacks build context. Nixpacks detects Next.js from `frontend/package.json` and builds correctly. The `frontend/railway.toml` config file is passed explicitly via `--config` in the CLI deploy command and is not auto-discovered by Railway.
+
+**Why config files use non-default names (`railway.api.toml`, `railway.worker.toml`):** Railway auto-discovers `railway.toml` at the Root Directory. Using non-default names prevents Railway from accidentally applying the wrong service config when auto-deploy is re-enabled or a manual deploy is triggered from the dashboard.
+
+> If you re-enable Railway's GitHub integration in the future, you must also set Config File Path in the dashboard for each service.
 
 ---
 
 ## Database migrations
 
-Migrations run exactly once per deployment via Railway's `preDeployCommand` in `railway.toml`:
+Migrations run exactly once per deployment via Railway's `preDeployCommand` in `railway.api.toml`:
 
 ```toml
 preDeployCommand = "alembic upgrade head"
