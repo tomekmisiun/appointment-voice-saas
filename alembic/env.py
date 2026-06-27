@@ -1,3 +1,4 @@
+import os
 from logging.config import fileConfig
 
 from app.models import (  # noqa: F401
@@ -18,6 +19,9 @@ from alembic import context
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+if (url := os.environ.get("DATABASE_URL")) and os.environ.get("ENVIRONMENT") != "test":
+    config.set_main_option("sqlalchemy.url", url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
