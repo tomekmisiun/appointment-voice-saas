@@ -328,6 +328,7 @@ def test_seed_sets_correct_inbound_phone(db):
 def test_seed_uses_configured_voice_number_without_changing_owner_phone(db):
     with patch("app.seed_demo_data.settings") as ms:
         ms.twilio_voice_number = "+18174057514"
+        ms.public_demo_business_id = 0
         ms.public_demo_user_email = DEMO_USER_EMAIL
         seed_demo(db)
 
@@ -370,6 +371,30 @@ def test_seed_rerun_updates_phone_fields(db):
     assert biz.phone == DEMO_INBOUND_PHONE
     assert biz.owner_notification_phone == DEMO_OWNER_NOTIFICATION_PHONE
     assert biz.transfer_phone_number == DEMO_TRANSFER_PHONE
+
+
+def test_seed_updates_configured_public_demo_business_id(db):
+    tenant = _default_tenant(db)
+    stale_demo = create_business(
+        db,
+        tenant_id=tenant.id,
+        name=DEMO_BUSINESS_NAME,
+        timezone="Europe/Warsaw",
+        phone="+48100200300",
+        owner_notification_phone=None,
+        transfer_phone_number=None,
+    )
+
+    with patch("app.seed_demo_data.settings") as ms:
+        ms.public_demo_business_id = stale_demo.id
+        ms.twilio_voice_number = ""
+        ms.public_demo_user_email = DEMO_USER_EMAIL
+        seed_demo(db)
+
+    db.refresh(stale_demo)
+    assert stale_demo.phone == DEMO_INBOUND_PHONE
+    assert stale_demo.owner_notification_phone == DEMO_OWNER_NOTIFICATION_PHONE
+    assert stale_demo.transfer_phone_number == DEMO_TRANSFER_PHONE
 
 
 # ---------------------------------------------------------------------------

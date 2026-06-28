@@ -102,11 +102,23 @@ def seed_demo(db) -> dict:
     demo_inbound_phone = settings.twilio_voice_number.strip() or DEMO_INBOUND_PHONE
 
     # ── Business ──────────────────────────────────────────────────────────────
-    biz = (
-        db.query(Business)
-        .filter(Business.tenant_id == tenant.id, Business.name == DEMO_BUSINESS_NAME)
-        .first()
-    )
+    biz = None
+    if settings.public_demo_business_id:
+        biz = (
+            db.query(Business)
+            .filter(
+                Business.tenant_id == tenant.id,
+                Business.id == settings.public_demo_business_id,
+            )
+            .first()
+        )
+
+    if biz is None:
+        biz = (
+            db.query(Business)
+            .filter(Business.tenant_id == tenant.id, Business.name == DEMO_BUSINESS_NAME)
+            .first()
+        )
     if biz is None:
         biz = Business(
             tenant_id=tenant.id,

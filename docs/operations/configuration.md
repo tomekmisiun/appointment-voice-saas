@@ -73,6 +73,7 @@ openssl rand -base64 32
 | `BACKEND_API_URL` | Yes | Server-only FastAPI base URL. |
 | `SESSION_SECRET` | Yes | Base64 AES-256-GCM key for encrypted HttpOnly sessions. |
 | `APP_ORIGIN` | Yes | Expected frontend origin for state-changing BFF route handlers. |
+| `APP_ORIGIN_ALIASES` | No | Comma-separated additional trusted frontend origins for the same deployment, used when Railway/custom domains coexist. |
 | `BFF_TRUST_FORWARDED_HEADERS` | No | Enables forwarded IP handling only behind a trusted proxy. |
 | `TENANT_SLUG` | No | Login-only tenant slug override for non-default tenant deployments. |
 

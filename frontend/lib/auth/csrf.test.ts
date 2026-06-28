@@ -10,10 +10,19 @@ beforeEach(() => {
 
 afterEach(() => {
   delete process.env.APP_ORIGIN;
+  delete process.env.APP_ORIGIN_ALIASES;
+  delete process.env.RAILWAY_PUBLIC_DOMAIN;
 });
 
 function makeRequest(headers: Record<string, string>): NextRequest {
   return new NextRequest(`${APP_ORIGIN}/api/auth/login`, {
+    method: "POST",
+    headers,
+  });
+}
+
+function makeProductionUrlRequest(headers: Record<string, string>): NextRequest {
+  return new NextRequest("https://demo.voxslot.example/api/auth/logout", {
     method: "POST",
     headers,
   });
@@ -28,6 +37,16 @@ describe("isSameOriginRequest", () => {
     expect(isSameOriginRequest(makeRequest({ origin: "https://evil.example" }))).toBe(false);
   });
 
+  it("accepts an explicit configured alias when APP_ORIGIN is stale behind the production proxy", () => {
+    process.env.APP_ORIGIN_ALIASES = "https://demo.voxslot.example";
+
+    expect(
+      isSameOriginRequest(
+        makeProductionUrlRequest({ origin: "https://demo.voxslot.example" }),
+      ),
+    ).toBe(true);
+  });
+
   it("falls back to a matching Referer when Origin is absent", () => {
     expect(
       isSameOriginRequest(makeRequest({ referer: `${APP_ORIGIN}/login` })),
@@ -38,6 +57,16 @@ describe("isSameOriginRequest", () => {
     expect(
       isSameOriginRequest(makeRequest({ referer: "https://evil.example/login" })),
     ).toBe(false);
+  });
+
+  it("accepts a Railway public domain as an explicit platform origin", () => {
+    process.env.RAILWAY_PUBLIC_DOMAIN = "demo.voxslot.example";
+
+    expect(
+      isSameOriginRequest(
+        makeProductionUrlRequest({ origin: "https://demo.voxslot.example" }),
+      ),
+    ).toBe(true);
   });
 
   it("rejects when both Origin and Referer are absent", () => {

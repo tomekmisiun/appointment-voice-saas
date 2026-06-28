@@ -8,7 +8,7 @@ import type { NextRequest } from "next/server";
  * Not a CORS setting — it never reaches the backend, and is unrelated to
  * Next.js's own (unconfigured, default) Server Action origin protection.
  */
-function getAppOrigin(): string {
+function getConfiguredAppOrigin(): string {
   const origin = process.env.APP_ORIGIN;
   if (!origin || origin.trim().length === 0) {
     throw new Error(
@@ -19,6 +19,31 @@ function getAppOrigin(): string {
   return origin.replace(/\/+$/, "");
 }
 
+function normalizeOrigin(value: string): string {
+  const trimmed = value.trim().replace(/\/+$/, "");
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+}
+
+function getAllowedOrigins(request: Request): Set<string> {
+  void request;
+  const allowed = new Set([getConfiguredAppOrigin()]);
+
+  for (const alias of (process.env.APP_ORIGIN_ALIASES ?? "").split(",")) {
+    if (alias.trim()) {
+      allowed.add(normalizeOrigin(alias));
+    }
+  }
+
+  if (process.env.RAILWAY_PUBLIC_DOMAIN?.trim()) {
+    allowed.add(normalizeOrigin(process.env.RAILWAY_PUBLIC_DOMAIN));
+  }
+
+  return allowed;
+}
+
 /**
  * True only when the request's Origin (or, if absent, Referer) matches
  * this app's configured origin. A state-changing request with neither
@@ -27,17 +52,17 @@ function getAppOrigin(): string {
  * failing closed when both are missing.
  */
 export function isSameOriginRequest(request: Request): boolean {
-  const appOrigin = getAppOrigin();
+  const allowedOrigins = getAllowedOrigins(request);
   const origin = request.headers.get("origin");
 
   if (origin) {
-    return origin === appOrigin;
+    return allowedOrigins.has(origin);
   }
 
   const referer = request.headers.get("referer");
   if (referer) {
     try {
-      return new URL(referer).origin === appOrigin;
+      return allowedOrigins.has(new URL(referer).origin);
     } catch {
       return false;
     }
