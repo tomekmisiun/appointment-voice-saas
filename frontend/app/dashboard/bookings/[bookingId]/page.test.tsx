@@ -71,6 +71,8 @@ function business(id: number) {
     name: `Business ${id}`,
     timezone: "Europe/Warsaw",
     phone: null,
+    owner_notification_phone: null,
+    transfer_phone_number: null,
     is_active: true,
     transfer_enabled: false,
     transfer_destination_policy: "business_phone",

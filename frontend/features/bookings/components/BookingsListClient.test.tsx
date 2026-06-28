@@ -18,6 +18,8 @@ const business: BusinessRead = {
   name: "Glamour Studio",
   timezone: "Europe/Warsaw",
   phone: null,
+  owner_notification_phone: null,
+  transfer_phone_number: null,
   is_active: true,
   language: "en",
   transfer_enabled: false,
