@@ -28,7 +28,9 @@ def test_seed_creates_business(seeded):
 def test_business_transfer_enabled(seeded):
     biz = seeded["biz"]
     assert biz.transfer_enabled is True
-    assert biz.phone == "+48100200300"
+    assert biz.phone == "+18174057514"
+    assert biz.owner_notification_phone == "+48505460409"
+    assert biz.transfer_phone_number == "+48505460409"
 
 
 def test_seed_creates_three_staff(seeded, db):

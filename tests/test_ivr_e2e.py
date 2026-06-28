@@ -130,7 +130,7 @@ def test_e2e_ivr_press_2_returns_transfer(db, admin_client, ivr_domain):
     update_business(
         db, biz_id, tid,
         transfer_enabled=True,
-        phone="+48100200300",
+        transfer_phone_number="+48100200300",
     )
 
     resp = client.post(

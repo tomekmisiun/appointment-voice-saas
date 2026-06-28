@@ -641,7 +641,7 @@ def _handle_reschedule_slot_selection(db: Session, session: VoiceSession, key: s
 def _resolve_transfer_destination(db, business, tenant_id: int) -> str | None:
     policy = business.transfer_destination_policy
     if policy == TransferDestinationPolicy.BUSINESS_PHONE:
-        phone = business.phone
+        phone = business.transfer_phone_number
         return phone if phone and phone.strip() else None
     if policy == TransferDestinationPolicy.STAFF:
         # First eligible staff by insertion order (id asc); intentional for determinism.

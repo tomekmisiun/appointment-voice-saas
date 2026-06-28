@@ -65,9 +65,19 @@ def reset_test_database() -> None:
 
 
 def run_test_migrations() -> None:
-    alembic_config = Config("alembic.ini")
-    alembic_config.set_main_option("sqlalchemy.url", settings.test_database_url)
-    command.upgrade(alembic_config, "head")
+    # env.py skips DATABASE_URL override when ENVIRONMENT=test, ensuring
+    # migrations target the test DB even in a development Docker environment.
+    _orig = os.environ.get("ENVIRONMENT")
+    os.environ["ENVIRONMENT"] = "test"
+    try:
+        alembic_config = Config("alembic.ini")
+        alembic_config.set_main_option("sqlalchemy.url", settings.test_database_url)
+        command.upgrade(alembic_config, "head")
+    finally:
+        if _orig is None:
+            os.environ.pop("ENVIRONMENT", None)
+        else:
+            os.environ["ENVIRONMENT"] = _orig
 
 
 def register_user(client, email: str, password: str = "password123", tenant_slug: str | None = None):

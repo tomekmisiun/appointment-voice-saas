@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/admin": {
+    "/health": {
         parameters: {
             query?: never;
             header?: never;
@@ -12,10 +12,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Admin panel welcome payload
-         * @deprecated
+         * Basic health check
+         * @description Backward-compatible process health endpoint.
          */
-        get: operations["admin_panel_admin_get"];
+        get: operations["health_check_health_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -24,19 +24,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/audit-logs": {
+    "/health/live": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * List audit logs
-         * @deprecated
-         * @description Admin-only paginated audit log listing with action and actor filters.
-         */
-        get: operations["list_audit_logs_admin_audit_logs_get"];
+        /** Liveness probe */
+        get: operations["liveness_check_health_live_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -45,7 +41,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/tenants": {
+    "/health/ready": {
         parameters: {
             query?: never;
             header?: never;
@@ -53,23 +49,70 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List tenants
-         * @deprecated
+         * Readiness probe
+         * @description Checks database, Redis, and optional object storage dependencies required to serve traffic.
          */
-        get: operations["list_tenant_records_admin_tenants_get"];
+        get: operations["readiness_check_health_ready_get"];
         put?: never;
-        /**
-         * Provision a new tenant
-         * @deprecated
-         */
-        post: operations["create_tenant_admin_tenants_post"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/admin/tenants/{tenant_id}": {
+    "/health/db": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Database health check */
+        get: operations["db_health_check_health_db_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health/redis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Redis health check */
+        get: operations["redis_health_health_redis_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health/s3": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Object storage health check */
+        get: operations["s3_health_health_s3_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health/limited": {
         parameters: {
             query?: never;
             header?: never;
@@ -77,20 +120,272 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get tenant details
-         * @deprecated
+         * Rate-limited example endpoint
+         * @description Demonstrates Redis-backed IP rate limiting for template projects.
          */
-        get: operations["get_tenant_admin_tenants__tenant_id__get"];
+        get: operations["limited_endpoint_health_limited_get"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
-         * Update tenant metadata or lifecycle state
-         * @deprecated
+         * Prometheus metrics
+         * @description Exposes request counters and latency histograms in Prometheus text format.
          */
-        patch: operations["patch_tenant_admin_tenants__tenant_id__patch"];
+        get: operations["metrics_metrics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register a new user
+         * @description Create an active user account with the default `user` role.
+         */
+        post: operations["register_api_v1_auth_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Login and receive JWT tokens
+         * @description Authenticate with email and password. Returns a short-lived access token and a refresh token used for rotation.
+         */
+        post: operations["login_api_v1_auth_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the current user profile */
+        get: operations["me_api_v1_auth_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotate access and refresh tokens
+         * @description Exchange a valid refresh token for a new access/refresh pair.
+         */
+        post: operations["refresh_token_api_v1_auth_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Logout and revoke refresh token
+         * @description Revokes the submitted refresh token in Redis.
+         */
+        post: operations["logout_api_v1_auth_logout_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password-reset/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request a password reset email
+         * @description Always returns the same success message to avoid account enumeration. Active users receive a background email job with a single-use reset token.
+         */
+        post: operations["request_reset_password_api_v1_auth_password_reset_request_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/demo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a public demo session
+         * @description Returns short-lived JWT tokens for the pre-configured read-only demo user. Requires PUBLIC_DEMO_ENABLED=true and correct PUBLIC_DEMO_USER_EMAIL / PUBLIC_DEMO_BUSINESS_ID configuration. The demo user cannot perform any mutation.
+         */
+        post: operations["demo_login_api_v1_auth_demo_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password-reset/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm a password reset
+         * @description Set a new password using a valid, unused, unexpired reset token.
+         */
+        post: operations["confirm_reset_password_api_v1_auth_password_reset_confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List users
+         * @description Admin-only user listing with keyset pagination, sorting, filters, and email search. Use `cursor` for scalable paging; `page` remains as a legacy offset fallback.
+         */
+        get: operations["list_users_api_v1_users__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a user by ID
+         * @description Admins can read any user. Regular users can only read themselves.
+         */
+        get: operations["get_user_api_v1_users__user_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete a user */
+        delete: operations["remove_user_api_v1_users__user_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a user
+         * @description Admins can update managed fields and activation state. Regular users can update only their own safe profile fields.
+         */
+        patch: operations["patch_user_api_v1_users__user_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/users/{user_id}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Deactivate a user */
+        patch: operations["deactivate_user_endpoint_api_v1_users__user_id__deactivate_patch"];
+        trace?: never;
+    };
+    "/api/v1/users/{user_id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Activate a user */
+        patch: operations["activate_user_endpoint_api_v1_users__user_id__activate_patch"];
         trace?: never;
     };
     "/api/v1/admin": {
@@ -166,7 +461,7 @@ export interface paths {
         patch: operations["patch_tenant_api_v1_admin_tenants__tenant_id__patch"];
         trace?: never;
     };
-    "/api/v1/auth/demo": {
+    "/api/v1/files/upload": {
         parameters: {
             query?: never;
             header?: never;
@@ -176,17 +471,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Start a public demo session
-         * @description Returns short-lived JWT tokens for the pre-configured read-only demo user. Requires PUBLIC_DEMO_ENABLED=true and correct PUBLIC_DEMO_USER_EMAIL / PUBLIC_DEMO_BUSINESS_ID configuration. The demo user cannot perform any mutation.
+         * Upload a file
+         * @description Authenticated multipart upload with size, declared content-type, and content-sniff validation. Objects are stored privately in S3-compatible storage.
          */
-        post: operations["demo_login_api_v1_auth_demo_post"];
+        post: operations["upload_file_api_v1_files_upload_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/login": {
+    "/api/v1/files/presigned-upload": {
         parameters: {
             query?: never;
             header?: never;
@@ -196,17 +491,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Login and receive JWT tokens
-         * @description Authenticate with email and password. Returns a short-lived access token and a refresh token used for rotation.
+         * Create a presigned upload URL
+         * @description Returns a short-lived private PUT URL for direct client-side uploads.
          */
-        post: operations["login_api_v1_auth_login_post"];
+        post: operations["create_presigned_upload_api_v1_files_presigned_upload_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/logout": {
+    "/api/v1/files/presigned-upload/complete": {
         parameters: {
             query?: never;
             header?: never;
@@ -215,26 +510,23 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Logout and revoke refresh token
-         * @description Revokes the submitted refresh token in Redis.
-         */
-        post: operations["logout_api_v1_auth_logout_post"];
+        /** Register a presigned upload */
+        post: operations["complete_presigned_upload_api_v1_files_presigned_upload_complete_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/me": {
+    "/api/v1/files/{file_id}/download-url": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get the current user profile */
-        get: operations["me_api_v1_auth_me_get"];
+        /** Get a presigned download URL */
+        get: operations["get_download_url_api_v1_files__file_id__download_url_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -243,7 +535,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/password-reset/confirm": {
+    "/api/v1/files/{file_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -252,18 +544,15 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Confirm a password reset
-         * @description Set a new password using a valid, unused, unexpired reset token.
-         */
-        post: operations["confirm_reset_password_api_v1_auth_password_reset_confirm_post"];
-        delete?: never;
+        post?: never;
+        /** Delete an uploaded file */
+        delete: operations["delete_file_api_v1_files__file_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/password-reset/request": {
+    "/api/v1/webhooks/inbound": {
         parameters: {
             query?: never;
             header?: never;
@@ -273,50 +562,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Request a password reset email
-         * @description Always returns the same success message to avoid account enumeration. Active users receive a background email job with a single-use reset token.
+         * Receive a signed inbound webhook
+         * @description Provider-neutral webhook entrypoint with timestamped HMAC signature verification, replay-window protection, event deduplication, and Idempotency-Key replay-safe response caching.
          */
-        post: operations["request_reset_password_api_v1_auth_password_reset_request_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/refresh": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Rotate access and refresh tokens
-         * @description Exchange a valid refresh token for a new access/refresh pair.
-         */
-        post: operations["refresh_token_api_v1_auth_refresh_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/register": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Register a new user
-         * @description Create an active user account with the default `user` role.
-         */
-        post: operations["register_api_v1_auth_register_post"];
+        post: operations["inbound_webhook_api_v1_webhooks_inbound_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -359,18 +608,161 @@ export interface paths {
         patch: operations["update_business_endpoint_api_v1_businesses__business_id__patch"];
         trace?: never;
     };
-    "/api/v1/businesses/{business_id}/availability": {
+    "/api/v1/businesses/{business_id}/staff": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get Availability */
-        get: operations["get_availability_api_v1_businesses__business_id__availability_get"];
+        /** List Staff Endpoint */
+        get: operations["list_staff_endpoint_api_v1_businesses__business_id__staff_get"];
+        put?: never;
+        /** Create Staff Endpoint */
+        post: operations["create_staff_endpoint_api_v1_businesses__business_id__staff_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/businesses/{business_id}/staff/{staff_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Staff Endpoint */
+        get: operations["get_staff_endpoint_api_v1_businesses__business_id__staff__staff_id__get"];
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Staff Endpoint */
+        patch: operations["update_staff_endpoint_api_v1_businesses__business_id__staff__staff_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/businesses/{business_id}/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Services Endpoint */
+        get: operations["list_services_endpoint_api_v1_businesses__business_id__services_get"];
+        put?: never;
+        /** Create Service Endpoint */
+        post: operations["create_service_endpoint_api_v1_businesses__business_id__services_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/businesses/{business_id}/services/{service_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Service Endpoint */
+        get: operations["get_service_endpoint_api_v1_businesses__business_id__services__service_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Service Endpoint */
+        delete: operations["delete_service_endpoint_api_v1_businesses__business_id__services__service_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Service Endpoint */
+        patch: operations["update_service_endpoint_api_v1_businesses__business_id__services__service_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/businesses/{business_id}/working-hours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Working Hours Endpoint */
+        get: operations["list_working_hours_endpoint_api_v1_businesses__business_id__working_hours_get"];
+        put?: never;
+        /**
+         * Create Working Hours Endpoint
+         * @description Create a recurring weekly working-hours window (P3-001).
+         *
+         *     Omit `staff_id` (or send it as null) for a business-wide "salon hours"
+         *     window -- used when availability is searched without a specific staff
+         *     member (e.g. "any available staff"). Set `staff_id` to scope the window
+         *     to one staff member instead -- required before that staff member can be
+         *     offered in the IVR staff-selection menu (P2-006) or have their own
+         *     availability searched, since `get_available_slots()` only consults a
+         *     given staff_id's own rows, never falling back to the business-wide ones,
+         *     for a staff-specific search. Combining both kinds of hours for a single
+         *     search (salon-wide intersected with staff-specific) is P3-002, not this
+         *     endpoint.
+         */
+        post: operations["create_working_hours_endpoint_api_v1_businesses__business_id__working_hours_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/businesses/{business_id}/working-hours/{wh_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Working Hours Endpoint */
+        get: operations["get_working_hours_endpoint_api_v1_businesses__business_id__working_hours__wh_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Working Hours Endpoint */
+        delete: operations["delete_working_hours_endpoint_api_v1_businesses__business_id__working_hours__wh_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Working Hours Endpoint */
+        patch: operations["update_working_hours_endpoint_api_v1_businesses__business_id__working_hours__wh_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/businesses/{business_id}/transfer-hours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Transfer Hours Endpoint */
+        get: operations["list_transfer_hours_endpoint_api_v1_businesses__business_id__transfer_hours_get"];
+        put?: never;
+        /** Create Transfer Hours Endpoint */
+        post: operations["create_transfer_hours_endpoint_api_v1_businesses__business_id__transfer_hours_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/businesses/{business_id}/transfer-hours/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Transfer Hours Endpoint */
+        get: operations["get_transfer_hours_endpoint_api_v1_businesses__business_id__transfer_hours__entry_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Transfer Hours Endpoint */
+        delete: operations["delete_transfer_hours_endpoint_api_v1_businesses__business_id__transfer_hours__entry_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -427,6 +819,71 @@ export interface paths {
         post?: never;
         /** Delete Exception Endpoint */
         delete: operations["delete_exception_endpoint_api_v1_businesses__business_id__availability_exceptions__exception_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/businesses/{business_id}/recurring-staff-blocks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Recurring Staff Blocks Endpoint */
+        get: operations["list_recurring_staff_blocks_endpoint_api_v1_businesses__business_id__recurring_staff_blocks_get"];
+        put?: never;
+        /**
+         * Create Recurring Staff Block Endpoint
+         * @description Create a recurring weekly unavailable window (P3-005), e.g. a daily
+         *     lunch break. Unlike a one-off `AvailabilityException`, this is
+         *     subtracted from generated slots every matching weekday and stays
+         *     correct if working hours change later -- see
+         *     `docs/adr/0003-recurring-staff-blocks.md`.
+         *
+         *     Omit `staff_id` (or send it as null) for a business-wide block (applies
+         *     to every staff member's search and an "any available staff" search).
+         *     Set `staff_id` to scope it to one staff member -- it has no effect on
+         *     other staff members or a search with no staff_id.
+         */
+        post: operations["create_recurring_staff_block_endpoint_api_v1_businesses__business_id__recurring_staff_blocks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/businesses/{business_id}/recurring-staff-blocks/{block_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Recurring Staff Block Endpoint */
+        get: operations["get_recurring_staff_block_endpoint_api_v1_businesses__business_id__recurring_staff_blocks__block_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Recurring Staff Block Endpoint */
+        delete: operations["delete_recurring_staff_block_endpoint_api_v1_businesses__business_id__recurring_staff_blocks__block_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/businesses/{business_id}/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Availability */
+        get: operations["get_availability_api_v1_businesses__business_id__availability_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -639,305 +1096,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/businesses/{business_id}/recurring-staff-blocks": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Recurring Staff Blocks Endpoint */
-        get: operations["list_recurring_staff_blocks_endpoint_api_v1_businesses__business_id__recurring_staff_blocks_get"];
-        put?: never;
-        /**
-         * Create Recurring Staff Block Endpoint
-         * @description Create a recurring weekly unavailable window (P3-005), e.g. a daily
-         *     lunch break. Unlike a one-off `AvailabilityException`, this is
-         *     subtracted from generated slots every matching weekday and stays
-         *     correct if working hours change later -- see
-         *     `docs/adr/0003-recurring-staff-blocks.md`.
-         *
-         *     Omit `staff_id` (or send it as null) for a business-wide block (applies
-         *     to every staff member's search and an "any available staff" search).
-         *     Set `staff_id` to scope it to one staff member -- it has no effect on
-         *     other staff members or a search with no staff_id.
-         */
-        post: operations["create_recurring_staff_block_endpoint_api_v1_businesses__business_id__recurring_staff_blocks_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/businesses/{business_id}/recurring-staff-blocks/{block_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Recurring Staff Block Endpoint */
-        get: operations["get_recurring_staff_block_endpoint_api_v1_businesses__business_id__recurring_staff_blocks__block_id__get"];
-        put?: never;
-        post?: never;
-        /** Delete Recurring Staff Block Endpoint */
-        delete: operations["delete_recurring_staff_block_endpoint_api_v1_businesses__business_id__recurring_staff_blocks__block_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/businesses/{business_id}/services": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Services Endpoint */
-        get: operations["list_services_endpoint_api_v1_businesses__business_id__services_get"];
-        put?: never;
-        /** Create Service Endpoint */
-        post: operations["create_service_endpoint_api_v1_businesses__business_id__services_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/businesses/{business_id}/services/{service_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Service Endpoint */
-        get: operations["get_service_endpoint_api_v1_businesses__business_id__services__service_id__get"];
-        put?: never;
-        post?: never;
-        /** Delete Service Endpoint */
-        delete: operations["delete_service_endpoint_api_v1_businesses__business_id__services__service_id__delete"];
-        options?: never;
-        head?: never;
-        /** Update Service Endpoint */
-        patch: operations["update_service_endpoint_api_v1_businesses__business_id__services__service_id__patch"];
-        trace?: never;
-    };
-    "/api/v1/businesses/{business_id}/staff": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Staff Endpoint */
-        get: operations["list_staff_endpoint_api_v1_businesses__business_id__staff_get"];
-        put?: never;
-        /** Create Staff Endpoint */
-        post: operations["create_staff_endpoint_api_v1_businesses__business_id__staff_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/businesses/{business_id}/staff/{staff_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Staff Endpoint */
-        get: operations["get_staff_endpoint_api_v1_businesses__business_id__staff__staff_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update Staff Endpoint */
-        patch: operations["update_staff_endpoint_api_v1_businesses__business_id__staff__staff_id__patch"];
-        trace?: never;
-    };
-    "/api/v1/businesses/{business_id}/transfer-hours": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Transfer Hours Endpoint */
-        get: operations["list_transfer_hours_endpoint_api_v1_businesses__business_id__transfer_hours_get"];
-        put?: never;
-        /** Create Transfer Hours Endpoint */
-        post: operations["create_transfer_hours_endpoint_api_v1_businesses__business_id__transfer_hours_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/businesses/{business_id}/transfer-hours/{entry_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Transfer Hours Endpoint */
-        get: operations["get_transfer_hours_endpoint_api_v1_businesses__business_id__transfer_hours__entry_id__get"];
-        put?: never;
-        post?: never;
-        /** Delete Transfer Hours Endpoint */
-        delete: operations["delete_transfer_hours_endpoint_api_v1_businesses__business_id__transfer_hours__entry_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/businesses/{business_id}/working-hours": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Working Hours Endpoint */
-        get: operations["list_working_hours_endpoint_api_v1_businesses__business_id__working_hours_get"];
-        put?: never;
-        /**
-         * Create Working Hours Endpoint
-         * @description Create a recurring weekly working-hours window (P3-001).
-         *
-         *     Omit `staff_id` (or send it as null) for a business-wide "salon hours"
-         *     window -- used when availability is searched without a specific staff
-         *     member (e.g. "any available staff"). Set `staff_id` to scope the window
-         *     to one staff member instead -- required before that staff member can be
-         *     offered in the IVR staff-selection menu (P2-006) or have their own
-         *     availability searched, since `get_available_slots()` only consults a
-         *     given staff_id's own rows, never falling back to the business-wide ones,
-         *     for a staff-specific search. Combining both kinds of hours for a single
-         *     search (salon-wide intersected with staff-specific) is P3-002, not this
-         *     endpoint.
-         */
-        post: operations["create_working_hours_endpoint_api_v1_businesses__business_id__working_hours_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/businesses/{business_id}/working-hours/{wh_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Working Hours Endpoint */
-        get: operations["get_working_hours_endpoint_api_v1_businesses__business_id__working_hours__wh_id__get"];
-        put?: never;
-        post?: never;
-        /** Delete Working Hours Endpoint */
-        delete: operations["delete_working_hours_endpoint_api_v1_businesses__business_id__working_hours__wh_id__delete"];
-        options?: never;
-        head?: never;
-        /** Update Working Hours Endpoint */
-        patch: operations["update_working_hours_endpoint_api_v1_businesses__business_id__working_hours__wh_id__patch"];
-        trace?: never;
-    };
-    "/api/v1/files/presigned-upload": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create a presigned upload URL
-         * @description Returns a short-lived private PUT URL for direct client-side uploads.
-         */
-        post: operations["create_presigned_upload_api_v1_files_presigned_upload_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/files/presigned-upload/complete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Register a presigned upload */
-        post: operations["complete_presigned_upload_api_v1_files_presigned_upload_complete_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/files/upload": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Upload a file
-         * @description Authenticated multipart upload with size, declared content-type, and content-sniff validation. Objects are stored privately in S3-compatible storage.
-         */
-        post: operations["upload_file_api_v1_files_upload_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/files/{file_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete an uploaded file */
-        delete: operations["delete_file_api_v1_files__file_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/files/{file_id}/download-url": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a presigned download URL */
-        get: operations["get_download_url_api_v1_files__file_id__download_url_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/ivr/simulate/call": {
         parameters: {
             query?: never;
@@ -972,7 +1130,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/onboarding": {
+    "/api/v1/webhooks/twilio/voice": {
         parameters: {
             query?: never;
             header?: never;
@@ -982,10 +1140,68 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * One-call business setup for self-service onboarding
-         * @description Creates a business together with initial staff, services, and working hours in a single request. Requires admin role. All entities are scoped to the authenticated user's tenant.
+         * Twilio Voice Inbound
+         * @description Inbound webhook — Twilio posts here when a call arrives.
+         *
+         *     Business is resolved by matching the To= number against business.phone
+         *     (the Twilio-provisioned inbound number), so no business_id is needed in
+         *     the URL.  Configure the Twilio webhook to point at this endpoint directly.
          */
-        post: operations["onboarding_setup_api_v1_onboarding_post"];
+        post: operations["twilio_voice_inbound_api_v1_webhooks_twilio_voice_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks/twilio/voice/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Twilio Voice Keypress
+         * @description Keypress (Gather) callback — Twilio posts here after the caller presses a digit.
+         */
+        post: operations["twilio_voice_keypress_api_v1_webhooks_twilio_voice__session_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks/twilio/sms/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Twilio Sms Status */
+        post: operations["twilio_sms_status_api_v1_webhooks_twilio_sms_status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks/twilio/sms/{business_id}/inbound": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Twilio Sms Inbound */
+        post: operations["twilio_sms_inbound_api_v1_webhooks_twilio_sms__business_id__inbound_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1047,6 +1263,26 @@ export interface paths {
         patch: operations["patch_lead_status_api_v1_owner_leads__lead_id__status_patch"];
         trace?: never;
     };
+    "/api/v1/onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * One-call business setup for self-service onboarding
+         * @description Creates a business together with initial staff, services, and working hours in a single request. Requires admin role. All entities are scoped to the authenticated user's tenant.
+         */
+        post: operations["onboarding_setup_api_v1_onboarding_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/signup": {
         parameters: {
             query?: never;
@@ -1058,322 +1294,9 @@ export interface paths {
         put?: never;
         /**
          * Self-service salon signup
-         * @description Public endpoint — no authentication required. Creates a brand new tenant and its first admin user in one call; no manually-created tenant or platform-admin action needed first. Rate-limited per IP.
+         * @description Public endpoint — no authentication required. Creates a brand new tenant, first business, and first admin user in one call; no manually-created tenant or platform-admin action needed first. Rate-limited per IP.
          */
         post: operations["signup_api_v1_signup_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/users/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List users
-         * @description Admin-only user listing with keyset pagination, sorting, filters, and email search. Use `cursor` for scalable paging; `page` remains as a legacy offset fallback.
-         */
-        get: operations["list_users_api_v1_users__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/users/{user_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get a user by ID
-         * @description Admins can read any user. Regular users can only read themselves.
-         */
-        get: operations["get_user_api_v1_users__user_id__get"];
-        put?: never;
-        post?: never;
-        /** Delete a user */
-        delete: operations["remove_user_api_v1_users__user_id__delete"];
-        options?: never;
-        head?: never;
-        /**
-         * Update a user
-         * @description Admins can update managed fields and activation state. Regular users can update only their own safe profile fields.
-         */
-        patch: operations["patch_user_api_v1_users__user_id__patch"];
-        trace?: never;
-    };
-    "/api/v1/users/{user_id}/activate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Activate a user */
-        patch: operations["activate_user_endpoint_api_v1_users__user_id__activate_patch"];
-        trace?: never;
-    };
-    "/api/v1/users/{user_id}/deactivate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Deactivate a user */
-        patch: operations["deactivate_user_endpoint_api_v1_users__user_id__deactivate_patch"];
-        trace?: never;
-    };
-    "/api/v1/webhooks/inbound": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Receive a signed inbound webhook
-         * @description Provider-neutral webhook entrypoint with timestamped HMAC signature verification, replay-window protection, event deduplication, and Idempotency-Key replay-safe response caching.
-         */
-        post: operations["inbound_webhook_api_v1_webhooks_inbound_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/webhooks/twilio/sms/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Twilio Sms Status */
-        post: operations["twilio_sms_status_api_v1_webhooks_twilio_sms_status_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/webhooks/twilio/sms/{business_id}/inbound": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Twilio Sms Inbound */
-        post: operations["twilio_sms_inbound_api_v1_webhooks_twilio_sms__business_id__inbound_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/webhooks/twilio/voice/{business_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Twilio Voice Inbound */
-        post: operations["twilio_voice_inbound_api_v1_webhooks_twilio_voice__business_id__post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/webhooks/twilio/voice/{business_id}/{session_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Twilio Voice Keypress */
-        post: operations["twilio_voice_keypress_api_v1_webhooks_twilio_voice__business_id___session_id__post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/demo": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Start a public demo session
-         * @deprecated
-         * @description Returns short-lived JWT tokens for the pre-configured read-only demo user. Requires PUBLIC_DEMO_ENABLED=true and correct PUBLIC_DEMO_USER_EMAIL / PUBLIC_DEMO_BUSINESS_ID configuration. The demo user cannot perform any mutation.
-         */
-        post: operations["demo_login_auth_demo_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Login and receive JWT tokens
-         * @deprecated
-         * @description Authenticate with email and password. Returns a short-lived access token and a refresh token used for rotation.
-         */
-        post: operations["login_auth_login_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/logout": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Logout and revoke refresh token
-         * @deprecated
-         * @description Revokes the submitted refresh token in Redis.
-         */
-        post: operations["logout_auth_logout_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get the current user profile
-         * @deprecated
-         */
-        get: operations["me_auth_me_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/password-reset/confirm": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Confirm a password reset
-         * @deprecated
-         * @description Set a new password using a valid, unused, unexpired reset token.
-         */
-        post: operations["confirm_reset_password_auth_password_reset_confirm_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/password-reset/request": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Request a password reset email
-         * @deprecated
-         * @description Always returns the same success message to avoid account enumeration. Active users receive a background email job with a single-use reset token.
-         */
-        post: operations["request_reset_password_auth_password_reset_request_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/refresh": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Rotate access and refresh tokens
-         * @deprecated
-         * @description Exchange a valid refresh token for a new access/refresh pair.
-         */
-        post: operations["refresh_token_auth_refresh_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1401,7 +1324,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/files/presigned-upload": {
+    "/auth/login": {
         parameters: {
             query?: never;
             header?: never;
@@ -1411,18 +1334,38 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Create a presigned upload URL
+         * Login and receive JWT tokens
          * @deprecated
-         * @description Returns a short-lived private PUT URL for direct client-side uploads.
+         * @description Authenticate with email and password. Returns a short-lived access token and a refresh token used for rotation.
          */
-        post: operations["create_presigned_upload_files_presigned_upload_post"];
+        post: operations["login_auth_login_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/files/presigned-upload/complete": {
+    "/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the current user profile
+         * @deprecated
+         */
+        get: operations["me_auth_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/refresh": {
         parameters: {
             query?: never;
             header?: never;
@@ -1432,17 +1375,18 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Register a presigned upload
+         * Rotate access and refresh tokens
          * @deprecated
+         * @description Exchange a valid refresh token for a new access/refresh pair.
          */
-        post: operations["complete_presigned_upload_files_presigned_upload_complete_post"];
+        post: operations["refresh_token_auth_refresh_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/files/upload": {
+    "/auth/logout": {
         parameters: {
             query?: never;
             header?: never;
@@ -1452,18 +1396,18 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Upload a file
+         * Logout and revoke refresh token
          * @deprecated
-         * @description Authenticated multipart upload with size, declared content-type, and content-sniff validation. Objects are stored privately in S3-compatible storage.
+         * @description Revokes the submitted refresh token in Redis.
          */
-        post: operations["upload_file_files_upload_post"];
+        post: operations["logout_auth_logout_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/files/{file_id}": {
+    "/auth/password-reset/request": {
         parameters: {
             query?: never;
             header?: never;
@@ -1472,179 +1416,54 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post?: never;
         /**
-         * Delete an uploaded file
+         * Request a password reset email
          * @deprecated
+         * @description Always returns the same success message to avoid account enumeration. Active users receive a background email job with a single-use reset token.
          */
-        delete: operations["delete_file_files__file_id__delete"];
+        post: operations["request_reset_password_auth_password_reset_request_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/files/{file_id}/download-url": {
+    "/auth/demo": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
+        get?: never;
+        put?: never;
         /**
-         * Get a presigned download URL
+         * Start a public demo session
          * @deprecated
+         * @description Returns short-lived JWT tokens for the pre-configured read-only demo user. Requires PUBLIC_DEMO_ENABLED=true and correct PUBLIC_DEMO_USER_EMAIL / PUBLIC_DEMO_BUSINESS_ID configuration. The demo user cannot perform any mutation.
          */
-        get: operations["get_download_url_files__file_id__download_url_get"];
-        put?: never;
-        post?: never;
+        post: operations["demo_login_auth_demo_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/health": {
+    "/auth/password-reset/confirm": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
+        get?: never;
+        put?: never;
         /**
-         * Basic health check
-         * @description Backward-compatible process health endpoint.
+         * Confirm a password reset
+         * @deprecated
+         * @description Set a new password using a valid, unused, unexpired reset token.
          */
-        get: operations["health_check_health_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/health/db": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Database health check */
-        get: operations["db_health_check_health_db_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/health/limited": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Rate-limited example endpoint
-         * @description Demonstrates Redis-backed IP rate limiting for template projects.
-         */
-        get: operations["limited_endpoint_health_limited_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/health/live": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Liveness probe */
-        get: operations["liveness_check_health_live_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/health/ready": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Readiness probe
-         * @description Checks database, Redis, and optional object storage dependencies required to serve traffic.
-         */
-        get: operations["readiness_check_health_ready_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/health/redis": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Redis health check */
-        get: operations["redis_health_health_redis_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/health/s3": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Object storage health check */
-        get: operations["s3_health_health_s3_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/metrics": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Prometheus metrics
-         * @description Exposes request counters and latency histograms in Prometheus text format.
-         */
-        get: operations["metrics_metrics_get"];
-        put?: never;
-        post?: never;
+        post: operations["confirm_reset_password_auth_password_reset_confirm_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1702,26 +1521,6 @@ export interface paths {
         patch: operations["patch_user_users__user_id__patch"];
         trace?: never;
     };
-    "/users/{user_id}/activate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Activate a user
-         * @deprecated
-         */
-        patch: operations["activate_user_endpoint_users__user_id__activate_patch"];
-        trace?: never;
-    };
     "/users/{user_id}/deactivate": {
         parameters: {
             query?: never;
@@ -1742,6 +1541,217 @@ export interface paths {
         patch: operations["deactivate_user_endpoint_users__user_id__deactivate_patch"];
         trace?: never;
     };
+    "/users/{user_id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Activate a user
+         * @deprecated
+         */
+        patch: operations["activate_user_endpoint_users__user_id__activate_patch"];
+        trace?: never;
+    };
+    "/admin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin panel welcome payload
+         * @deprecated
+         */
+        get: operations["admin_panel_admin_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/audit-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List audit logs
+         * @deprecated
+         * @description Admin-only paginated audit log listing with action and actor filters.
+         */
+        get: operations["list_audit_logs_admin_audit_logs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tenants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List tenants
+         * @deprecated
+         */
+        get: operations["list_tenant_records_admin_tenants_get"];
+        put?: never;
+        /**
+         * Provision a new tenant
+         * @deprecated
+         */
+        post: operations["create_tenant_admin_tenants_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tenants/{tenant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get tenant details
+         * @deprecated
+         */
+        get: operations["get_tenant_admin_tenants__tenant_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update tenant metadata or lifecycle state
+         * @deprecated
+         */
+        patch: operations["patch_tenant_admin_tenants__tenant_id__patch"];
+        trace?: never;
+    };
+    "/files/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a file
+         * @deprecated
+         * @description Authenticated multipart upload with size, declared content-type, and content-sniff validation. Objects are stored privately in S3-compatible storage.
+         */
+        post: operations["upload_file_files_upload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/presigned-upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a presigned upload URL
+         * @deprecated
+         * @description Returns a short-lived private PUT URL for direct client-side uploads.
+         */
+        post: operations["create_presigned_upload_files_presigned_upload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/presigned-upload/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register a presigned upload
+         * @deprecated
+         */
+        post: operations["complete_presigned_upload_files_presigned_upload_complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/download-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a presigned download URL
+         * @deprecated
+         */
+        get: operations["get_download_url_files__file_id__download_url_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete an uploaded file
+         * @deprecated
+         */
+        delete: operations["delete_file_files__file_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1753,22 +1763,22 @@ export interface components {
         AuditAction: "user.updated" | "user.deactivated" | "user.activated" | "user.deleted" | "password_reset.requested" | "password_reset.confirmed" | "tenant.created" | "tenant.activated" | "tenant.deactivated" | "booking.created" | "booking.cancelled" | "booking.rescheduled" | "booking.confirmed" | "booking.override_created" | "booking.override_cancelled" | "booking.hold_expired" | "booking.payment_refunded" | "customer.anonymized";
         /** AuditLogRead */
         AuditLogRead: {
-            action: components["schemas"]["AuditAction"];
+            /** Id */
+            id: number;
             /** Admin Id */
             admin_id: number | null;
+            action: components["schemas"]["AuditAction"];
+            /** Target User Id */
+            target_user_id: number | null;
+            /** Target Booking Id */
+            target_booking_id: number | null;
+            /** Source */
+            source: string | null;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
-            /** Id */
-            id: number;
-            /** Source */
-            source: string | null;
-            /** Target Booking Id */
-            target_booking_id: number | null;
-            /** Target User Id */
-            target_user_id: number | null;
         };
         /** AvailabilityExceptionCreate */
         AvailabilityExceptionCreate: {
@@ -1777,76 +1787,76 @@ export interface components {
              * Format: date
              */
             date: string;
-            /** End Time */
-            end_time?: string | null;
             /**
              * Is Closed
              * @default true
              */
             is_closed: boolean;
+            /** Start Time */
+            start_time?: string | null;
+            /** End Time */
+            end_time?: string | null;
             /** Reason */
             reason?: string | null;
             /** Staff Id */
             staff_id?: number | null;
-            /** Start Time */
-            start_time?: string | null;
         };
         /** AvailabilityExceptionRead */
         AvailabilityExceptionRead: {
+            /** Id */
+            id: number;
+            /** Tenant Id */
+            tenant_id: number;
             /** Business Id */
             business_id: number;
+            /** Staff Id */
+            staff_id: number | null;
             /**
              * Date
              * Format: date
              */
             date: string;
-            /** End Time */
-            end_time: string | null;
-            /** Id */
-            id: number;
             /** Is Closed */
             is_closed: boolean;
-            /** Reason */
-            reason: string | null;
-            /** Staff Id */
-            staff_id: number | null;
             /** Start Time */
             start_time: string | null;
-            /** Tenant Id */
-            tenant_id: number;
+            /** End Time */
+            end_time: string | null;
+            /** Reason */
+            reason: string | null;
         };
         /** AvailabilitySlot */
         AvailabilitySlot: {
-            /**
-             * Ends At
-             * Format: date-time
-             */
-            ends_at: string;
             /**
              * Starts At
              * Format: date-time
              */
             starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
         };
         /** Body_twilio_sms_inbound_api_v1_webhooks_twilio_sms__business_id__inbound_post */
         Body_twilio_sms_inbound_api_v1_webhooks_twilio_sms__business_id__inbound_post: {
+            /** From */
+            From: string;
             /**
              * Body
              * @default
              */
             Body: string;
-            /** From */
-            From: string;
         };
         /** Body_twilio_sms_status_api_v1_webhooks_twilio_sms_status_post */
         Body_twilio_sms_status_api_v1_webhooks_twilio_sms_status_post: {
-            /** Messagestatus */
-            MessageStatus: string;
             /** Smssid */
             SmsSid: string;
+            /** Messagestatus */
+            MessageStatus: string;
         };
-        /** Body_twilio_voice_inbound_api_v1_webhooks_twilio_voice__business_id__post */
-        Body_twilio_voice_inbound_api_v1_webhooks_twilio_voice__business_id__post: {
+        /** Body_twilio_voice_inbound_api_v1_webhooks_twilio_voice_post */
+        Body_twilio_voice_inbound_api_v1_webhooks_twilio_voice_post: {
             /** Callsid */
             CallSid: string;
             /**
@@ -1854,9 +1864,14 @@ export interface components {
              * @default
              */
             From: string;
+            /**
+             * To
+             * @default
+             */
+            To: string;
         };
-        /** Body_twilio_voice_keypress_api_v1_webhooks_twilio_voice__business_id___session_id__post */
-        Body_twilio_voice_keypress_api_v1_webhooks_twilio_voice__business_id___session_id__post: {
+        /** Body_twilio_voice_keypress_api_v1_webhooks_twilio_voice__session_id__post */
+        Body_twilio_voice_keypress_api_v1_webhooks_twilio_voice__session_id__post: {
             /**
              * Digits
              * @default
@@ -1884,8 +1899,6 @@ export interface components {
             customer_id: number;
             /** Service Id */
             service_id: number;
-            /** @default api */
-            source: components["schemas"]["BookingSource"];
             /** Staff Id */
             staff_id?: number | null;
             /**
@@ -1893,6 +1906,8 @@ export interface components {
              * Format: date-time
              */
             starts_at: string;
+            /** @default api */
+            source: components["schemas"]["BookingSource"];
         };
         /**
          * BookingMode
@@ -1908,12 +1923,8 @@ export interface components {
         BookingOverrideCreateRequest: {
             /** Customer Id */
             customer_id: number;
-            /** Reason */
-            reason: string;
             /** Service Id */
             service_id: number;
-            /** @default api */
-            source: components["schemas"]["BookingSource"];
             /** Staff Id */
             staff_id?: number | null;
             /**
@@ -1921,35 +1932,39 @@ export interface components {
              * Format: date-time
              */
             starts_at: string;
+            /** @default api */
+            source: components["schemas"]["BookingSource"];
+            /** Reason */
+            reason: string;
         };
         /** BookingPaymentRead */
         BookingPaymentRead: {
-            /** Amount Minor Units */
-            amount_minor_units: number;
+            /** Id */
+            id: number;
             /** Booking Id */
             booking_id: number;
+            /** Provider */
+            provider: string;
+            /** Provider Session Id */
+            provider_session_id: string | null;
+            /** Provider Payment Id */
+            provider_payment_id: string | null;
+            /** Amount Minor Units */
+            amount_minor_units: number;
+            /** Currency */
+            currency: string;
+            status: components["schemas"]["BookingPaymentStatus"];
+            /** Failure Reason */
+            failure_reason: string | null;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
-            /** Currency */
-            currency: string;
-            /** Failure Reason */
-            failure_reason: string | null;
-            /** Id */
-            id: number;
             /** Paid At */
             paid_at: string | null;
-            /** Provider */
-            provider: string;
-            /** Provider Payment Id */
-            provider_payment_id: string | null;
-            /** Provider Session Id */
-            provider_session_id: string | null;
             /** Refunded At */
             refunded_at: string | null;
-            status: components["schemas"]["BookingPaymentStatus"];
         };
         /** BookingPaymentRefundRequest */
         BookingPaymentRefundRequest: {
@@ -1963,28 +1978,16 @@ export interface components {
         BookingPaymentStatus: "pending" | "succeeded" | "failed" | "refunded";
         /** BookingRead */
         BookingRead: {
-            /** Business Id */
-            business_id: number;
-            /** Cancel Reason */
-            cancel_reason: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /** Customer Id */
-            customer_id: number;
-            /**
-             * Ends At
-             * Format: date-time
-             */
-            ends_at: string;
             /** Id */
             id: number;
+            /** Tenant Id */
+            tenant_id: number;
+            /** Business Id */
+            business_id: number;
+            /** Customer Id */
+            customer_id: number;
             /** Service Id */
             service_id: number;
-            /** Source */
-            source: string;
             /** Staff Id */
             staff_id: number | null;
             /**
@@ -1992,10 +1995,22 @@ export interface components {
              * Format: date-time
              */
             starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
             /** Status */
             status: string;
-            /** Tenant Id */
-            tenant_id: number;
+            /** Source */
+            source: string;
+            /** Cancel Reason */
+            cancel_reason: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /** BookingRescheduleRequest */
         BookingRescheduleRequest: {
@@ -2019,33 +2034,37 @@ export interface components {
         BookingStatus: "confirmed" | "cancelled" | "pending_payment";
         /** BusinessCreate */
         BusinessCreate: {
-            /** @default internal_booking */
-            booking_mode: components["schemas"]["BookingMode"];
-            /** External Booking Label */
-            external_booking_label?: string | null;
-            external_booking_provider?: components["schemas"]["ExternalBookingProvider"] | null;
-            /** External Booking Url */
-            external_booking_url?: string | null;
-            /** @default en */
-            language: components["schemas"]["BusinessLanguage"];
             /** Name */
             name: string;
-            /** Phone */
-            phone?: string | null;
-            /** @default full_booking */
-            subscription_plan: components["schemas"]["SubscriptionPlan"];
             /**
              * Timezone
              * @example Europe/Warsaw
              */
             timezone: string;
-            /** @default business_phone */
-            transfer_destination_policy: components["schemas"]["TransferDestinationPolicy"];
+            /** @default en */
+            language: components["schemas"]["BusinessLanguage"];
+            /** Phone */
+            phone?: string | null;
+            /** Owner Notification Phone */
+            owner_notification_phone?: string | null;
+            /** Transfer Phone Number */
+            transfer_phone_number?: string | null;
             /**
              * Transfer Enabled
              * @default false
              */
             transfer_enabled: boolean;
+            /** @default business_phone */
+            transfer_destination_policy: components["schemas"]["TransferDestinationPolicy"];
+            /** @default internal_booking */
+            booking_mode: components["schemas"]["BookingMode"];
+            /** External Booking Url */
+            external_booking_url?: string | null;
+            /** External Booking Label */
+            external_booking_label?: string | null;
+            external_booking_provider?: components["schemas"]["ExternalBookingProvider"] | null;
+            /** @default full_booking */
+            subscription_plan: components["schemas"]["SubscriptionPlan"];
         };
         /**
          * BusinessLanguage
@@ -2057,39 +2076,43 @@ export interface components {
         BusinessLanguage: "en" | "pl";
         /** BusinessRead */
         BusinessRead: {
+            /** Id */
+            id: number;
+            /** Tenant Id */
+            tenant_id: number;
+            /** Name */
+            name: string;
+            /** Timezone */
+            timezone: string;
+            /** Language */
+            language: string;
+            /** Phone */
+            phone: string | null;
+            /** Owner Notification Phone */
+            owner_notification_phone: string | null;
+            /** Transfer Phone Number */
+            transfer_phone_number: string | null;
+            /** Is Active */
+            is_active: boolean;
+            /** Transfer Enabled */
+            transfer_enabled: boolean;
+            /** Transfer Destination Policy */
+            transfer_destination_policy: string;
             /** Booking Mode */
             booking_mode: string;
+            /** External Booking Url */
+            external_booking_url: string | null;
+            /** External Booking Label */
+            external_booking_label: string | null;
+            /** External Booking Provider */
+            external_booking_provider: string | null;
+            /** Subscription Plan */
+            subscription_plan: string;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
-            /** External Booking Label */
-            external_booking_label: string | null;
-            /** External Booking Provider */
-            external_booking_provider: string | null;
-            /** External Booking Url */
-            external_booking_url: string | null;
-            /** Id */
-            id: number;
-            /** Is Active */
-            is_active: boolean;
-            /** Language */
-            language: string;
-            /** Name */
-            name: string;
-            /** Phone */
-            phone: string | null;
-            /** Subscription Plan */
-            subscription_plan: string;
-            /** Tenant Id */
-            tenant_id: number;
-            /** Timezone */
-            timezone: string;
-            /** Transfer Destination Policy */
-            transfer_destination_policy: string;
-            /** Transfer Enabled */
-            transfer_enabled: boolean;
         };
         /** BusinessTransferHoursCreate */
         BusinessTransferHoursCreate: {
@@ -2099,95 +2122,99 @@ export interface components {
              */
             day_of_week: number;
             /**
-             * End Time
-             * Format: time
-             */
-            end_time: string;
-            /**
              * Start Time
              * Format: time
              */
             start_time: string;
+            /**
+             * End Time
+             * Format: time
+             */
+            end_time: string;
         };
         /** BusinessTransferHoursRead */
         BusinessTransferHoursRead: {
+            /** Id */
+            id: number;
+            /** Tenant Id */
+            tenant_id: number;
             /** Business Id */
             business_id: number;
             /** Day Of Week */
             day_of_week: number;
             /**
-             * End Time
-             * Format: time
-             */
-            end_time: string;
-            /** Id */
-            id: number;
-            /**
              * Start Time
              * Format: time
              */
             start_time: string;
-            /** Tenant Id */
-            tenant_id: number;
+            /**
+             * End Time
+             * Format: time
+             */
+            end_time: string;
         };
         /** BusinessUpdate */
         BusinessUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Timezone */
+            timezone?: string | null;
+            language?: components["schemas"]["BusinessLanguage"] | null;
+            /** Phone */
+            phone?: string | null;
+            /** Owner Notification Phone */
+            owner_notification_phone?: string | null;
+            /** Transfer Phone Number */
+            transfer_phone_number?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Transfer Enabled */
+            transfer_enabled?: boolean | null;
+            transfer_destination_policy?: components["schemas"]["TransferDestinationPolicy"] | null;
             booking_mode?: components["schemas"]["BookingMode"] | null;
+            /** External Booking Url */
+            external_booking_url?: string | null;
             /** External Booking Label */
             external_booking_label?: string | null;
             external_booking_provider?: components["schemas"]["ExternalBookingProvider"] | null;
-            /** External Booking Url */
-            external_booking_url?: string | null;
-            /** Is Active */
-            is_active?: boolean | null;
-            language?: components["schemas"]["BusinessLanguage"] | null;
-            /** Name */
-            name?: string | null;
-            /** Phone */
-            phone?: string | null;
             subscription_plan?: components["schemas"]["SubscriptionPlan"] | null;
-            /** Timezone */
-            timezone?: string | null;
-            transfer_destination_policy?: components["schemas"]["TransferDestinationPolicy"] | null;
-            /** Transfer Enabled */
-            transfer_enabled?: boolean | null;
         };
         /** ClientCreate */
         ClientCreate: {
+            /** Name */
+            name: string;
             /** Customer Id */
             customer_id?: number | null;
             /** Email */
             email?: string | null;
-            /** Name */
-            name: string;
-            /** Notes */
-            notes?: string | null;
             /** Phone */
             phone?: string | null;
+            /** Notes */
+            notes?: string | null;
         };
         /** ClientRead */
         ClientRead: {
+            /** Id */
+            id: number;
+            /** Tenant Id */
+            tenant_id: number;
             /** Business Id */
             business_id: number;
+            /** Customer Id */
+            customer_id: number | null;
+            /** Name */
+            name: string;
+            /** Email */
+            email: string | null;
+            /** Phone */
+            phone: string | null;
+            /** Notes */
+            notes: string | null;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
-            /** Customer Id */
-            customer_id: number | null;
-            /** Email */
-            email: string | null;
-            /** Id */
-            id: number;
-            /** Name */
-            name: string;
-            /** Notes */
-            notes: string | null;
-            /** Phone */
-            phone: string | null;
-            /** Tenant Id */
-            tenant_id: number;
             /**
              * Updated At
              * Format: date-time
@@ -2196,44 +2223,44 @@ export interface components {
         };
         /** ClientUpdate */
         ClientUpdate: {
-            /** Email */
-            email?: string | null;
             /** Name */
             name?: string | null;
-            /** Notes */
-            notes?: string | null;
+            /** Email */
+            email?: string | null;
             /** Phone */
             phone?: string | null;
+            /** Notes */
+            notes?: string | null;
         };
         /** CustomerRead */
         CustomerRead: {
+            /** Id */
+            id: number;
+            /** Tenant Id */
+            tenant_id: number;
             /** Business Id */
             business_id: number;
+            /** Phone */
+            phone: string;
+            /** Phone Normalized */
+            phone_normalized: string;
+            /** Name */
+            name: string | null;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
-            /** Id */
-            id: number;
-            /** Name */
-            name: string | null;
-            /** Phone */
-            phone: string;
-            /** Phone Normalized */
-            phone_normalized: string;
-            /** Tenant Id */
-            tenant_id: number;
         };
         /** DependencyHealth */
         DependencyHealth: {
-            /** Message */
-            message?: string | null;
             /**
              * Status
              * @enum {string}
              */
             status: "ok" | "unavailable";
+            /** Message */
+            message?: string | null;
         };
         /** ErrorBody */
         ErrorBody: {
@@ -2244,18 +2271,18 @@ export interface components {
              */
             code: string;
             /**
+             * Message
+             * @description Human-readable error message safe for API clients.
+             * @example Could not validate credentials
+             */
+            message: string;
+            /**
              * Details
              * @description Optional structured validation or context details.
              */
             details?: unknown[] | {
                 [key: string]: unknown;
             } | null;
-            /**
-             * Message
-             * @description Human-readable error message safe for API clients.
-             * @example Could not validate credentials
-             */
-            message: string;
         };
         /**
          * ErrorResponse
@@ -2301,13 +2328,13 @@ export interface components {
         };
         /** IvrSessionResponse */
         IvrSessionResponse: {
-            action: components["schemas"]["IvrAction"];
-            /** Options */
-            options: components["schemas"]["IvrOptionRead"][];
-            /** Prompt */
-            prompt: string;
             /** Session Id */
             session_id: number | null;
+            /** Prompt */
+            prompt: string;
+            /** Options */
+            options: components["schemas"]["IvrOptionRead"][];
+            action: components["schemas"]["IvrAction"];
             /** Transfer Destination */
             transfer_destination?: string | null;
         };
@@ -2333,40 +2360,40 @@ export interface components {
         };
         /** OnboardingBusinessSpec */
         OnboardingBusinessSpec: {
+            /** Name */
+            name: string;
+            /** Timezone */
+            timezone: string;
+            /** Phone */
+            phone?: string | null;
             /** @default internal_booking */
             booking_mode: components["schemas"]["BookingMode"];
+            /** External Booking Url */
+            external_booking_url?: string | null;
             /** External Booking Label */
             external_booking_label?: string | null;
             external_booking_provider?: components["schemas"]["ExternalBookingProvider"] | null;
-            /** External Booking Url */
-            external_booking_url?: string | null;
-            /** Name */
-            name: string;
-            /** Phone */
-            phone?: string | null;
             /** @default full_booking */
             subscription_plan: components["schemas"]["SubscriptionPlan"];
-            /** Timezone */
-            timezone: string;
         };
         /** OnboardingServiceItem */
         OnboardingServiceItem: {
-            /** Currency */
-            currency?: string | null;
-            /** Duration Minutes */
-            duration_minutes: number;
             /** Name */
             name: string;
+            /** Duration Minutes */
+            duration_minutes: number;
             /** Price Minor Units */
             price_minor_units?: number | null;
+            /** Currency */
+            currency?: string | null;
         };
         /** OnboardingSetupRequest */
         OnboardingSetupRequest: {
             business: components["schemas"]["OnboardingBusinessSpec"];
-            /** Services */
-            services?: components["schemas"]["OnboardingServiceItem"][];
             /** Staff */
             staff?: components["schemas"]["OnboardingStaffItem"][];
+            /** Services */
+            services?: components["schemas"]["OnboardingServiceItem"][];
             /** Working Hours */
             working_hours?: components["schemas"]["OnboardingWorkingHoursItem"][];
         };
@@ -2376,10 +2403,10 @@ export interface components {
             business_id: number;
             /** Business Name */
             business_name: string;
-            /** Service Count */
-            service_count: number;
             /** Staff Count */
             staff_count: number;
+            /** Service Count */
+            service_count: number;
             /** Working Hours Count */
             working_hours_count: number;
         };
@@ -2395,46 +2422,46 @@ export interface components {
             /** Day Of Week */
             day_of_week: number;
             /**
-             * End Time
-             * Format: time
-             */
-            end_time: string;
-            /**
              * Start Time
              * Format: time
              */
             start_time: string;
+            /**
+             * End Time
+             * Format: time
+             */
+            end_time: string;
         };
         /**
          * OwnerLeadAdminRead
          * @description Full lead record for platform operators.
          */
         OwnerLeadAdminRead: {
-            /** Booking Mode Interest */
-            booking_mode_interest: string;
+            /** Id */
+            id: number;
             /** Business Name */
             business_name: string;
+            /** Owner Name */
+            owner_name: string | null;
+            /** Email */
+            email: string;
+            /** Phone Number */
+            phone_number: string;
             /** City */
             city: string | null;
+            /** Booking Mode Interest */
+            booking_mode_interest: string;
+            /** External Booking Url */
+            external_booking_url: string | null;
+            /** Message */
+            message: string | null;
+            /** Status */
+            status: string;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
-            /** Email */
-            email: string;
-            /** External Booking Url */
-            external_booking_url: string | null;
-            /** Id */
-            id: number;
-            /** Message */
-            message: string | null;
-            /** Owner Name */
-            owner_name: string | null;
-            /** Phone Number */
-            phone_number: string;
-            /** Status */
-            status: string;
             /**
              * Updated At
              * Format: date-time
@@ -2443,43 +2470,43 @@ export interface components {
         };
         /** OwnerLeadCreate */
         OwnerLeadCreate: {
-            booking_mode_interest: components["schemas"]["LeadBookingModeInterest"];
             /** Business Name */
             business_name: string;
-            /** City */
-            city?: string | null;
+            /** Owner Name */
+            owner_name?: string | null;
             /**
              * Email
              * Format: email
              */
             email: string;
+            /** Phone Number */
+            phone_number: string;
+            /** City */
+            city?: string | null;
+            booking_mode_interest: components["schemas"]["LeadBookingModeInterest"];
             /** External Booking Url */
             external_booking_url?: string | null;
             /** Message */
             message?: string | null;
-            /** Owner Name */
-            owner_name?: string | null;
-            /** Phone Number */
-            phone_number: string;
         };
         /**
          * OwnerLeadPublicRead
          * @description Response returned to the public submitter — no sensitive internals.
          */
         OwnerLeadPublicRead: {
-            /** Booking Mode Interest */
-            booking_mode_interest: string;
+            /** Id */
+            id: number;
             /** Business Name */
             business_name: string;
+            /** Booking Mode Interest */
+            booking_mode_interest: string;
+            /** Status */
+            status: string;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
-            /** Id */
-            id: number;
-            /** Status */
-            status: string;
         };
         /** OwnerLeadStatusUpdate */
         OwnerLeadStatusUpdate: {
@@ -2488,15 +2515,15 @@ export interface components {
         /** PasswordResetConfirm */
         PasswordResetConfirm: {
             /**
-             * New Password
-             * @example new-strong-password
-             */
-            new_password: string;
-            /**
              * Token
              * @example reset-token-from-email
              */
             token: string;
+            /**
+             * New Password
+             * @example new-strong-password
+             */
+            new_password: string;
         };
         /** PasswordResetRequest */
         PasswordResetRequest: {
@@ -2516,48 +2543,48 @@ export interface components {
         };
         /** PresignedUploadCompleteRequest */
         PresignedUploadCompleteRequest: {
-            /** Content Type */
-            content_type: string;
-            /** Filename */
-            filename: string;
             /** Object Key */
             object_key: string;
+            /** Filename */
+            filename: string;
+            /** Content Type */
+            content_type: string;
             /** Size Bytes */
             size_bytes: number;
         };
         /** PresignedUploadRequest */
         PresignedUploadRequest: {
             /**
-             * Content Type
-             * @example application/pdf
-             */
-            content_type: string;
-            /**
              * Filename
              * @example invoice.pdf
              */
             filename: string;
+            /**
+             * Content Type
+             * @example application/pdf
+             */
+            content_type: string;
         };
         /** PresignedUploadResponse */
         PresignedUploadResponse: {
-            /** Expires In Seconds */
-            expires_in_seconds: number;
             /** Object Key */
             object_key: string;
             /** Upload Url */
             upload_url: string;
+            /** Expires In Seconds */
+            expires_in_seconds: number;
         };
         /** ReadinessHealth */
         ReadinessHealth: {
-            /** Checks */
-            checks: {
-                [key: string]: components["schemas"]["DependencyHealth"];
-            };
             /**
              * Status
              * @enum {string}
              */
             status: "ok" | "unavailable";
+            /** Checks */
+            checks: {
+                [key: string]: components["schemas"]["DependencyHealth"];
+            };
         };
         /** RecurringStaffBlockCreate */
         RecurringStaffBlockCreate: {
@@ -2566,6 +2593,11 @@ export interface components {
              * @description 0=Monday, 6=Sunday
              */
             day_of_week: number;
+            /**
+             * Start Time
+             * Format: time
+             */
+            start_time: string;
             /**
              * End Time
              * Format: time
@@ -2578,36 +2610,31 @@ export interface components {
              * @description Omit or null for a business-wide block; set to scope it to one staff member.
              */
             staff_id?: number | null;
+        };
+        /** RecurringStaffBlockRead */
+        RecurringStaffBlockRead: {
+            /** Id */
+            id: number;
+            /** Tenant Id */
+            tenant_id: number;
+            /** Business Id */
+            business_id: number;
+            /** Staff Id */
+            staff_id: number | null;
+            /** Day Of Week */
+            day_of_week: number;
             /**
              * Start Time
              * Format: time
              */
             start_time: string;
-        };
-        /** RecurringStaffBlockRead */
-        RecurringStaffBlockRead: {
-            /** Business Id */
-            business_id: number;
-            /** Day Of Week */
-            day_of_week: number;
             /**
              * End Time
              * Format: time
              */
             end_time: string;
-            /** Id */
-            id: number;
             /** Reason */
             reason: string | null;
-            /** Staff Id */
-            staff_id: number | null;
-            /**
-             * Start Time
-             * Format: time
-             */
-            start_time: string;
-            /** Tenant Id */
-            tenant_id: number;
         };
         /** RefreshTokenRequest */
         RefreshTokenRequest: {
@@ -2616,66 +2643,66 @@ export interface components {
         };
         /** ServiceCreate */
         ServiceCreate: {
+            /** Name */
+            name: string;
+            /** Duration Minutes */
+            duration_minutes: number;
+            /** Price Minor Units */
+            price_minor_units?: number | null;
             /** Currency */
             currency?: string | null;
-            /** Deposit Minor Units */
-            deposit_minor_units?: number | null;
             /**
              * Deposit Required
              * @default false
              */
             deposit_required: boolean;
-            /** Duration Minutes */
-            duration_minutes: number;
-            /** Name */
-            name: string;
-            /** Price Minor Units */
-            price_minor_units?: number | null;
+            /** Deposit Minor Units */
+            deposit_minor_units?: number | null;
         };
         /** ServiceRead */
         ServiceRead: {
+            /** Id */
+            id: number;
+            /** Tenant Id */
+            tenant_id: number;
             /** Business Id */
             business_id: number;
+            /** Name */
+            name: string;
+            /** Duration Minutes */
+            duration_minutes: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Price Minor Units */
+            price_minor_units: number | null;
+            /** Currency */
+            currency: string | null;
+            /** Deposit Required */
+            deposit_required: boolean;
+            /** Deposit Minor Units */
+            deposit_minor_units: number | null;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
-            /** Currency */
-            currency: string | null;
-            /** Deposit Minor Units */
-            deposit_minor_units: number | null;
-            /** Deposit Required */
-            deposit_required: boolean;
-            /** Duration Minutes */
-            duration_minutes: number;
-            /** Id */
-            id: number;
-            /** Is Active */
-            is_active: boolean;
-            /** Name */
-            name: string;
-            /** Price Minor Units */
-            price_minor_units: number | null;
-            /** Tenant Id */
-            tenant_id: number;
         };
         /** ServiceUpdate */
         ServiceUpdate: {
-            /** Currency */
-            currency?: string | null;
-            /** Deposit Minor Units */
-            deposit_minor_units?: number | null;
-            /** Deposit Required */
-            deposit_required?: boolean | null;
-            /** Duration Minutes */
-            duration_minutes?: number | null;
-            /** Is Active */
-            is_active?: boolean | null;
             /** Name */
             name?: string | null;
+            /** Duration Minutes */
+            duration_minutes?: number | null;
             /** Price Minor Units */
             price_minor_units?: number | null;
+            /** Currency */
+            currency?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Deposit Required */
+            deposit_required?: boolean | null;
+            /** Deposit Minor Units */
+            deposit_minor_units?: number | null;
         };
         /** SimulateCallRequest */
         SimulateCallRequest: {
@@ -2686,10 +2713,10 @@ export interface components {
         };
         /** SimulatePressRequest */
         SimulatePressRequest: {
-            /** Key */
-            key: string;
             /** Session Id */
             session_id: number;
+            /** Key */
+            key: string;
         };
         /**
          * SortOrder
@@ -2705,32 +2732,32 @@ export interface components {
         };
         /** StaffRead */
         StaffRead: {
+            /** Id */
+            id: number;
+            /** Tenant Id */
+            tenant_id: number;
             /** Business Id */
             business_id: number;
+            /** Name */
+            name: string;
+            /** Phone */
+            phone: string | null;
+            /** Is Active */
+            is_active: boolean;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
-            /** Id */
-            id: number;
-            /** Is Active */
-            is_active: boolean;
-            /** Name */
-            name: string;
-            /** Phone */
-            phone: string | null;
-            /** Tenant Id */
-            tenant_id: number;
         };
         /** StaffUpdate */
         StaffUpdate: {
-            /** Is Active */
-            is_active?: boolean | null;
             /** Name */
             name?: string | null;
             /** Phone */
             phone?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
         };
         /**
          * SubscriptionPlan
@@ -2740,40 +2767,29 @@ export interface components {
         /** TenantCreate */
         TenantCreate: {
             /**
-             * Name
-             * @example Acme Corp
-             */
-            name: string;
-            /**
              * Slug
              * @example acme-corp
              */
             slug: string;
+            /**
+             * Name
+             * @example Acme Corp
+             */
+            name: string;
         };
         /** TenantRead */
         TenantRead: {
             /** Id */
             id: number;
-            /** Is Active */
-            is_active: boolean;
-            /** Name */
-            name: string;
             /** Slug */
             slug: string;
+            /** Name */
+            name: string;
+            /** Is Active */
+            is_active: boolean;
         };
         /** TenantSignupRequest */
         TenantSignupRequest: {
-            /**
-             * Admin Email
-             * Format: email
-             * @example owner@example.com
-             */
-            admin_email: string;
-            /**
-             * Admin Password
-             * @example strong-password
-             */
-            admin_password: string;
             /**
              * Salon Name
              * @example Glamour Studio
@@ -2785,6 +2801,17 @@ export interface components {
              * @example glamour-studio
              */
             slug?: string | null;
+            /**
+             * Admin Email
+             * Format: email
+             * @example owner@example.com
+             */
+            admin_email: string;
+            /**
+             * Admin Password
+             * @example strong-password
+             */
+            admin_password: string;
         };
         /** TenantSignupResponse */
         TenantSignupResponse: {
@@ -2793,10 +2820,10 @@ export interface components {
         };
         /** TenantUpdate */
         TenantUpdate: {
-            /** Is Active */
-            is_active?: boolean | null;
             /** Name */
             name?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
         };
         /** Token */
         Token: {
@@ -2817,25 +2844,25 @@ export interface components {
         TransferDestinationPolicy: "business_phone" | "staff";
         /** UploadedFileRead */
         UploadedFileRead: {
+            /** Id */
+            id: number;
+            /** Owner Id */
+            owner_id: number;
+            /** Object Key */
+            object_key: string;
+            /** Filename */
+            filename: string;
             /** Content Type */
             content_type: string;
+            /** Size Bytes */
+            size_bytes: number;
+            /** Verification Status */
+            verification_status: string;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
-            /** Filename */
-            filename: string;
-            /** Id */
-            id: number;
-            /** Object Key */
-            object_key: string;
-            /** Owner Id */
-            owner_id: number;
-            /** Size Bytes */
-            size_bytes: number;
-            /** Verification Status */
-            verification_status: string;
         };
         /** UserAdminUpdate */
         UserAdminUpdate: {
@@ -2891,19 +2918,19 @@ export interface components {
         };
         /** UserRead */
         UserRead: {
+            /** Id */
+            id: number;
             /**
              * Email
              * Format: email
              */
             email: string;
-            /** Id */
-            id: number;
             /** Is Active */
             is_active: boolean;
-            /** Is Demo User */
-            is_demo_user: boolean;
             /** Role */
             role: string;
+            /** Is Demo User */
+            is_demo_user: boolean;
         };
         /**
          * UserRole
@@ -2922,25 +2949,25 @@ export interface components {
         UserSortBy: "id" | "email" | "role" | "is_active";
         /** ValidationError */
         ValidationError: {
-            /** Context */
-            ctx?: Record<string, never>;
-            /** Input */
-            input?: unknown;
             /** Location */
             loc: (string | number)[];
             /** Message */
             msg: string;
             /** Error Type */
             type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
         };
         /** WebhookInboundResponse */
         WebhookInboundResponse: {
-            /** Event Id */
-            event_id: string;
-            /** Provider */
-            provider: string;
             /** Status */
             status: string;
+            /** Provider */
+            provider: string;
+            /** Event Id */
+            event_id: string;
         };
         /** WorkingHoursCreate */
         WorkingHoursCreate: {
@@ -2949,6 +2976,11 @@ export interface components {
              * @description 0=Monday, 6=Sunday
              */
             day_of_week: number;
+            /**
+             * Start Time
+             * Format: time
+             */
+            start_time: string;
             /**
              * End Time
              * Format: time
@@ -2959,41 +2991,36 @@ export interface components {
              * @description Omit or null for business-wide (salon) hours; set to scope this window to one staff member.
              */
             staff_id?: number | null;
+        };
+        /** WorkingHoursRead */
+        WorkingHoursRead: {
+            /** Id */
+            id: number;
+            /** Tenant Id */
+            tenant_id: number;
+            /** Business Id */
+            business_id: number;
+            /** Staff Id */
+            staff_id: number | null;
+            /** Day Of Week */
+            day_of_week: number;
             /**
              * Start Time
              * Format: time
              */
             start_time: string;
-        };
-        /** WorkingHoursRead */
-        WorkingHoursRead: {
-            /** Business Id */
-            business_id: number;
-            /** Day Of Week */
-            day_of_week: number;
             /**
              * End Time
              * Format: time
              */
             end_time: string;
-            /** Id */
-            id: number;
-            /** Staff Id */
-            staff_id: number | null;
-            /**
-             * Start Time
-             * Format: time
-             */
-            start_time: string;
-            /** Tenant Id */
-            tenant_id: number;
         };
         /** WorkingHoursUpdate */
         WorkingHoursUpdate: {
-            /** End Time */
-            end_time?: string | null;
             /** Start Time */
             start_time?: string | null;
+            /** End Time */
+            end_time?: string | null;
         };
     };
     responses: never;
@@ -3004,7 +3031,127 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    admin_panel_admin_get: {
+    health_check_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthStatus"];
+                };
+            };
+        };
+    };
+    liveness_check_health_live_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthStatus"];
+                };
+            };
+        };
+    };
+    readiness_check_health_ready_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadinessHealth"];
+                };
+            };
+        };
+    };
+    db_health_check_health_db_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadinessHealth"];
+                };
+            };
+        };
+    };
+    redis_health_health_redis_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadinessHealth"];
+                };
+            };
+        };
+    };
+    s3_health_health_s3_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadinessHealth"];
+                };
+            };
+        };
+    };
+    limited_endpoint_health_limited_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -3022,54 +3169,14 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated but not authorized for this action. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Requested resource was not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
         };
     };
-    list_audit_logs_admin_audit_logs_get: {
+    metrics_metrics_get: {
         parameters: {
-            query?: {
-                page?: number;
-                size?: number;
-                action?: components["schemas"]["AuditAction"] | null;
-                admin_id?: number | null;
-                target_user_id?: number | null;
+            query?: never;
+            header?: {
+                Authorization?: string | null;
             };
-            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -3081,108 +3188,21 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AuditLogRead"][];
+                    "text/plain": string;
                 };
             };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated but not authorized for this action. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Requested resource was not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
+            /** @description Validation Error */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
     };
-    list_tenant_records_admin_tenants_get: {
-        parameters: {
-            query?: {
-                page?: number;
-                size?: number;
-                include_inactive?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TenantRead"][];
-                };
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated but not authorized for this action. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Requested resource was not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    create_tenant_admin_tenants_post: {
+    register_api_v1_auth_register_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -3191,17 +3211,403 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["TenantCreate"];
+                "application/json": components["schemas"]["UserCreate"];
             };
         };
         responses: {
             /** @description Successful Response */
-            201: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TenantRead"];
+                    "application/json": components["schemas"]["UserRead"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limit exceeded. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    login_api_v1_auth_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserLogin"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Token"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limit exceeded. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    me_api_v1_auth_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRead"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    refresh_token_api_v1_auth_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Token"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limit exceeded. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    logout_api_v1_auth_logout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LogoutRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limit exceeded. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    request_reset_password_api_v1_auth_password_reset_request_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limit exceeded. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    demo_login_api_v1_auth_demo_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Token"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limit exceeded. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    confirm_reset_password_api_v1_auth_password_reset_confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetConfirm"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_users_api_v1_users__get: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+                cursor?: string | null;
+                sort_by?: components["schemas"]["UserSortBy"];
+                sort_order?: components["schemas"]["SortOrder"];
+                role?: components["schemas"]["UserRole"] | null;
+                is_active?: boolean | null;
+                search?: string | null;
+                search_mode?: components["schemas"]["UserSearchMode"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserListPage"];
                 };
             };
             /** @description Authentication required or credentials are invalid. */
@@ -3242,12 +3648,12 @@ export interface operations {
             };
         };
     };
-    get_tenant_admin_tenants__tenant_id__get: {
+    get_user_api_v1_users__user_id__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                tenant_id: number;
+                user_id: number;
             };
             cookie?: never;
         };
@@ -3259,7 +3665,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TenantRead"];
+                    "application/json": components["schemas"]["UserRead"];
                 };
             };
             /** @description Authentication required or credentials are invalid. */
@@ -3300,18 +3706,74 @@ export interface operations {
             };
         };
     };
-    patch_tenant_admin_tenants__tenant_id__patch: {
+    remove_user_api_v1_users__user_id__delete: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                tenant_id: number;
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated but not authorized for this action. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requested resource was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    patch_user_api_v1_users__user_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: number;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["TenantUpdate"];
+                "application/json": components["schemas"]["UserAdminUpdate"];
             };
         };
         responses: {
@@ -3321,7 +3783,123 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TenantRead"];
+                    "application/json": components["schemas"]["UserRead"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated but not authorized for this action. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requested resource was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deactivate_user_endpoint_api_v1_users__user_id__deactivate_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRead"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated but not authorized for this action. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requested resource was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    activate_user_endpoint_api_v1_users__user_id__activate_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRead"];
                 };
             };
             /** @description Authentication required or credentials are invalid. */
@@ -3720,11 +4298,193 @@ export interface operations {
             };
         };
     };
-    demo_login_api_v1_auth_demo_post: {
+    upload_file_api_v1_files_upload_post: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_file_api_v1_files_upload_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadedFileRead"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated but not authorized for this action. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requested resource was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    create_presigned_upload_api_v1_files_presigned_upload_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresignedUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresignedUploadResponse"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated but not authorized for this action. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requested resource was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    complete_presigned_upload_api_v1_files_presigned_upload_complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresignedUploadCompleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadedFileRead"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated but not authorized for this action. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requested resource was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_download_url_api_v1_files__file_id__download_url_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: number;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -3735,11 +4495,29 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Token"];
+                    "application/json": components["schemas"]["PresignedDownloadUrlRead"];
                 };
             };
             /** @description Authentication required or credentials are invalid. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated but not authorized for this action. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requested resource was not found. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3756,80 +4534,18 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Rate limit exceeded. */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
         };
     };
-    login_api_v1_auth_login_post: {
+    delete_file_api_v1_files__file_id__delete: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                file_id: number;
+            };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UserLogin"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Token"];
-                };
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Rate limit exceeded. */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    logout_api_v1_auth_logout_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LogoutRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             204: {
@@ -3847,6 +4563,24 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Authenticated but not authorized for this action. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requested resource was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Request validation failed. */
             422: {
                 headers: {
@@ -3856,21 +4590,16 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Rate limit exceeded. */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
         };
     };
-    me_api_v1_auth_me_get: {
+    inbound_webhook_api_v1_webhooks_inbound_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Webhook-Signature"?: string | null;
+                "X-Webhook-Timestamp"?: string | null;
+                "Idempotency-Key"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -3882,7 +4611,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserRead"];
+                    "application/json": components["schemas"]["WebhookInboundResponse"];
                 };
             };
             /** @description Authentication required or credentials are invalid. */
@@ -3896,201 +4625,6 @@ export interface operations {
             };
             /** @description Request validation failed. */
             422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    confirm_reset_password_api_v1_auth_password_reset_confirm_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PasswordResetConfirm"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    request_reset_password_api_v1_auth_password_reset_request_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PasswordResetRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Rate limit exceeded. */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    refresh_token_api_v1_auth_refresh_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RefreshTokenRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Token"];
-                };
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Rate limit exceeded. */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    register_api_v1_auth_register_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UserCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserRead"];
-                };
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Rate limit exceeded. */
-            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4232,11 +4766,315 @@ export interface operations {
             };
         };
     };
-    get_availability_api_v1_businesses__business_id__availability_get: {
+    list_staff_endpoint_api_v1_businesses__business_id__staff_get: {
         parameters: {
-            query: {
+            query?: {
+                include_inactive?: boolean;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path: {
+                business_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_staff_endpoint_api_v1_businesses__business_id__staff_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                business_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_staff_endpoint_api_v1_businesses__business_id__staff__staff_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                business_id: number;
+                staff_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_staff_endpoint_api_v1_businesses__business_id__staff__staff_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                business_id: number;
+                staff_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_services_endpoint_api_v1_businesses__business_id__services_get: {
+        parameters: {
+            query?: {
+                include_inactive?: boolean;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path: {
+                business_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_service_endpoint_api_v1_businesses__business_id__services_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                business_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_service_endpoint_api_v1_businesses__business_id__services__service_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                business_id: number;
                 service_id: number;
-                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_service_endpoint_api_v1_businesses__business_id__services__service_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                business_id: number;
+                service_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_service_endpoint_api_v1_businesses__business_id__services__service_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                business_id: number;
+                service_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_working_hours_endpoint_api_v1_businesses__business_id__working_hours_get: {
+        parameters: {
+            query?: {
                 staff_id?: number | null;
             };
             header?: never;
@@ -4253,8 +5091,269 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AvailabilitySlot"][];
+                    "application/json": components["schemas"]["WorkingHoursRead"][];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_working_hours_endpoint_api_v1_businesses__business_id__working_hours_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                business_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkingHoursCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkingHoursRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_working_hours_endpoint_api_v1_businesses__business_id__working_hours__wh_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                business_id: number;
+                wh_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkingHoursRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_working_hours_endpoint_api_v1_businesses__business_id__working_hours__wh_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                business_id: number;
+                wh_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_working_hours_endpoint_api_v1_businesses__business_id__working_hours__wh_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                business_id: number;
+                wh_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkingHoursUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkingHoursRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_transfer_hours_endpoint_api_v1_businesses__business_id__transfer_hours_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                business_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessTransferHoursRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_transfer_hours_endpoint_api_v1_businesses__business_id__transfer_hours_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                business_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BusinessTransferHoursCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessTransferHoursRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_transfer_hours_endpoint_api_v1_businesses__business_id__transfer_hours__entry_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                business_id: number;
+                entry_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessTransferHoursRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_transfer_hours_endpoint_api_v1_businesses__business_id__transfer_hours__entry_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                business_id: number;
+                entry_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -4387,6 +5486,172 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_recurring_staff_blocks_endpoint_api_v1_businesses__business_id__recurring_staff_blocks_get: {
+        parameters: {
+            query?: {
+                staff_id?: number | null;
+                day_of_week?: number | null;
+            };
+            header?: never;
+            path: {
+                business_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringStaffBlockRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_recurring_staff_block_endpoint_api_v1_businesses__business_id__recurring_staff_blocks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                business_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecurringStaffBlockCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringStaffBlockRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_recurring_staff_block_endpoint_api_v1_businesses__business_id__recurring_staff_blocks__block_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                business_id: number;
+                block_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringStaffBlockRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_recurring_staff_block_endpoint_api_v1_businesses__business_id__recurring_staff_blocks__block_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                business_id: number;
+                block_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_availability_api_v1_businesses__business_id__availability_get: {
+        parameters: {
+            query: {
+                service_id: number;
+                date: string;
+                staff_id?: number | null;
+            };
+            header?: never;
+            path: {
+                business_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvailabilitySlot"][];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -4885,1031 +6150,6 @@ export interface operations {
             };
         };
     };
-    list_recurring_staff_blocks_endpoint_api_v1_businesses__business_id__recurring_staff_blocks_get: {
-        parameters: {
-            query?: {
-                staff_id?: number | null;
-                day_of_week?: number | null;
-            };
-            header?: never;
-            path: {
-                business_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RecurringStaffBlockRead"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_recurring_staff_block_endpoint_api_v1_businesses__business_id__recurring_staff_blocks_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                business_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RecurringStaffBlockCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RecurringStaffBlockRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_recurring_staff_block_endpoint_api_v1_businesses__business_id__recurring_staff_blocks__block_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                business_id: number;
-                block_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RecurringStaffBlockRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_recurring_staff_block_endpoint_api_v1_businesses__business_id__recurring_staff_blocks__block_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                business_id: number;
-                block_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_services_endpoint_api_v1_businesses__business_id__services_get: {
-        parameters: {
-            query?: {
-                include_inactive?: boolean;
-                page?: number;
-                size?: number;
-            };
-            header?: never;
-            path: {
-                business_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ServiceRead"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_service_endpoint_api_v1_businesses__business_id__services_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                business_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ServiceCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ServiceRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_service_endpoint_api_v1_businesses__business_id__services__service_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                business_id: number;
-                service_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ServiceRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_service_endpoint_api_v1_businesses__business_id__services__service_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                business_id: number;
-                service_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_service_endpoint_api_v1_businesses__business_id__services__service_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                business_id: number;
-                service_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ServiceUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ServiceRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_staff_endpoint_api_v1_businesses__business_id__staff_get: {
-        parameters: {
-            query?: {
-                include_inactive?: boolean;
-                page?: number;
-                size?: number;
-            };
-            header?: never;
-            path: {
-                business_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StaffRead"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_staff_endpoint_api_v1_businesses__business_id__staff_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                business_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["StaffCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StaffRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_staff_endpoint_api_v1_businesses__business_id__staff__staff_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                business_id: number;
-                staff_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StaffRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_staff_endpoint_api_v1_businesses__business_id__staff__staff_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                business_id: number;
-                staff_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["StaffUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StaffRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_transfer_hours_endpoint_api_v1_businesses__business_id__transfer_hours_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                business_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BusinessTransferHoursRead"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_transfer_hours_endpoint_api_v1_businesses__business_id__transfer_hours_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                business_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BusinessTransferHoursCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BusinessTransferHoursRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_transfer_hours_endpoint_api_v1_businesses__business_id__transfer_hours__entry_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                business_id: number;
-                entry_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BusinessTransferHoursRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_transfer_hours_endpoint_api_v1_businesses__business_id__transfer_hours__entry_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                business_id: number;
-                entry_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_working_hours_endpoint_api_v1_businesses__business_id__working_hours_get: {
-        parameters: {
-            query?: {
-                staff_id?: number | null;
-            };
-            header?: never;
-            path: {
-                business_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorkingHoursRead"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_working_hours_endpoint_api_v1_businesses__business_id__working_hours_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                business_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WorkingHoursCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorkingHoursRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_working_hours_endpoint_api_v1_businesses__business_id__working_hours__wh_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                business_id: number;
-                wh_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorkingHoursRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_working_hours_endpoint_api_v1_businesses__business_id__working_hours__wh_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                business_id: number;
-                wh_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_working_hours_endpoint_api_v1_businesses__business_id__working_hours__wh_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                business_id: number;
-                wh_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WorkingHoursUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorkingHoursRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_presigned_upload_api_v1_files_presigned_upload_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PresignedUploadRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PresignedUploadResponse"];
-                };
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated but not authorized for this action. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Requested resource was not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    complete_presigned_upload_api_v1_files_presigned_upload_complete_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PresignedUploadCompleteRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UploadedFileRead"];
-                };
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated but not authorized for this action. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Requested resource was not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    upload_file_api_v1_files_upload_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_upload_file_api_v1_files_upload_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UploadedFileRead"];
-                };
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated but not authorized for this action. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Requested resource was not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    delete_file_api_v1_files__file_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                file_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated but not authorized for this action. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Requested resource was not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    get_download_url_api_v1_files__file_id__download_url_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                file_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PresignedDownloadUrlRead"];
-                };
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated but not authorized for this action. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Requested resource was not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
     simulate_call_api_v1_ivr_simulate_call_post: {
         parameters: {
             query?: never;
@@ -5976,27 +6216,134 @@ export interface operations {
             };
         };
     };
-    onboarding_setup_api_v1_onboarding_post: {
+    twilio_voice_inbound_api_v1_webhooks_twilio_voice_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Twilio-Signature"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["OnboardingSetupRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["Body_twilio_voice_inbound_api_v1_webhooks_twilio_voice_post"];
             };
         };
         responses: {
             /** @description Successful Response */
-            201: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OnboardingSetupResponse"];
+                    "application/json": unknown;
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    twilio_voice_keypress_api_v1_webhooks_twilio_voice__session_id__post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Twilio-Signature"?: string | null;
+            };
+            path: {
+                session_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["Body_twilio_voice_keypress_api_v1_webhooks_twilio_voice__session_id__post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    twilio_sms_status_api_v1_webhooks_twilio_sms_status_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Twilio-Signature"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["Body_twilio_sms_status_api_v1_webhooks_twilio_sms_status_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    twilio_sms_inbound_api_v1_webhooks_twilio_sms__business_id__inbound_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Twilio-Signature"?: string | null;
+            };
+            path: {
+                business_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["Body_twilio_sms_inbound_api_v1_webhooks_twilio_sms__business_id__inbound_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -6141,6 +6488,39 @@ export interface operations {
             };
         };
     };
+    onboarding_setup_api_v1_onboarding_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OnboardingSetupRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingSetupResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     signup_api_v1_signup_post: {
         parameters: {
             query?: never;
@@ -6174,198 +6554,16 @@ export interface operations {
             };
         };
     };
-    list_users_api_v1_users__get: {
+    register_auth_register_post: {
         parameters: {
-            query?: {
-                page?: number;
-                size?: number;
-                cursor?: string | null;
-                sort_by?: components["schemas"]["UserSortBy"];
-                sort_order?: components["schemas"]["SortOrder"];
-                role?: components["schemas"]["UserRole"] | null;
-                is_active?: boolean | null;
-                search?: string | null;
-                search_mode?: components["schemas"]["UserSearchMode"];
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserListPage"];
-                };
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated but not authorized for this action. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Requested resource was not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    get_user_api_v1_users__user_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                user_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserRead"];
-                };
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated but not authorized for this action. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Requested resource was not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    remove_user_api_v1_users__user_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                user_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated but not authorized for this action. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Requested resource was not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    patch_user_api_v1_users__user_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                user_id: number;
-            };
-            cookie?: never;
-        };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UserAdminUpdate"];
+                "application/json": components["schemas"]["UserCreate"];
             };
         };
         responses: {
@@ -6376,363 +6574,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserRead"];
-                };
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated but not authorized for this action. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Requested resource was not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    activate_user_endpoint_api_v1_users__user_id__activate_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                user_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserRead"];
-                };
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated but not authorized for this action. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Requested resource was not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    deactivate_user_endpoint_api_v1_users__user_id__deactivate_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                user_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserRead"];
-                };
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated but not authorized for this action. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Requested resource was not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    inbound_webhook_api_v1_webhooks_inbound_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Webhook-Signature"?: string | null;
-                "X-Webhook-Timestamp"?: string | null;
-                "Idempotency-Key"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WebhookInboundResponse"];
-                };
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    twilio_sms_status_api_v1_webhooks_twilio_sms_status_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Twilio-Signature"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/x-www-form-urlencoded": components["schemas"]["Body_twilio_sms_status_api_v1_webhooks_twilio_sms_status_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    twilio_sms_inbound_api_v1_webhooks_twilio_sms__business_id__inbound_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Twilio-Signature"?: string | null;
-            };
-            path: {
-                business_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/x-www-form-urlencoded": components["schemas"]["Body_twilio_sms_inbound_api_v1_webhooks_twilio_sms__business_id__inbound_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    twilio_voice_inbound_api_v1_webhooks_twilio_voice__business_id__post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Twilio-Signature"?: string | null;
-            };
-            path: {
-                business_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/x-www-form-urlencoded": components["schemas"]["Body_twilio_voice_inbound_api_v1_webhooks_twilio_voice__business_id__post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    twilio_voice_keypress_api_v1_webhooks_twilio_voice__business_id___session_id__post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Twilio-Signature"?: string | null;
-            };
-            path: {
-                business_id: number;
-                session_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/x-www-form-urlencoded": components["schemas"]["Body_twilio_voice_keypress_api_v1_webhooks_twilio_voice__business_id___session_id__post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    demo_login_auth_demo_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Token"];
                 };
             };
             /** @description Authentication required or credentials are invalid. */
@@ -6774,6 +6615,95 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UserLogin"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Token"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limit exceeded. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    me_auth_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRead"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    refresh_token_auth_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshTokenRequest"];
             };
         };
         responses: {
@@ -6864,86 +6794,6 @@ export interface operations {
             };
         };
     };
-    me_auth_me_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserRead"];
-                };
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    confirm_reset_password_auth_password_reset_confirm_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PasswordResetConfirm"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
     request_reset_password_auth_password_reset_request_post: {
         parameters: {
             query?: never;
@@ -6995,18 +6845,14 @@ export interface operations {
             };
         };
     };
-    refresh_token_auth_refresh_post: {
+    demo_login_auth_demo_post: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RefreshTokenRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -7046,7 +6892,7 @@ export interface operations {
             };
         };
     };
-    register_auth_register_post: {
+    confirm_reset_password_auth_password_reset_confirm_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -7055,7 +6901,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UserCreate"];
+                "application/json": components["schemas"]["PasswordResetConfirm"];
             };
         };
         responses: {
@@ -7065,7 +6911,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserRead"];
+                    "application/json": components["schemas"]["MessageResponse"];
                 };
             };
             /** @description Authentication required or credentials are invalid. */
@@ -7084,480 +6930,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Rate limit exceeded. */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    create_presigned_upload_files_presigned_upload_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PresignedUploadRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PresignedUploadResponse"];
-                };
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated but not authorized for this action. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Requested resource was not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    complete_presigned_upload_files_presigned_upload_complete_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PresignedUploadCompleteRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UploadedFileRead"];
-                };
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated but not authorized for this action. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Requested resource was not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    upload_file_files_upload_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_upload_file_files_upload_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UploadedFileRead"];
-                };
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated but not authorized for this action. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Requested resource was not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    delete_file_files__file_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                file_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated but not authorized for this action. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Requested resource was not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    get_download_url_files__file_id__download_url_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                file_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PresignedDownloadUrlRead"];
-                };
-            };
-            /** @description Authentication required or credentials are invalid. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated but not authorized for this action. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Requested resource was not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    health_check_health_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HealthStatus"];
-                };
-            };
-        };
-    };
-    db_health_check_health_db_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReadinessHealth"];
-                };
-            };
-        };
-    };
-    limited_endpoint_health_limited_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    liveness_check_health_live_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HealthStatus"];
-                };
-            };
-        };
-    };
-    readiness_check_health_ready_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReadinessHealth"];
-                };
-            };
-        };
-    };
-    redis_health_health_redis_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReadinessHealth"];
-                };
-            };
-        };
-    };
-    s3_health_health_s3_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReadinessHealth"];
-                };
-            };
-        };
-    };
-    metrics_metrics_get: {
-        parameters: {
-            query?: never;
-            header?: {
-                Authorization?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/plain": string;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -7804,6 +7176,64 @@ export interface operations {
             };
         };
     };
+    deactivate_user_endpoint_users__user_id__deactivate_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRead"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated but not authorized for this action. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requested resource was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     activate_user_endpoint_users__user_id__activate_patch: {
         parameters: {
             query?: never;
@@ -7862,12 +7292,250 @@ export interface operations {
             };
         };
     };
-    deactivate_user_endpoint_users__user_id__deactivate_patch: {
+    admin_panel_admin_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated but not authorized for this action. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requested resource was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_audit_logs_admin_audit_logs_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+                action?: components["schemas"]["AuditAction"] | null;
+                admin_id?: number | null;
+                target_user_id?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditLogRead"][];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated but not authorized for this action. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requested resource was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_tenant_records_admin_tenants_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+                include_inactive?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantRead"][];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated but not authorized for this action. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requested resource was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    create_tenant_admin_tenants_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantRead"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated but not authorized for this action. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requested resource was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_tenant_admin_tenants__tenant_id__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                user_id: number;
+                tenant_id: number;
             };
             cookie?: never;
         };
@@ -7879,8 +7547,364 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserRead"];
+                    "application/json": components["schemas"]["TenantRead"];
                 };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated but not authorized for this action. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requested resource was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    patch_tenant_admin_tenants__tenant_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantRead"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated but not authorized for this action. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requested resource was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    upload_file_files_upload_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_file_files_upload_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadedFileRead"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated but not authorized for this action. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requested resource was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    create_presigned_upload_files_presigned_upload_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresignedUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresignedUploadResponse"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated but not authorized for this action. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requested resource was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    complete_presigned_upload_files_presigned_upload_complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresignedUploadCompleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadedFileRead"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated but not authorized for this action. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requested resource was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_download_url_files__file_id__download_url_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresignedDownloadUrlRead"];
+                };
+            };
+            /** @description Authentication required or credentials are invalid. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated but not authorized for this action. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requested resource was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    delete_file_files__file_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Authentication required or credentials are invalid. */
             401: {

@@ -47,7 +47,7 @@ def test_transfer_flow_business_phone_full_path(domain):
         db, biz.id, tid,
         transfer_enabled=True,
         transfer_destination_policy=TransferDestinationPolicy.BUSINESS_PHONE,
-        phone="+48600700800",
+        transfer_phone_number="+48600700800",
     )
     session = _make_session(db, biz.id, tid)
     resp = handle_keypress(db, session_id=session.id, tenant_id=tid, key="2")
@@ -80,7 +80,7 @@ def test_transfer_unavailable_then_press_1_then_transfer_succeeds(domain):
         db, biz.id, tid,
         transfer_enabled=True,
         transfer_destination_policy=TransferDestinationPolicy.BUSINESS_PHONE,
-        phone="+48999888777",
+        transfer_phone_number="+48999888777",
     )
     resp = handle_keypress(db, session_id=session.id, tenant_id=tid, key="2")
     assert resp.action == IvrAction.TRANSFER

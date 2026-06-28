@@ -13,7 +13,7 @@ from app.core.domain_errors import NotFoundError
 from app.core.twilio_security import TwilioSignatureError, verify_twilio_signature
 from app.db.session import get_db
 from app.models.voice_session import VoiceSession
-from app.services.business_service import get_business_global
+from app.services.business_service import get_business_by_inbound_phone, get_business_global
 from app.services.ivr_service import handle_keypress, start_session
 from app.services.twilio_voice_adapter import ivr_to_twiml
 
@@ -58,26 +58,32 @@ def _check_signature(request: Request, form_data: dict[str, str], signature: str
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid Twilio signature")
 
 
-def _gather_url(business_id: int, session_id: int) -> str:
+def _gather_url(session_id: int) -> str:
     base = settings.twilio_voice_base_url.rstrip("/")
-    return f"{base}/api/v1/webhooks/twilio/voice/{business_id}/{session_id}"
+    return f"{base}/api/v1/webhooks/twilio/voice/{session_id}"
 
 
-@router.post("/{business_id}", status_code=status.HTTP_200_OK)
+@router.post("", status_code=status.HTTP_200_OK)
 async def twilio_voice_inbound(
     request: Request,
-    business_id: int,
     db: Session = Depends(get_db),
     x_twilio_signature: str | None = Header(default=None, alias="X-Twilio-Signature"),
     call_sid: str = Form(alias="CallSid"),
     caller: str = Form(default="", alias="From"),
+    called: str = Form(default="", alias="To"),
 ):
+    """Inbound webhook — Twilio posts here when a call arrives.
+
+    Business is resolved by matching the To= number against business.phone
+    (the Twilio-provisioned inbound number), so no business_id is needed in
+    the URL.  Configure the Twilio webhook to point at this endpoint directly.
+    """
     try:
         _enforce_voice_rate_limit(request)
         form_data = dict(await request.form())
         _check_signature(request, {k: str(v) for k, v in form_data.items()}, x_twilio_signature)
 
-        business = get_business_global(db, business_id)
+        business = get_business_by_inbound_phone(db, called)
         if business is None:
             twiml = (
                 '<?xml version="1.0" encoding="UTF-8"?>'
@@ -90,8 +96,8 @@ async def twilio_voice_inbound(
             ivr_response = handle_keypress(
                 db, session_id=existing.id, tenant_id=existing.tenant_id, key=""
             )
-            gather_url = _gather_url(business_id, existing.id)
-            transfer_to = ivr_response.transfer_destination or business.phone
+            gather_url = _gather_url(existing.id)
+            transfer_to = ivr_response.transfer_destination or business.transfer_phone_number
             return Response(
                 content=ivr_to_twiml(
                     ivr_response,
@@ -105,7 +111,7 @@ async def twilio_voice_inbound(
         try:
             session, ivr_response = start_session(
                 db,
-                business_id=business_id,
+                business_id=business.id,
                 tenant_id=business.tenant_id,
                 caller_phone=caller or "unknown",
             )
@@ -119,39 +125,35 @@ async def twilio_voice_inbound(
         session.call_sid = call_sid
         db.commit()
 
-        gather_url = _gather_url(business_id, session.id)
+        gather_url = _gather_url(session.id)
         return Response(
             content=ivr_to_twiml(
                 ivr_response,
                 gather_action_url=gather_url,
-                transfer_to=business.phone,
+                transfer_to=business.transfer_phone_number,
                 locale=session.locale,
             ),
             media_type=_TWIML,
         )
     except (OperationalError, RedisError):
-        logger.exception("twilio_voice_backend_unavailable business_id=%s", business_id)
+        logger.exception("twilio_voice_backend_unavailable called=%s", called)
         return _backend_unavailable_response()
     except HTTPException as exc:
-        # enforce_rate_limit_counter() already converts a RedisError into an
-        # HTTPException(503) itself; treat that the same as a raw RedisError.
-        # Any other HTTPException (403 bad signature, 429 rate limited) is a
-        # real decision, not an outage — let it propagate as-is.
         if exc.status_code == status.HTTP_503_SERVICE_UNAVAILABLE:
-            logger.exception("twilio_voice_backend_unavailable business_id=%s", business_id)
+            logger.exception("twilio_voice_backend_unavailable called=%s", called)
             return _backend_unavailable_response()
         raise
 
 
-@router.post("/{business_id}/{session_id}", status_code=status.HTTP_200_OK)
+@router.post("/{session_id}", status_code=status.HTTP_200_OK)
 async def twilio_voice_keypress(
     request: Request,
-    business_id: int,
     session_id: int,
     db: Session = Depends(get_db),
     x_twilio_signature: str | None = Header(default=None, alias="X-Twilio-Signature"),
     digits: str = Form(default="", alias="Digits"),
 ):
+    """Keypress (Gather) callback — Twilio posts here after the caller presses a digit."""
     try:
         _enforce_voice_rate_limit(request)
         form_data = dict(await request.form())
@@ -165,7 +167,7 @@ async def twilio_voice_keypress(
             )
             return Response(content=twiml, media_type=_TWIML)
 
-        business = get_business_global(db, business_id)
+        business = get_business_global(db, session.business_id)
 
         try:
             ivr_response = handle_keypress(
@@ -178,9 +180,10 @@ async def twilio_voice_keypress(
             )
             return Response(content=twiml, media_type=_TWIML)
 
-        # Prefer the IVR-resolved destination (respects STAFF policy); fall back to business phone.
-        transfer_to = ivr_response.transfer_destination or (business.phone if business else None)
-        gather_url = _gather_url(business_id, session_id)
+        transfer_to = ivr_response.transfer_destination or (
+            business.transfer_phone_number if business else None
+        )
+        gather_url = _gather_url(session_id)
         return Response(
             content=ivr_to_twiml(
                 ivr_response,
@@ -191,12 +194,10 @@ async def twilio_voice_keypress(
             media_type=_TWIML,
         )
     except (OperationalError, RedisError):
-        logger.exception("twilio_voice_backend_unavailable business_id=%s session_id=%s", business_id, session_id)
+        logger.exception("twilio_voice_backend_unavailable session_id=%s", session_id)
         return _backend_unavailable_response()
     except HTTPException as exc:
         if exc.status_code == status.HTTP_503_SERVICE_UNAVAILABLE:
-            logger.exception(
-                "twilio_voice_backend_unavailable business_id=%s session_id=%s", business_id, session_id
-            )
+            logger.exception("twilio_voice_backend_unavailable session_id=%s", session_id)
             return _backend_unavailable_response()
         raise

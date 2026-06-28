@@ -20,14 +20,15 @@ from app.services.staff_service import create_staff
 _STARTS_AT = datetime(2027, 9, 1, 9, 0, 0, tzinfo=timezone.utc)
 
 
-def _setup(db, *, business_phone: str | None = "+48600000000"):
+def _setup(db, *, owner_notification_phone: str | None = "+48600000001"):
     tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
     biz = create_business(
         db,
         tenant_id=tenant.id,
         name="Notify Salon",
         timezone="Europe/Warsaw",
-        phone=business_phone,
+        phone="+18174057514",
+        owner_notification_phone=owner_notification_phone,
     )
     staff = create_staff(db, tenant_id=tenant.id, business_id=biz.id, name="Ola")
     svc = create_service(db, tenant_id=tenant.id, business_id=biz.id, name="Cut", duration_minutes=30)
@@ -63,7 +64,7 @@ def test_create_booking_enqueues_customer_and_business_confirmation(db):
     assert len(intents) == 2
 
     customer_intent = next(i for i in intents if i.recipient_phone == customer.phone)
-    business_intent = next(i for i in intents if i.recipient_phone == biz.phone)
+    business_intent = next(i for i in intents if i.recipient_phone == biz.owner_notification_phone)
 
     for intent in (customer_intent, business_intent):
         assert intent.tenant_id == tenant_id
@@ -103,8 +104,8 @@ def test_create_booking_enqueues_send_notification_jobs(db, monkeypatch):
     assert {job["type"] for job in enqueued_jobs} == {"send_notification"}
 
 
-def test_create_booking_skips_business_intent_without_business_phone(db):
-    tenant_id, biz, staff_id, svc, customer = _setup(db, business_phone=None)
+def test_create_booking_skips_business_intent_without_owner_notification_phone(db):
+    tenant_id, biz, staff_id, svc, customer = _setup(db, owner_notification_phone=None)
 
     booking = create_booking(
         db,
@@ -164,7 +165,7 @@ def test_cancel_booking_enqueues_customer_and_business_cancellation(db):
     assert len(cancellation_intents) == 2
 
     customer_intent = next(i for i in cancellation_intents if i.recipient_phone == customer.phone)
-    business_intent = next(i for i in cancellation_intents if i.recipient_phone == biz.phone)
+    business_intent = next(i for i in cancellation_intents if i.recipient_phone == biz.owner_notification_phone)
 
     for intent in (customer_intent, business_intent):
         assert intent.tenant_id == tenant_id
@@ -174,8 +175,8 @@ def test_cancel_booking_enqueues_customer_and_business_cancellation(db):
         assert intent.body
 
 
-def test_cancel_booking_skips_business_intent_without_business_phone(db):
-    tenant_id, biz, staff_id, svc, customer = _setup(db, business_phone=None)
+def test_cancel_booking_skips_business_intent_without_owner_notification_phone(db):
+    tenant_id, biz, staff_id, svc, customer = _setup(db, owner_notification_phone=None)
 
     booking = create_booking(
         db,

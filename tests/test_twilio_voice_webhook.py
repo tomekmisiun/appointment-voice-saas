@@ -28,8 +28,15 @@ def domain(db, client):
     token = login_user(client, "twilio_admin@example.com").json()["access_token"]
 
     tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
-    biz = create_business(db, tenant_id=tenant.id, name="Voice Test Salon", timezone="UTC")
-    return {"client": client, "token": token, "business_id": biz.id, "tenant_id": tenant.id}
+    biz = create_business(
+        db, tenant_id=tenant.id, name="Voice Test Salon", timezone="UTC",
+        phone="+18174010001",
+    )
+    return {
+        "client": client, "token": token,
+        "business_id": biz.id, "tenant_id": tenant.id,
+        "phone": biz.phone,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -178,11 +185,11 @@ def test_twilio_signature_skipped_when_no_auth_token():
 # ---------------------------------------------------------------------------
 
 def test_inbound_call_creates_session(domain):
-    client, biz_id = domain["client"], domain["business_id"]
+    client, phone = domain["client"], domain["phone"]
 
     resp = client.post(
-        f"/api/v1/webhooks/twilio/voice/{biz_id}",
-        data={"CallSid": "CA_test_001", "From": "+48600000002", "To": "+48800000000"},
+        "/api/v1/webhooks/twilio/voice",
+        data={"CallSid": "CA_test_001", "From": "+48600000002", "To": phone},
     )
     assert resp.status_code == 200
     assert "application/xml" in resp.headers["content-type"]
@@ -193,12 +200,13 @@ def test_inbound_call_creates_session(domain):
 def test_inbound_call_uses_polish_say_voice_for_polish_business(client, db):
     tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
     biz = create_business(
-        db, tenant_id=tenant.id, name="Salon PL Webhook", timezone="UTC", language="pl"
+        db, tenant_id=tenant.id, name="Salon PL Webhook", timezone="UTC",
+        language="pl", phone="+18174010002",
     )
 
     resp = client.post(
-        f"/api/v1/webhooks/twilio/voice/{biz.id}",
-        data={"CallSid": "CA_test_pl_001", "From": "+48600000009", "To": "+48800000000"},
+        "/api/v1/webhooks/twilio/voice",
+        data={"CallSid": "CA_test_pl_001", "From": "+48600000009", "To": biz.phone},
     )
 
     assert resp.status_code == 200
@@ -210,19 +218,19 @@ def test_inbound_call_returns_twiml_for_unknown_business(domain):
     client = domain["client"]
 
     resp = client.post(
-        "/api/v1/webhooks/twilio/voice/99999",
-        data={"CallSid": "CA_test_002", "From": "+48600000003", "To": "+48800000000"},
+        "/api/v1/webhooks/twilio/voice",
+        data={"CallSid": "CA_test_002", "From": "+48600000003", "To": "+10000000000"},
     )
     assert resp.status_code == 200
     assert "<Hangup/>" in resp.text
 
 
 def test_inbound_call_idempotent_on_retry(domain, db):
-    client, biz_id = domain["client"], domain["business_id"]
+    client, phone = domain["client"], domain["phone"]
 
-    data = {"CallSid": "CA_idempotent", "From": "+48600000004", "To": "+48800000000"}
-    resp1 = client.post(f"/api/v1/webhooks/twilio/voice/{biz_id}", data=data)
-    resp2 = client.post(f"/api/v1/webhooks/twilio/voice/{biz_id}", data=data)
+    data = {"CallSid": "CA_idempotent", "From": "+48600000004", "To": phone}
+    resp1 = client.post("/api/v1/webhooks/twilio/voice", data=data)
+    resp2 = client.post("/api/v1/webhooks/twilio/voice", data=data)
 
     sessions = db.query(VoiceSession).filter(VoiceSession.call_sid == "CA_idempotent").all()
     assert len(sessions) == 1
@@ -231,16 +239,16 @@ def test_inbound_call_idempotent_on_retry(domain, db):
 
 
 def test_keypress_returns_service_menu(domain, db):
-    client, biz_id = domain["client"], domain["business_id"]
+    client, phone = domain["client"], domain["phone"]
 
     client.post(
-        f"/api/v1/webhooks/twilio/voice/{biz_id}",
-        data={"CallSid": "CA_press_001", "From": "+48600000005", "To": "+48800000000"},
+        "/api/v1/webhooks/twilio/voice",
+        data={"CallSid": "CA_press_001", "From": "+48600000005", "To": phone},
     )
     session = db.query(VoiceSession).filter(VoiceSession.call_sid == "CA_press_001").one()
 
     resp = client.post(
-        f"/api/v1/webhooks/twilio/voice/{biz_id}/{session.id}",
+        f"/api/v1/webhooks/twilio/voice/{session.id}",
         data={"CallSid": "CA_press_001", "Digits": "1"},
     )
     assert resp.status_code == 200
@@ -248,10 +256,10 @@ def test_keypress_returns_service_menu(domain, db):
 
 
 def test_keypress_invalid_session_returns_twiml(domain):
-    client, biz_id = domain["client"], domain["business_id"]
+    client = domain["client"]
 
     resp = client.post(
-        f"/api/v1/webhooks/twilio/voice/{biz_id}/99999",
+        "/api/v1/webhooks/twilio/voice/99999",
         data={"CallSid": "CA_bad", "Digits": "1"},
     )
     assert resp.status_code == 200

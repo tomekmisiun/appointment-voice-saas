@@ -22,10 +22,11 @@ them to source control.
 1. Purchase a phone number in the Twilio console.
 2. Set the "A call comes in" webhook to:
    ```
-   POST https://<your-domain>/api/v1/webhooks/twilio/voice/<business_id>
+   POST https://<your-domain>/api/v1/webhooks/twilio/voice
    ```
-   Replace `<business_id>` with the integer ID of the pilot business (from the
-   database or admin API).
+   No path parameters are needed. The backend identifies the business from the
+   `To=` field Twilio sends in the request body, matched against the
+   `businesses.phone` column for the provisioned number.
 3. Leave the HTTP method as **POST**.
 4. Twilio will follow gather action URLs automatically; no additional webhook
    configuration is needed for keypresses.
@@ -92,7 +93,7 @@ prompt and the call ends. Adjust the TTL to match your expected call duration.
 |---|---|---|
 | 403 on voice webhook | Signature mismatch | Check `TWILIO_AUTH_TOKEN`; check reverse proxy URL rewriting |
 | 422 on voice webhook | Missing `CallSid` or `From` form field | Check Twilio webhook method is POST |
-| IVR returns "not configured" | Unknown `business_id` in URL | Verify webhook URL in Twilio console |
+| IVR returns "not configured" | No business with matching `phone` for the `To=` number | Verify the provisioned Twilio number matches `businesses.phone` |
 | SMS not delivered | `NullSmsProvider` active | Check `TWILIO_ACCOUNT_SID` / `TWILIO_FROM_NUMBER` are set |
 | SMS status stays `SENT` | Status callback URL not configured | Set status callback URL in Twilio console |
 | High failed-job queue depth | Twilio API returning errors | Check Twilio account balance and number status |

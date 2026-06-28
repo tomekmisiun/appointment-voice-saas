@@ -13,6 +13,8 @@ def create_business(
     timezone: str,
     language: str = "en",
     phone: str | None = None,
+    owner_notification_phone: str | None = None,
+    transfer_phone_number: str | None = None,
     transfer_enabled: bool = False,
     transfer_destination_policy: str = "business_phone",
     booking_mode: str = "internal_booking",
@@ -27,6 +29,8 @@ def create_business(
         timezone=timezone,
         language=language,
         phone=phone,
+        owner_notification_phone=owner_notification_phone,
+        transfer_phone_number=transfer_phone_number,
         is_active=True,
         transfer_enabled=transfer_enabled,
         transfer_destination_policy=transfer_destination_policy,
@@ -62,6 +66,17 @@ def get_business_global(db: Session, business_id: int) -> Business | None:
     return db.query(Business).filter(Business.id == business_id).first()
 
 
+def get_business_by_inbound_phone(db: Session, phone: str) -> Business | None:
+    """Return the business whose Twilio inbound number matches phone (for webhook To= routing)."""
+    if not phone:
+        return None
+    return (
+        db.query(Business)
+        .filter(Business.phone == phone, Business.is_active.is_(True))
+        .first()
+    )
+
+
 def list_businesses(
     db: Session,
     tenant_id: int,
@@ -88,6 +103,8 @@ def update_business(
     timezone: str | None = None,
     language: str | None = None,
     phone: str | None = None,
+    owner_notification_phone: str | None = None,
+    transfer_phone_number: str | None = None,
     is_active: bool | None = None,
     transfer_enabled: bool | None = None,
     transfer_destination_policy: str | None = None,
@@ -106,6 +123,10 @@ def update_business(
         business.language = language
     if phone is not None:
         business.phone = phone
+    if owner_notification_phone is not None:
+        business.owner_notification_phone = owner_notification_phone
+    if transfer_phone_number is not None:
+        business.transfer_phone_number = transfer_phone_number
     if is_active is not None:
         business.is_active = is_active
     if transfer_enabled is not None:

@@ -37,6 +37,8 @@ class BusinessCreate(BaseModel):
     timezone: str = Field(min_length=1, max_length=64, examples=["Europe/Warsaw"])
     language: BusinessLanguage = BusinessLanguage.EN
     phone: str | None = Field(default=None, max_length=32)
+    owner_notification_phone: str | None = Field(default=None, max_length=32)
+    transfer_phone_number: str | None = Field(default=None, max_length=32)
     transfer_enabled: bool = False
     transfer_destination_policy: TransferDestinationPolicy = TransferDestinationPolicy.BUSINESS_PHONE
     booking_mode: BookingMode = BookingMode.INTERNAL_BOOKING
@@ -74,6 +76,8 @@ class BusinessRead(BaseModel):
     timezone: str
     language: str
     phone: str | None
+    owner_notification_phone: str | None
+    transfer_phone_number: str | None
     is_active: bool
     transfer_enabled: bool
     transfer_destination_policy: str
@@ -92,6 +96,8 @@ class BusinessUpdate(BaseModel):
     timezone: str | None = Field(default=None, min_length=1, max_length=64)
     language: BusinessLanguage | None = None
     phone: str | None = Field(default=None, max_length=32)
+    owner_notification_phone: str | None = Field(default=None, max_length=32)
+    transfer_phone_number: str | None = Field(default=None, max_length=32)
     is_active: bool | None = None
     transfer_enabled: bool | None = None
     transfer_destination_policy: TransferDestinationPolicy | None = None

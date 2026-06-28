@@ -61,7 +61,7 @@ def enqueue_booking_confirmation(
             body=f"Your {service.name} appointment at {business.name} is confirmed for {when}.",
         )
     ]
-    if business.phone:
+    if business.owner_notification_phone:
         intents.append(
             NotificationOutbox(
                 tenant_id=booking.tenant_id,
@@ -69,7 +69,7 @@ def enqueue_booking_confirmation(
                 booking_id=booking.id,
                 channel=NotificationChannel.SMS,
                 purpose=NotificationPurpose.BOOKING_CONFIRMATION,
-                recipient_phone=business.phone,
+                recipient_phone=business.owner_notification_phone,
                 body=f"New booking: {service.name} for {customer.phone} on {when}.",
             )
         )
@@ -101,7 +101,7 @@ def enqueue_booking_cancellation(
             body=f"Your {service.name} appointment at {business.name} on {when} has been cancelled.",
         )
     ]
-    if business.phone:
+    if business.owner_notification_phone:
         intents.append(
             NotificationOutbox(
                 tenant_id=booking.tenant_id,
@@ -109,7 +109,7 @@ def enqueue_booking_cancellation(
                 booking_id=booking.id,
                 channel=NotificationChannel.SMS,
                 purpose=NotificationPurpose.BOOKING_CANCELLATION,
-                recipient_phone=business.phone,
+                recipient_phone=business.owner_notification_phone,
                 body=f"Booking cancelled: {service.name} for {customer.phone} on {when}.",
             )
         )

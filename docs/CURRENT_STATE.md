@@ -59,7 +59,7 @@ User, Tenant, Business, BusinessMembership, Staff, Service, WorkingHours, Recurr
 - `scripts/seed_demo_data.py` seeds deterministic demo data
 
 ### IVR / Voice Booking
-- Twilio webhook: `POST /webhooks/twilio/voice/{business_id}/...` — routes by `business_id` in URL (not by phone number)
+- Twilio webhook: `POST /webhooks/twilio/voice` — routes by `To=` field matched against `businesses.phone`; keypress action URL is `/api/v1/webhooks/twilio/voice/{session_id}` (no `business_id` in any path)
 - Twilio signature validation enforced on all webhook handlers
 - Full IVR flow: incoming call → main menu → service selection → staff selection → slot proposal → booking confirmation
 - Handles: no-input (3 retries), invalid input (5 cumulative), repeat menu (`*`), transfer to staff, backend-unavailable fallback
@@ -133,7 +133,6 @@ User, Tenant, Business, BusinessMembership, Staff, Service, WorkingHours, Recurr
 - `telephony_status` column on Business
 - `TelephonyStatusCard` frontend component
 - `DemoSmsProvider`
-- Phone-number-based IVR routing (current: `business_id` in webhook URL)
 - SMS templates (per-business, user-editable)
 - Booking management public link (HMAC token, public cancel/reschedule endpoint)
 - Stripe payment links (P3-007, deliberately deferred)
@@ -221,14 +220,13 @@ Historical backend test count (last known green): 900+ tests, coverage ≥85%.
 
 1. Production API is down (502) — requires Railway dashboard investigation
 2. `BusinessMembership.role` is not used in runtime authorization (SAC-005 incomplete)
-3. IVR routes by `business_id` in URL, not by phone number — real telephony requires phone-number routing (T9)
-4. SMS messages are hardcoded EN-only; no per-business language or template support
-5. No public booking management link — customers cannot cancel/reschedule without calling or contacting business
-6. Telephony block (T1–T9) not on `main`; exists only in `backup/mixed-work-before-recovery-2026-06-26` snapshot
-7. Landing page (`/`) does not link to `/demo` — reduces demo discoverability
-8. `staff_invitations` table (SAC-009) exists in the backup snapshot; if it was ever applied to production DB, a fresh DB will not have it (potential prod/fresh-DB divergence — investigate Railway DB state)
-9. Node version: local dev may use Node 26; `package.json` engines specifies `^22.13.0`
-10. `CalendarIntegration` model exists but no real OAuth flow; frontend calendar setup screen does not exist
+3. SMS messages are hardcoded EN-only; no per-business language or template support
+4. No public booking management link — customers cannot cancel/reschedule without calling or contacting business
+5. Telephony block (T1–T9) not on `main`; exists only in `backup/mixed-work-before-recovery-2026-06-26` snapshot (phone-number webhook routing from T9 was forward-ported as P4-001 on `main`)
+6. Landing page (`/`) does not link to `/demo` — reduces demo discoverability
+7. `staff_invitations` table (SAC-009) exists in the backup snapshot; if it was ever applied to production DB, a fresh DB will not have it (potential prod/fresh-DB divergence — investigate Railway DB state)
+8. Node version: local dev may use Node 26; `package.json` engines specifies `^22.13.0`
+9. `CalendarIntegration` model exists but no real OAuth flow; frontend calendar setup screen does not exist
 
 ---
 
@@ -240,5 +238,5 @@ Historical backend test count (last known green): 900+ tests, coverage ≥85%.
 | Portfolio demo (local) | READY | None |
 | Portfolio demo (production) | NOT READY | API prod down (502) + no CTA on landing page |
 | Public demo (production) | NOT READY | Same as above |
-| Pilot (real businesses) | NOT READY | Phone routing (T9), SMS templates, booking management link, API down |
+| Pilot (real businesses) | NOT READY | SMS templates, booking management link, API down |
 | Production SaaS | NOT READY | All pilot blockers + billing, subscriptions, phone provisioning |

@@ -18,7 +18,7 @@ _FULL_SETUP = {
     "business": {
         "name": "Test Onboarding Salon",
         "timezone": "Europe/Warsaw",
-        "phone": "+48100200300",
+        "phone": "+18174057514",
         "booking_mode": "internal_booking",
     },
     "staff": [

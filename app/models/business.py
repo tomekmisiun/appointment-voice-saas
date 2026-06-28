@@ -58,6 +58,8 @@ class Business(Base):
         String(8), nullable=False, default=BusinessLanguage.EN
     )
     phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    owner_notification_phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    transfer_phone_number: Mapped[str | None] = mapped_column(String(32), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     transfer_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     transfer_destination_policy: Mapped[str] = mapped_column(

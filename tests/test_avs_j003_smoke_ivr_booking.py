@@ -142,4 +142,4 @@ def test_ivr_smoke_transfer_path(ivr_smoke):
     assert resp.status_code == 200
     data = resp.json()
     assert data["action"] == IvrAction.TRANSFER
-    assert data["transfer_destination"] == "+48100200300"
+    assert data["transfer_destination"] == "+48505460409"

@@ -30,6 +30,13 @@ logger = logging.getLogger(__name__)
 DEMO_BUSINESS_NAME = "Glamour Studio Demo"
 DEMO_USER_EMAIL = "demo@voxslot.demo"
 
+# The Twilio-provisioned inbound number clients call to reach the demo IVR.
+DEMO_INBOUND_PHONE = "+18174057514"
+# The owner's direct line — receives booking notification SMS.
+DEMO_OWNER_NOTIFICATION_PHONE = "+48505460409"
+# Where the IVR transfers calls (may equal the owner's direct line).
+DEMO_TRANSFER_PHONE = "+48505460409"
+
 # Mon=0 … Fri=4, Sat=5
 WEEKDAY_HOURS = [(d, time(9, 0), time(17, 0)) for d in range(5)]
 SATURDAY_HOURS = [(5, time(10, 0), time(14, 0))]
@@ -104,7 +111,9 @@ def seed_demo(db) -> dict:
             tenant_id=tenant.id,
             name=DEMO_BUSINESS_NAME,
             timezone="Europe/Warsaw",
-            phone="+48100200300",
+            phone=DEMO_INBOUND_PHONE,
+            owner_notification_phone=DEMO_OWNER_NOTIFICATION_PHONE,
+            transfer_phone_number=DEMO_TRANSFER_PHONE,
             is_active=True,
             transfer_enabled=True,
             transfer_destination_policy=TransferDestinationPolicy.BUSINESS_PHONE,
@@ -114,7 +123,13 @@ def seed_demo(db) -> dict:
         db.refresh(biz)
         results["business"].append(f"created: {DEMO_BUSINESS_NAME}")
     else:
-        results["business"].append(f"skipped: {DEMO_BUSINESS_NAME}")
+        # Always sync the phone fields so re-running seed after env changes is safe.
+        biz.phone = DEMO_INBOUND_PHONE
+        biz.owner_notification_phone = DEMO_OWNER_NOTIFICATION_PHONE
+        biz.transfer_phone_number = DEMO_TRANSFER_PHONE
+        db.commit()
+        db.refresh(biz)
+        results["business"].append(f"updated: {DEMO_BUSINESS_NAME}")
 
     # ── Staff ─────────────────────────────────────────────────────────────────
     existing_names = {s.name for s in db.query(Staff).filter(Staff.business_id == biz.id).all()}

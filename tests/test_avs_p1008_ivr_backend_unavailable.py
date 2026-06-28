@@ -31,17 +31,20 @@ def _setup(db, client):
     register_user(client, "p1008_admin@example.com")
     promote_to_admin(db, "p1008_admin@example.com")
     tenant = db.query(Tenant).filter(Tenant.slug == "default").one()
-    biz = create_business(db, tenant_id=tenant.id, name="Outage Salon", timezone="UTC")
-    return biz.id
+    biz = create_business(
+        db, tenant_id=tenant.id, name="Outage Salon", timezone="UTC",
+        phone="+18174020001",
+    )
+    return biz.id, biz.phone
 
 
 def test_inbound_call_db_unavailable_returns_graceful_twiml(db, client, monkeypatch):
-    biz_id = _setup(db, client)
-    monkeypatch.setattr("app.api.routes.twilio_voice.get_business_global", _db_unavailable)
+    biz_id, phone = _setup(db, client)
+    monkeypatch.setattr("app.api.routes.twilio_voice.get_business_by_inbound_phone", _db_unavailable)
 
     resp = client.post(
-        f"/api/v1/webhooks/twilio/voice/{biz_id}",
-        data={"CallSid": "CA_outage_001", "From": "+48600000010", "To": "+48800000000"},
+        "/api/v1/webhooks/twilio/voice",
+        data={"CallSid": "CA_outage_001", "From": "+48600000010", "To": phone},
     )
 
     assert resp.status_code == 200
@@ -52,12 +55,12 @@ def test_inbound_call_db_unavailable_returns_graceful_twiml(db, client, monkeypa
 
 
 def test_inbound_call_redis_unavailable_returns_graceful_twiml(db, client, monkeypatch):
-    biz_id = _setup(db, client)
+    biz_id, phone = _setup(db, client)
     monkeypatch.setattr("app.api.dependencies.rate_limit.redis_client", _UnavailableRedis())
 
     resp = client.post(
-        f"/api/v1/webhooks/twilio/voice/{biz_id}",
-        data={"CallSid": "CA_outage_002", "From": "+48600000011", "To": "+48800000000"},
+        "/api/v1/webhooks/twilio/voice",
+        data={"CallSid": "CA_outage_002", "From": "+48600000011", "To": phone},
     )
 
     assert resp.status_code == 200
@@ -67,17 +70,17 @@ def test_inbound_call_redis_unavailable_returns_graceful_twiml(db, client, monke
 
 
 def test_keypress_db_unavailable_returns_graceful_twiml(db, client, monkeypatch):
-    biz_id = _setup(db, client)
+    biz_id, phone = _setup(db, client)
     client.post(
-        f"/api/v1/webhooks/twilio/voice/{biz_id}",
-        data={"CallSid": "CA_outage_003", "From": "+48600000012", "To": "+48800000000"},
+        "/api/v1/webhooks/twilio/voice",
+        data={"CallSid": "CA_outage_003", "From": "+48600000012", "To": phone},
     )
     session = db.query(VoiceSession).filter(VoiceSession.call_sid == "CA_outage_003").one()
 
     monkeypatch.setattr("app.api.routes.twilio_voice.get_business_global", _db_unavailable)
 
     resp = client.post(
-        f"/api/v1/webhooks/twilio/voice/{biz_id}/{session.id}",
+        f"/api/v1/webhooks/twilio/voice/{session.id}",
         data={"CallSid": "CA_outage_003", "Digits": "1"},
     )
 
@@ -87,17 +90,17 @@ def test_keypress_db_unavailable_returns_graceful_twiml(db, client, monkeypatch)
 
 
 def test_keypress_redis_unavailable_returns_graceful_twiml(db, client, monkeypatch):
-    biz_id = _setup(db, client)
+    biz_id, phone = _setup(db, client)
     client.post(
-        f"/api/v1/webhooks/twilio/voice/{biz_id}",
-        data={"CallSid": "CA_outage_004", "From": "+48600000013", "To": "+48800000000"},
+        "/api/v1/webhooks/twilio/voice",
+        data={"CallSid": "CA_outage_004", "From": "+48600000013", "To": phone},
     )
     session = db.query(VoiceSession).filter(VoiceSession.call_sid == "CA_outage_004").one()
 
     monkeypatch.setattr("app.api.dependencies.rate_limit.redis_client", _UnavailableRedis())
 
     resp = client.post(
-        f"/api/v1/webhooks/twilio/voice/{biz_id}/{session.id}",
+        f"/api/v1/webhooks/twilio/voice/{session.id}",
         data={"CallSid": "CA_outage_004", "Digits": "1"},
     )
 
@@ -109,16 +112,16 @@ def test_keypress_redis_unavailable_returns_graceful_twiml(db, client, monkeypat
 def test_rate_limit_exceeded_is_not_treated_as_backend_unavailable(db, client, monkeypatch):
     """A real 429 (limit exceeded, Redis healthy) must stay a 429 — only a
     Redis-outage-flavored HTTPException(503) should become graceful TwiML."""
-    biz_id = _setup(db, client)
+    biz_id, phone = _setup(db, client)
     monkeypatch.setattr("app.core.config.settings.twilio_voice_rate_limit_limit", 1)
 
     client.post(
-        f"/api/v1/webhooks/twilio/voice/{biz_id}",
-        data={"CallSid": "CA_outage_006", "From": "+48600000015", "To": "+48800000000"},
+        "/api/v1/webhooks/twilio/voice",
+        data={"CallSid": "CA_outage_006", "From": "+48600000015", "To": phone},
     )
     resp = client.post(
-        f"/api/v1/webhooks/twilio/voice/{biz_id}",
-        data={"CallSid": "CA_outage_007", "From": "+48600000016", "To": "+48800000000"},
+        "/api/v1/webhooks/twilio/voice",
+        data={"CallSid": "CA_outage_007", "From": "+48600000016", "To": phone},
     )
 
     assert resp.status_code == 429
@@ -127,12 +130,12 @@ def test_rate_limit_exceeded_is_not_treated_as_backend_unavailable(db, client, m
 def test_signature_failure_is_not_treated_as_backend_unavailable(db, client, monkeypatch):
     """A bad/missing Twilio signature must still 403 — the new except clause
     only catches OperationalError/RedisError, not HTTPException."""
-    biz_id = _setup(db, client)
+    biz_id, phone = _setup(db, client)
     monkeypatch.setattr("app.core.config.settings.twilio_auth_token", "some-secret")
 
     resp = client.post(
-        f"/api/v1/webhooks/twilio/voice/{biz_id}",
-        data={"CallSid": "CA_outage_005", "From": "+48600000014", "To": "+48800000000"},
+        "/api/v1/webhooks/twilio/voice",
+        data={"CallSid": "CA_outage_005", "From": "+48600000014", "To": phone},
     )
 
     assert resp.status_code == 403

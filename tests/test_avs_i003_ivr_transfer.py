@@ -56,7 +56,7 @@ def test_press_2_business_phone_policy_transfers_to_business_phone(domain):
         db, biz.id, tid,
         transfer_enabled=True,
         transfer_destination_policy=TransferDestinationPolicy.BUSINESS_PHONE,
-        phone="+48100200300",
+        transfer_phone_number="+48100200300",
     )
     session = _make_session(db, biz.id, tid)
     resp = handle_keypress(db, session_id=session.id, tenant_id=tid, key="2")
@@ -85,7 +85,7 @@ def test_press_2_business_phone_whitespace_returns_unavailable_fallback(domain):
         db, biz.id, tid,
         transfer_enabled=True,
         transfer_destination_policy=TransferDestinationPolicy.BUSINESS_PHONE,
-        phone="   ",
+        transfer_phone_number="   ",
     )
     session = _make_session(db, biz.id, tid)
     resp = handle_keypress(db, session_id=session.id, tenant_id=tid, key="2")
@@ -150,7 +150,7 @@ def test_successful_transfer_sets_session_step_to_abandoned(domain):
         db, biz.id, tid,
         transfer_enabled=True,
         transfer_destination_policy=TransferDestinationPolicy.BUSINESS_PHONE,
-        phone="+48111222333",
+        transfer_phone_number="+48111222333",
     )
     session = _make_session(db, biz.id, tid)
     handle_keypress(db, session_id=session.id, tenant_id=tid, key="2")
@@ -164,7 +164,7 @@ def test_successful_transfer_persists_destination_on_session(domain):
         db, biz.id, tid,
         transfer_enabled=True,
         transfer_destination_policy=TransferDestinationPolicy.BUSINESS_PHONE,
-        phone="+48444555666",
+        transfer_phone_number="+48444555666",
     )
     session = _make_session(db, biz.id, tid)
     handle_keypress(db, session_id=session.id, tenant_id=tid, key="2")

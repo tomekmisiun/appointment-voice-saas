@@ -138,7 +138,7 @@ def test_press_1_transitions_to_service_selection(db):
 
 def test_press_2_transfers(db):
     tenant_id, biz, _svc = _setup(db)
-    update_business(db, biz.id, tenant_id, transfer_enabled=True, phone="+48100200300")
+    update_business(db, biz.id, tenant_id, transfer_enabled=True, transfer_phone_number="+48100200300")
     session, _ = start_session(db, business_id=biz.id, tenant_id=tenant_id, caller_phone="+48600111444")
 
     response = handle_keypress(db, session_id=session.id, tenant_id=tenant_id, key="2")
