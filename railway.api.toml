@@ -4,9 +4,9 @@ dockerfilePath = "Dockerfile"
 buildTarget = "production"
 
 [deploy]
-startCommand = "python -m app.seed_demo_data; uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers"
+startCommand = "uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers"
 healthcheckPath = "/health/live"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
-preDeployCommand = "alembic upgrade head"
+preDeployCommand = "alembic upgrade head && python -m app.seed_demo_data"
