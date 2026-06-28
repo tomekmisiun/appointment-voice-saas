@@ -25,7 +25,7 @@ Forbidden examples:
   Created-by: AI
 
 Remove all AI co-author and attribution metadata. Human authors only.
-See .ai-rules/git.md and docs/ci-policy-guards.md
+See .ai-rules/git.md and docs/development/ci-policy.md
 EOF
 }
 

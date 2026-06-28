@@ -10,16 +10,16 @@ This repository is the **Appointment Voice SaaS** product
 (`appointment-voice-saas`), not a generic template. When orienting, distinguish:
 
 - **Inherited foundation** — generic FastAPI/auth/tenancy/worker/CI scaffolding
-  (`app/`, `docs/foundation/`, `docs/template-*`, `TEMPLATE_FREEZE_CHECKLIST.md`).
-- **AVS product docs** — `docs/product-scope.md`, `docs/domain-model.md`,
-  `docs/appointment-saas-roadmap.md`, `ROADMAP.md`, `PROJECT_STATUS.md`.
+  (`app/`, `docs/archive/legacy/`, `docs/template-*`, `docs/archive/legacy/template-freeze-checklist-root.md`).
+- **AVS product docs** — `docs/product/scope.md`, `docs/architecture/domain-model.md`,
+  `docs/project/implementation-backlog.md`, `ROADMAP.md`, `PROJECT_STATUS.md`.
 - **AVS implementation** — product code, tests, and migrations implementing
   roadmap items (`AVS-Exxx`).
 - **AI workflow/rules** — `.ai-rules/`, `AGENTS.md`, `CLAUDE.md`,
-  `docs/ai-workflows.md`, `.commands/`, `agents/`.
+  `docs/development/workflows/ai-workflows.md`, `.commands/`, `agents/`.
 
 For Appointment Voice SaaS product tasks, pick the next item from
-`docs/appointment-saas-roadmap.md` (the executable backlog), not the
+`docs/project/implementation-backlog.md` (the executable backlog), not the
 high-level `ROADMAP.md`, unless the user specifies otherwise.
 
 ## 1. Classify the task
@@ -40,7 +40,7 @@ high-level `ROADMAP.md`, unless the user specifies otherwise.
 - Read `.ai-rules/context-map.md` and open the listed files for this task type.
 - Read binding rules that apply (architecture, testing, security, git, etc.).
 - Optional: use a persona from `agents/` for review-only work (see
-  `docs/ai-workflows.md`).
+  `docs/development/workflows/ai-workflows.md`).
 
 ## 3. Define scope
 
@@ -108,7 +108,7 @@ pasted handoff, local runner command, or separate CLI window.
 
 Prefer **cross-provider review**: a different AI provider/CLI than the
 Builder reviews the diff. See `.ai-rules/model-routing.md` §7 for why, and
-`docs/two-agent-review-workflow.md` "Verification status" for what is and is
+`docs/development/workflows/two-agent-review.md` "Verification status" for what is and is
 not confirmed to work in a given environment.
 
 **When running under Codex CLI (Builder = Codex):**

@@ -8,7 +8,7 @@
 
 ## Context
 
-`docs/audits/pre-p3-readiness-audit.md` §9 flags P3-006 as ADR-first,
+`docs/archive/audits/pre-p3-readiness-audit.md` §9 flags P3-006 as ADR-first,
 blocking P3-007 ("Add Stripe payment links") and P3-008 ("Add
 pending-payment booking state"): *"Architecture approved before payment
 code."* The roadmap's risk note for this tier is explicit — *"Payments
@@ -287,6 +287,6 @@ product actually needs one.
 - Implementation (model, migration, service wiring, API, worker job, tests)
   for both the `BookingPayment` model and the `PENDING_PAYMENT` status is
   tracked as **P3-008 (pending-payment state) before P3-007 (Stripe payment
-  links)** — the reverse of `docs/audits/pre-p3-readiness-audit.md` §10's
+  links)** — the reverse of `docs/archive/audits/pre-p3-readiness-audit.md` §10's
   original ordering, per §3 above: P3-007's payment-link flow has no safe
   status to create a hold with until P3-008 lands. Not this task.

@@ -11,7 +11,7 @@ env validation, or observability wiring.
 - `.github/workflows/ci.yml`, `release.yml`, `deploy.yml`
 - `Makefile`, `scripts/deploy_promote.sh`, `scripts/smoke_test.sh`
 - `app/core/config.py` production validators
-- `docs/production-deployment.md`, `docs/production-runtime-examples.md`
+- `docs/operations/deployment.md`, `docs/operations/runbooks/production-runtime.md`
 - Trivy/load-smoke/policy-guards CI jobs
 
 ## What to ignore
@@ -46,4 +46,4 @@ env validation, or observability wiring.
 Severity: **Critical** (broken CI/security gate), **High** (unsafe prod default),
 **Medium** (doc/ops gap), **Low** (nit).
 
-Binding: `.ai-rules/docker.md`, `docs/ci-policy-guards.md`.
+Binding: `.ai-rules/docker.md`, `docs/development/ci-policy.md`.

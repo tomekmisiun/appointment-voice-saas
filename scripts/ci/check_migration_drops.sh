@@ -69,6 +69,6 @@ cat <<EOF
 Use expand/contract across releases, or document an approved breaking migration
 by updating scripts/ci/allow-migration-drops with a one-line reason.
 
-See docs/ci-policy-guards.md and docs/migration-rollback.md
+See docs/development/ci-policy.md and docs/operations/runbooks/migration-rollback.md
 EOF
 exit 1

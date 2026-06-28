@@ -1,12 +1,12 @@
 # SAC-002: Membership Expand/Backfill/Contract Migration Runbook
 
 - **Status:** Planned
-- **Roadmap card:** [`docs/product/staff-access-calendar-roadmap.md`](../product/staff-access-calendar-roadmap.md) SAC-002
+- **Backlog:** [`docs/project/implementation-backlog.md`](../project/implementation-backlog.md)
 - **Architecture:** [`docs/specs/staff-access-and-calendar.md`](staff-access-and-calendar.md)
   §"Migration and backfill strategy" and §`business_memberships` (binding target
   schema; not redefined here)
 - **Decision:** [ADR 0007](../adr/0007-separate-staff-records-from-login-identities.md)
-- **Evidence:** [`docs/runbooks/membership-data-preflight.md`](../runbooks/membership-data-preflight.md),
+- **Evidence:** [`docs/operations/runbooks/membership-data-preflight.md`](../operations/runbooks/membership-data-preflight.md),
   `app/ops/membership_preflight.py` (SAC-001)
 - **Out of scope:** Alembic migrations and runtime code. This is the sequencing
   plan that SAC-003 (schema), SAC-004 (backfill), and SAC-005 (RBAC cutover)
@@ -224,12 +224,12 @@ The backfill command must log, per run:
    old access.
 7. Rollback is flipping the flag back to `False`, **and is only a
    no-further-action rollback while step 6's mirroring has held** — this is
-   the "Application rollback" case in `docs/migration-rollback.md`
+   the "Application rollback" case in `docs/operations/runbooks/migration-rollback.md`
    (schema-compatible, behavior-only fix). If mirroring is ever found to be
    incomplete for some user (bug, race, or a manual DB fix that bypassed the
    service layer), reconcile that user's legacy columns to match their
    membership state *before* flipping back, or treat it as a forward-fix /
-   restore-from-backup situation per `docs/migration-rollback.md` instead of
+   restore-from-backup situation per `docs/operations/runbooks/migration-rollback.md` instead of
    assuming the flag alone is sufficient. Rolling back does **not** undo the
    forced reauthentication from step 5 — that is a one-time, intentionally
    irreversible safety step, not a rollback target.
@@ -285,7 +285,7 @@ next use.
 | SAC-003 merged, before any backfill ran | `alembic downgrade` to drop the table | None — table is empty |
 | SAC-004 ran in an environment | Delete rows created by that backfill run (or truncate the table if no manual resolution has happened yet); legacy auth is untouched | None — membership is not yet read by any auth path |
 | SAC-005 flag flipped to `True` | Flip back to `False` | Low *while* every post-cutover membership mutation has been mirrored to legacy columns (dual-read step 6); if mirroring gaps are found, reconcile affected users' legacy columns first — see dual-read step 7 |
-| Contract (legacy column removal) | Out of scope for this runbook; requires its own backup, since this step is destructive | High — restore-from-backup is the only path back; see `docs/migration-rollback.md` §"Database Rollback Policy" |
+| Contract (legacy column removal) | Out of scope for this runbook; requires its own backup, since this step is destructive | High — restore-from-backup is the only path back; see `docs/operations/runbooks/migration-rollback.md` §"Database Rollback Policy" |
 
 ## Backup/restore rehearsal
 

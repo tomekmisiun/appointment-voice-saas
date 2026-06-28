@@ -28,7 +28,7 @@ Each task MUST include:
 ## Roadmap and tech debt
 
 - For Appointment Voice SaaS product tasks, pick the next item from
-  `docs/appointment-saas-roadmap.md` (the executable backlog, `AVS-Exxx`
+  `docs/project/implementation-backlog.md` (the executable backlog, `AVS-Exxx`
   items) unless the user specifies otherwise. `ROADMAP.md` is the high-level,
   non-executable view.
 - Map debt IDs from the roadmap row to `TECH_DEBT.md`; mark **Done** only after

@@ -12,7 +12,7 @@ config validators, or before production freeze.
 - `app/api/dependencies/auth.py`, `rate_limit.py`, `metrics_auth.py`
 - `app/services/auth_service.py`, `webhook_service.py`, `storage_service.py`
 - `.env.example` — no real secrets; placeholders safe
-- `docs/secret-management.md`, `docs/redis-production-contract.md`
+- `docs/security/secret-management.md`, `docs/architecture/redis-production-contract.md`
 
 ## What to ignore
 

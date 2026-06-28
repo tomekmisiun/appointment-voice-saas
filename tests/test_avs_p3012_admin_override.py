@@ -5,7 +5,7 @@ Decision recorded for this task: override-create does NOT bypass the
 DB-level no-overlap exclusion constraint (`no_overlapping_staff_bookings`)
 for a staff_id with a real conflict. It only adds a mandatory reason and a
 distinct AuditAction for cases that are not otherwise blocked (no staff_id,
-or no actual conflict) — see docs/audits/pre-p3-readiness-audit.md §10 and
+or no actual conflict) — see docs/archive/audits/pre-p3-readiness-audit.md §10 and
 the override-create-still-409s test below, which documents this boundary
 on purpose rather than leaving it implicit.
 """

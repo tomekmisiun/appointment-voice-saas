@@ -6,8 +6,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 required_files=(
   "AGENTS.md"
   "CLAUDE.md"
-  "docs/ai-workflows.md"
-  "docs/two-agent-review-workflow.md"
+  "docs/development/workflows/ai-workflows.md"
+  "docs/development/workflows/two-agent-review.md"
   ".ai-rules/agent-orchestration.md"
   ".ai-rules/anti-overengineering.md"
   ".ai-rules/context-map.md"
@@ -23,6 +23,8 @@ required_files=(
   ".ai-rules/model-routing.md"
   ".claude/agents/code-reviewer.md"
   ".claude/hooks/codex-stop-review.sh"
+  ".cursor/rules/project.mdc"
+  ".cursor/rules/testing.mdc"
   "scripts/ai/invoke-cross-reviewer.sh"
 )
 
@@ -95,6 +97,7 @@ runner_scan_paths=(
   "AGENTS.md"
   "CLAUDE.md"
   ".ai-rules"
+  ".cursor"
   ".commands"
   "docs"
   "Makefile"
@@ -105,6 +108,36 @@ for term in "${runner_terms[@]}"; do
   if grep -R --exclude-dir=foundation --exclude-dir=.git -F "$term" \
     "${runner_scan_paths[@]/#/$ROOT/}" >/dev/null; then
     echo "validate-ai-workflows: stale local runner reference: $term" >&2
+    missing=1
+  fi
+done
+
+stale_doc_paths=(
+  "docs/ai-workflows.md"
+  "docs/two-agent-review-workflow.md"
+  "docs/ci-policy-guards.md"
+  "docs/CURRENT_STATE.md"
+  "docs/appointment-saas-roadmap.md"
+  "docs/domain-model.md"
+  "docs/product-scope.md"
+  "docs/tenant-isolation.md"
+  "docs/migration-rollback.md"
+  "docs/template-onboarding.md"
+  "docs/template-usage.md"
+  "TEMPLATE_FREEZE_CHECKLIST.md"
+)
+
+for path in "${stale_doc_paths[@]}"; do
+  if grep -R --exclude=validate-ai-workflows.sh --exclude=documentation.md \
+    --exclude-dir=.git --exclude-dir=__pycache__ -F "$path" \
+    "$ROOT/AGENTS.md" \
+    "$ROOT/CLAUDE.md" \
+    "$ROOT/.ai-rules" \
+    "$ROOT/.cursor" \
+    "$ROOT/.commands" \
+    "$ROOT/agents" \
+    "$ROOT/scripts" >/dev/null; then
+    echo "validate-ai-workflows: stale documentation path reference: $path" >&2
     missing=1
   fi
 done
@@ -129,7 +162,7 @@ done
 approve_gate_files=(
   ".ai-rules/git.md"
   ".ai-rules/agent-orchestration.md"
-  "docs/two-agent-review-workflow.md"
+  "docs/development/workflows/two-agent-review.md"
 )
 
 for file in "${approve_gate_files[@]}"; do
@@ -170,13 +203,13 @@ for entry in "${cross_provider_refs[@]}"; do
   fi
 done
 
-two_agent_doc="$ROOT/docs/two-agent-review-workflow.md"
+two_agent_doc="$ROOT/docs/development/workflows/two-agent-review.md"
 if ! grep -F "invoke-cross-reviewer.sh claude" "$two_agent_doc" >/dev/null; then
-  echo "validate-ai-workflows: docs/two-agent-review-workflow.md missing Codex -> Claude review (invoke-cross-reviewer.sh claude)" >&2
+  echo "validate-ai-workflows: docs/development/workflows/two-agent-review.md missing Codex -> Claude review (invoke-cross-reviewer.sh claude)" >&2
   missing=1
 fi
 if ! grep -F "invoke-cross-reviewer.sh codex" "$two_agent_doc" >/dev/null; then
-  echo "validate-ai-workflows: docs/two-agent-review-workflow.md missing Claude -> Codex review (invoke-cross-reviewer.sh codex)" >&2
+  echo "validate-ai-workflows: docs/development/workflows/two-agent-review.md missing Claude -> Codex review (invoke-cross-reviewer.sh codex)" >&2
   missing=1
 fi
 

@@ -41,7 +41,7 @@ Before editing, read the files listed for your **task type**. Start with
 - `app/core/tenant_context.py`, `app/api/dependencies/tenant.py`
 - `app/services/tenant_*`, affected models with `tenant_id`
 - `tests/test_tenant_isolation.py`, `tests/test_tenancy.py`
-- `docs/tenant-isolation.md`
+- `docs/architecture/tenant-isolation.md`
 
 ### Worker / queue change
 - `.ai-rules/workers.md`, `.ai-rules/testing.md`
@@ -59,33 +59,33 @@ Before editing, read the files listed for your **task type**. Start with
 - `.ai-rules/docker.md`, `.ai-rules/documentation.md`
 - `Dockerfile`, `docker-compose*.yml`, `Makefile`
 - `.github/workflows/`, `scripts/ci/`
-- `docs/ci-policy-guards.md`
+- `docs/development/ci-policy.md`
 
 ### Docs / project status change
 - `.ai-rules/documentation.md`, `.ai-rules/review.md`
 - `README.md`, `PROJECT_STATUS.md`, `ROADMAP.md`, `TECH_DEBT.md`
 - Matching `docs/` topic file
-- `docs/CURRENT_STATE.md` when implementation status changes
-- `TEMPLATE_FREEZE_CHECKLIST.md` if template-scope wording changes
+- `docs/project/current-state.md` when implementation status changes
+- `docs/archive/legacy/template-freeze-checklist-root.md` if template-scope wording changes
 
 ### Learning / mental map / onboarding docs
-- `docs/CURRENT_STATE.md` (code-verified implementation snapshot)
-- `docs/domain-model.md` (entity relationships)
+- `docs/project/current-state.md` (code-verified implementation snapshot)
+- `docs/architecture/domain-model.md` (entity relationships)
 - `.ai-rules/learning-mode.md` when changing agent completion format
 
 ### AI rules / workflow change
-- `.ai-rules/documentation.md`, `docs/ai-workflows.md`
+- `.ai-rules/documentation.md`, `docs/development/workflows/ai-workflows.md`
 - `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/project.mdc`
 - `scripts/validate-ai-workflows.sh`
 
 ### Template clone / onboarding
 - `.ai-rules/template-onboarding.md`
-- `docs/template-onboarding.md`, `docs/template-usage.md`
-- `TEMPLATE_FREEZE_CHECKLIST.md`, `.env.example`
+- `docs/archive/legacy/template-onboarding.md`, `docs/archive/legacy/template-usage.md`
+- `docs/archive/legacy/template-freeze-checklist-root.md`, `.env.example`
 
 ### Spec / ADR / design doc
 - `.ai-rules/spec-driven-development.md`
-- `docs/specs/README.md`, `docs/decisions/README.md`, `docs/adr/`
+- `docs/specs/README.md`, `docs/archive/superseded/decisions-readme.md`, `docs/adr/`
 
 ## Tracking files (do not confuse roles)
 
@@ -93,6 +93,6 @@ Before editing, read the files listed for your **task type**. Start with
 |------|---------|
 | `PROJECT_STATUS.md` | Verified capabilities only |
 | `ROADMAP.md` | High-level, non-executable product roadmap |
-| `docs/appointment-saas-roadmap.md` | Executable AVS backlog (`AVS-Exxx`) — pick the next product task here |
+| `docs/project/implementation-backlog.md` | Executable AVS backlog (`AVS-Exxx`) — pick the next product task here |
 | `TECH_DEBT.md` | Debt register |
-| `TEMPLATE_FREEZE_CHECKLIST.md` | Template reuse / freeze |
+| `docs/archive/legacy/template-freeze-checklist-root.md` | Template reuse / freeze |

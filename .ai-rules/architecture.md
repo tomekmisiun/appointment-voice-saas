@@ -29,4 +29,4 @@ Preserve the current architecture unless an explicit task requires changing it.
   unless the user explicitly requested that dependency change.
 - Prefer stdlib and packages already in the project.
 - CI and pre-commit enforce `pyproject.toml` / `uv.lock` pairing. See
-  `docs/ci-policy-guards.md`.
+  `docs/development/ci-policy.md`.

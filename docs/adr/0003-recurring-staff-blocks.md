@@ -8,7 +8,7 @@
 
 P3-004 ("Add staff time blocks") and P3-005 ("Add recurring staff blocks")
 are adjacent roadmap items that both describe carving unavailable time out
-of an otherwise-open schedule (e.g. a lunch break). `docs/audits/pre-p3-readiness-audit.md`
+of an otherwise-open schedule (e.g. a lunch break). `docs/archive/audits/pre-p3-readiness-audit.md`
 §9 flags a **high** conceptual overlap between them and requires this ADR
 before any P3-005 code lands: *"must decide: extend `AvailabilityException`
 with a recurrence rule, or add a new `RecurringBlock` model, before any code
@@ -165,4 +165,4 @@ wins over staff availability").
   change.
 - Implementation (model, migration, service wiring, API, tests) is tracked
   as a separate task, sequenced after `feat/p3-004-staff-blocks-hardening`
-  per `docs/audits/pre-p3-readiness-audit.md` §10.
+  per `docs/archive/audits/pre-p3-readiness-audit.md` §10.

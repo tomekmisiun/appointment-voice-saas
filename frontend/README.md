@@ -3,8 +3,8 @@
 Next.js (App Router) owner dashboard for the Appointment Voice SaaS backend.
 This branch (`feat/frontend-foundation-auth`) ships the foundation only:
 project scaffold, typed API layer, authentication, and a protected dashboard
-shell. See `docs/frontend/frontend-roadmap.md` (repo root) for what ships in
-later branches — most nav entries are intentionally marked "Coming soon."
+shell. See [`../ROADMAP.md`](../ROADMAP.md) and
+[`../TECH_DEBT.md`](../TECH_DEBT.md) for remaining product gaps.
 
 ## Architecture in one paragraph
 
@@ -108,12 +108,9 @@ pnpm test
 pnpm build
 ```
 
-No Playwright/E2E suite in this branch — nothing here is interactive enough
-to need a browser smoke test beyond the unit/component coverage (login form,
-auth failure handling, protected-route redirects, the refresh flow's
-concurrency-safety, CSRF rejection, session size/secret validation,
-business-selection states). Playwright lands with the bookings-read branch,
-once there's an actual page to click through.
+No Playwright/E2E suite exists in this branch. Current coverage is Vitest unit
+and component coverage for forms, auth handling, route protection, refresh
+locking, CSRF rejection, session validation, and dashboard states.
 
 ## Common problems
 

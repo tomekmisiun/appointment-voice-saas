@@ -10,8 +10,8 @@ how a real business owner would. This adds `staff_id` to the create
 request (optional, defaults to business-wide), with the same
 business-membership validation as other `staff_id`-accepting endpoints.
 
-See `docs/appointment-saas-roadmap.md` P3-001 and
-`docs/audits/pre-p3-readiness-audit.md` §9.
+See `docs/project/implementation-backlog.md` P3-001 and
+`docs/archive/audits/pre-p3-readiness-audit.md` §9.
 """
 from datetime import time
 

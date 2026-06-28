@@ -132,7 +132,7 @@ After a merge to `main`:
 3. Redeploy the previous application image via Railway dashboard.
 4. Document the incident.
 
-> Prefer forward-fix migrations over downgrades in production. See `docs/migration-rollback.md`.
+> Prefer forward-fix migrations over downgrades in production. See `docs/operations/runbooks/migration-rollback.md`.
 
 ---
 

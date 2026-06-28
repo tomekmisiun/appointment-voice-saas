@@ -55,4 +55,4 @@ runs `git diff` locally; do **not** paste diff or conversation history.
 After handoff, invoke the configured Reviewer. Reviewer reads
 `.ai-rules/review-checklist.md` only.
 
-Reference: `docs/two-agent-review-workflow.md`
+Reference: `docs/development/workflows/two-agent-review.md`

@@ -6,4 +6,4 @@
 Use this file as a human index only. Manual pre-PR review:
 `.commands/review-current-branch.md`.
 
-Reference: `docs/two-agent-review-workflow.md`
+Reference: `docs/development/workflows/two-agent-review.md`

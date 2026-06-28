@@ -5,8 +5,8 @@
 This task adds the validation that was missing: overlap/conflict
 prevention between exceptions for the same (business_id, staff_id, date)
 scope, and a `staff_id` business-membership check on create. See
-`docs/appointment-saas-roadmap.md` P3-004 and
-`docs/audits/pre-p3-readiness-audit.md` §9-10 item 6.
+`docs/project/implementation-backlog.md` P3-004 and
+`docs/archive/audits/pre-p3-readiness-audit.md` §9-10 item 6.
 """
 from datetime import date, time
 

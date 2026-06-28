@@ -7,8 +7,7 @@ triage, validation, and docs consistency — not new backend features.
 
 ## What to inspect
 
-- `docs/template-onboarding.md`, `docs/template-usage.md`
-- `TEMPLATE_FREEZE_CHECKLIST.md`
+- `docs/archive/legacy/` for historical foundation-only references
 - `README.md`, `.env.example`, `app/seed_dev_data.py`
 - `Makefile`, `.github/workflows/release.yml` (image naming)
 - `PROJECT_STATUS.md` — must match enabled modules after trim

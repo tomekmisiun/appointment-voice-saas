@@ -127,9 +127,9 @@ booking correctness from provider availability.
 
 ## References
 
-- `docs/domain-model.md`
-- `docs/product-scope.md`
-- `docs/appointment-saas-roadmap.md`
+- `docs/architecture/domain-model.md`
+- `docs/product/scope.md`
+- `docs/project/implementation-backlog.md`
 - `docs/adr/0001-sync-vs-async-architecture.md`
 - `.ai-rules/tenancy.md`
 - `.ai-rules/security.md`

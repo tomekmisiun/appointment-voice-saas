@@ -16,7 +16,7 @@ Login is CPU-bound (bcrypt) and database-bound (user lookup, token issuance).
 Without enough Uvicorn workers or horizontal replicas, latency rises before
 PostgreSQL saturates.
 
-P2 #23 added `docs/sync-scaling-benchmark.md` and an `auth-login` load profile
+P2 #23 added `docs/architecture/scaling.md` and an `auth-login` load profile
 so forks can measure single- vs multi-worker behavior locally.
 
 ## Decision Drivers
@@ -31,8 +31,8 @@ so forks can measure single- vs multi-worker behavior locally.
 ### 1. Stay sync; scale with workers and replicas (recommended default)
 
 - Increase Uvicorn `--workers` or run more API replicas behind a load balancer
-- Size PostgreSQL pools using the formula in `docs/production-deployment.md`
-- Use `docs/sync-scaling-benchmark.md` to validate changes
+- Size PostgreSQL pools using the formula in `docs/operations/deployment.md`
+- Use `docs/architecture/scaling.md` to validate changes
 
 **Pros:** No rewrite; aligns with current code and tests; fastest path to production.
 
@@ -71,7 +71,7 @@ version commits to a full rewrite.
 Recommended fork workflow:
 
 1. Run sync benchmarks (`make load-smoke-auth-login-thresholds`, multi-worker
-   steps in `docs/sync-scaling-benchmark.md`).
+   steps in `docs/architecture/scaling.md`).
 2. If login/admin p95 or throughput still miss SLO after worker/replica tuning,
    prototype async auth routes in the fork behind feature flags.
 3. Re-evaluate full async only after measuring DB/Redis as the next bottleneck.
@@ -87,7 +87,7 @@ Recommended fork workflow:
 
 ## References
 
-- `docs/sync-scaling-benchmark.md`
-- `docs/production-deployment.md`
-- `docs/production-runtime-examples.md`
-- `docs/foundation/template-roadmap.md` P2 #23, P2 #24
+- `docs/architecture/scaling.md`
+- `docs/operations/deployment.md`
+- `docs/operations/runbooks/production-runtime.md`
+- `docs/archive/legacy/foundation-template-roadmap.md` P2 #23, P2 #24

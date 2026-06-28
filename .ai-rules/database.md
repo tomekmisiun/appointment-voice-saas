@@ -15,7 +15,7 @@ SQLAlchemy, Alembic, PostgreSQL, and a separate test database.
 - MUST NOT modify existing migration files unless the user explicitly requested
   it.
 - MUST NOT mix unrelated schema changes and refactors in one migration.
-- CI enforces model changes → new migration. See `docs/ci-policy-guards.md`.
+- CI enforces model changes → new migration. See `docs/development/ci-policy.md`.
 
 ## Destructive Migrations
 
@@ -24,7 +24,7 @@ SQLAlchemy, Alembic, PostgreSQL, and a separate test database.
 - MUST NOT use `op.drop_*` unless the user explicitly requested a breaking
   migration.
 - CI flags destructive operations in new migration **`upgrade()`** blocks. See
-  `docs/migration-rollback.md` and `docs/ci-policy-guards.md`.
+  `docs/operations/runbooks/migration-rollback.md` and `docs/development/ci-policy.md`.
 
 ## Data Access
 

@@ -18,4 +18,4 @@ receivers:
         send_resolved: true
 ```
 
-See `docs/observability-production.md` for deployment guidance.
+See `docs/operations/observability.md` for deployment guidance.

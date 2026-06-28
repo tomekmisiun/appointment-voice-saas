@@ -10,7 +10,7 @@
 
 ## Context
 
-`docs/audits/pre-p3-readiness-audit.md` §9 flags P3-011 explicitly: *"High
+`docs/archive/audits/pre-p3-readiness-audit.md` §9 flags P3-011 explicitly: *"High
 risk of scope creep into full two-way sync if not kept as a spike"* — and
 scopes it as *"ADR/spike only, interface sketch, no implementation"*. This
 ADR is that spike.
@@ -31,7 +31,7 @@ The relevant existing state:
   `WorkingHours`/`AvailabilityException`/`RecurringStaffBlock` only model
   time the salon itself configured — the roadmap's named risk for this item
   is exactly that: *"External conflicts missed."*
-- `docs/audits/pre-p3-readiness-audit.md` also separately scopes **P3-014**
+- `docs/archive/audits/pre-p3-readiness-audit.md` also separately scopes **P3-014**
   (two-way calendar sync ADR) as the place to decide *whether* to ever let
   external calendar state affect availability at all, with an explicit
   default recommendation to *"reject full two-way sync in favor of one-way

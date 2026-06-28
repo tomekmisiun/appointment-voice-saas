@@ -9,11 +9,11 @@ grounded in this repo's actual code (not README claims).
 
 ## Before changing code
 
-- Read `docs/CURRENT_STATE.md` when unsure what is implemented.
-- Use `docs/domain-model.md` to locate entities and their relationships.
+- Read `docs/project/current-state.md` when unsure what is implemented.
+- Use `docs/architecture/domain-model.md` to locate entities and their relationships.
 - Do not mark features implemented unless verified in code, tests, or migrations.
 - When closing a roadmap item (`[x]`) or updating verified status in
-  `PROJECT_STATUS.md`, **MUST** refresh `docs/CURRENT_STATE.md`
+  `PROJECT_STATUS.md`, **MUST** refresh `docs/project/current-state.md`
   in the same change set (see `.ai-rules/documentation.md`).
 
 ## Required final response sections
@@ -74,6 +74,6 @@ Still include validation run and manual verification (e.g. read docs, run
 
 | Doc | Use when |
 |-----|----------|
-| `docs/CURRENT_STATE.md` | What exists vs planned |
-| `docs/domain-model.md` | Product entities and relationships |
+| `docs/project/current-state.md` | What exists vs planned |
+| `docs/architecture/domain-model.md` | Product entities and relationships |
 | `.ai-rules/context-map.md` | Safe change patterns by task type |

@@ -33,6 +33,6 @@ ERROR: app/models/ changed without a new Alembic revision.
 Add a migration under alembic/versions/, or document a non-schema-only model
 change by updating scripts/ci/allow-no-migration with a one-line reason.
 
-See docs/ci-policy-guards.md
+See docs/development/ci-policy.md
 EOF
 exit 1

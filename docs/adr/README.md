@@ -1,8 +1,10 @@
 # Architecture Decision Records
 
-Index of significant template-level architecture decisions.
+Index of significant architecture decisions.
 
-Format guide: [docs/decisions/README.md](../decisions/README.md)
+Use short, dated Markdown records with a status (`Proposed`, `Accepted`,
+`Superseded`, or `Deprecated`), context, decision, consequences, and links to
+the affected code or documentation.
 
 | ADR | Title | Status |
 |-----|-------|--------|
@@ -14,6 +16,7 @@ Format guide: [docs/decisions/README.md](../decisions/README.md)
 | [0006](0006-two-way-calendar-sync.md) | Two-way calendar sync | Accepted |
 | [0007](0007-separate-staff-records-from-login-identities.md) | Separate staff records from login identities | Accepted |
 | [0008](0008-external-busy-periods-as-availability-exclusions.md) | External busy periods as availability exclusions | Accepted |
+| [0009](0009-public-readonly-demo.md) | Public read-only demo | Accepted |
 
 ADR 0008 supersedes only ADR 0005 section 2 and ADR 0006 decision 1. Their
 rejection of external booking authority and full bidirectional sync remains in

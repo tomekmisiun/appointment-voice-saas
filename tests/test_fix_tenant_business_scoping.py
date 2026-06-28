@@ -7,7 +7,7 @@ authorized for one business could read or mutate another business's
 Client/Customer/Staff/Booking rows -- including running GDPR anonymization
 on another business's customer -- by substituting `business_id` in the URL
 while keeping a valid resource id from a different business in the same
-tenant. See docs/audits/pre-p3-readiness-audit.md Finding 1 (AVS-TD-029).
+tenant. See docs/archive/audits/pre-p3-readiness-audit.md Finding 1 (AVS-TD-029).
 
 The same pattern was found, separately, in `require_working_hours` and
 `require_availability_exception` (not covered by the original AVS-TD-029

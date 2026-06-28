@@ -36,7 +36,7 @@ Feature branch workflow with explicit user approval for remote changes.
 - Local pre-commit blocks trailers when the commit-msg hook is installed:
   `uv run pre-commit install --hook-type commit-msg`
 - CI policy guards scan commits in the PR/push range via
-  `scripts/ci/check_no_ai_commit_trailers.sh` (see `docs/ci-policy-guards.md`).
+  `scripts/ci/check_no_ai_commit_trailers.sh` (see `docs/development/ci-policy.md`).
 - IDE or agent integrations may inject trailers automatically. Do not rely on
   `git commit` alone — inspect the final message with
   `git log -1 --pretty=format:%B` or `--message-file` on the guard script.

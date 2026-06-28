@@ -1,7 +1,7 @@
 # Template Onboarding (Agent Workflow)
 
 Agent workflow for **cloning this repository into a new product**. User-facing
-steps live in `docs/template-onboarding.md` and `docs/template-usage.md`.
+steps live in `docs/archive/legacy/template-onboarding.md` and `docs/archive/legacy/template-usage.md`.
 
 ## When to use
 
@@ -20,7 +20,7 @@ Ask or infer (minimal questions):
   webhooks, audit logs, observability stack
 - Registration policy (`public` vs `disabled`)
 - Platform admin model (demo `platform_admin` vs fork-specific design — see
-  `docs/platform-admin-model.md`)
+  `docs/architecture/platform-admin-model.md`)
 
 ### 2. Rename placeholders
 
@@ -39,7 +39,7 @@ a package rename (large scope).
 
 - Copy `.env.example` → `.env`; generate strong `SECRET_KEY`
 - Document required production vars in fork runbook (see
-  `TEMPLATE_FREEZE_CHECKLIST.md`)
+  `docs/archive/legacy/template-freeze-checklist-root.md`)
 - Remove or rotate any shared staging credentials
 
 ### 4. Validate locally

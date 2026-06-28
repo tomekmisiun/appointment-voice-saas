@@ -21,7 +21,7 @@ Use pytest for backend tests.
 
 - Run `make validate` before commit when changing application code, tests, or
   migrations. CI enforces the same coverage floor and test jobs.
-- Pre-commit runs cheap hygiene checks only. See `docs/ci-policy-guards.md`.
+- Pre-commit runs cheap hygiene checks only. See `docs/development/ci-policy.md`.
 
 ## Test Design
 

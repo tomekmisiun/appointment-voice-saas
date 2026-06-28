@@ -8,4 +8,4 @@ globs:
 alwaysApply: false
 ---
 
-Source of truth: `.ai-rules/testing.md` and `docs/ci-policy-guards.md`.
+Source of truth: `.ai-rules/testing.md` and `docs/development/ci-policy.md`.

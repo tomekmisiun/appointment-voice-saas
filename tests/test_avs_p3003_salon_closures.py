@@ -10,8 +10,8 @@ endpoint) and the precedence/isolation tests the audit flagged as missing:
 a business-wide closure must affect *every* staff member and always win
 over a staff-specific exception, while a staff-specific exception must
 *not* leak into other staff members' or the business-wide search. See
-`docs/appointment-saas-roadmap.md` P3-003 and
-`docs/audits/pre-p3-readiness-audit.md` §9-10 item 9.
+`docs/project/implementation-backlog.md` P3-003 and
+`docs/archive/audits/pre-p3-readiness-audit.md` §9-10 item 9.
 """
 from datetime import date, time
 

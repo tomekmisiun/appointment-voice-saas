@@ -114,7 +114,7 @@ Named profiles in `perf/profiles.json`:
 | `health-ready` | `GET /health/ready` | `p95 <= 2000ms`, `throughput >= 5 rps` |
 | `auth-login` | `POST /api/v1/auth/login` | `p95 <= 5000ms`, `throughput >= 2 rps` |
 
-Multi-worker sync scaling benchmarks: `docs/sync-scaling-benchmark.md`.
+Multi-worker sync scaling benchmarks: `docs/architecture/scaling.md`.
 
-See `docs/load-concurrency-testing.md` for concurrency regression coverage and
+See `docs/testing/load-and-concurrency.md` for concurrency regression coverage and
 the manual GitHub Actions workflow.

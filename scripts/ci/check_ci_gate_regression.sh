@@ -81,6 +81,6 @@ cat <<EOF
 
 Restore the guard or document an intentional change in the PR description.
 
-See docs/ci-policy-guards.md
+See docs/development/ci-policy.md
 EOF
 exit 1

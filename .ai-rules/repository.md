@@ -17,7 +17,7 @@
 
 - Mechanical checks (coverage floor, lockfile pairing, migration guards, secrets
   scans, AI commit-trailer guards) live in CI, pre-commit, and
-  `docs/ci-policy-guards.md`.
+  `docs/development/ci-policy.md`.
 - `.ai-rules/` keeps judgment rules that automation cannot enforce.
 - Commit messages MUST NOT contain AI attribution trailers — see
   `.ai-rules/git.md`. Agents MUST verify the exact message before commit.
@@ -27,4 +27,4 @@
 - `.ai-rules/` is the only source of truth for **binding** AI/project rules.
 - `AGENTS.md`, `CLAUDE.md`, and `.cursor/rules/*.mdc` MUST only point to
   `.ai-rules/` and workflow indexes — MUST NOT duplicate rule bodies.
-- `agents/` and `.commands/` are optional workflow aids (see `docs/ai-workflows.md`).
+- `agents/` and `.commands/` are optional workflow aids (see `docs/development/workflows/ai-workflows.md`).

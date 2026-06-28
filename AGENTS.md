@@ -3,8 +3,8 @@
 Binding project rules live in **`.ai-rules/`**. Read the relevant files before
 making changes. Do not duplicate rule bodies here.
 
-Workflow overview: **`docs/ai-workflows.md`** · Two-agent review:
-**`docs/two-agent-review-workflow.md`**
+Workflow overview: **`docs/development/workflows/ai-workflows.md`** · Two-agent review:
+**`docs/development/workflows/two-agent-review.md`**
 
 After every non-trivial file-changing task, Codex MUST run a read-only
 Reviewer before the final response: first try cross-provider review via
@@ -52,10 +52,10 @@ decision tree and `.ai-rules/model-routing.md` for model/tier selection.
 - **`agents/`** — review personas (backend, security, tenancy, DB, CI, onboarding)
 - **`.commands/`** — prompt formats and procedures (spec, plan, builder
   handoff, two-agent review, audit, onboard)
-- **`docs/two-agent-review-workflow.md`** — Builder / Reviewer handoff pattern
-- **`docs/CURRENT_STATE.md`** — code-verified implementation snapshot (replaces planned `docs/learning/` directory)
+- **`docs/development/workflows/two-agent-review.md`** — Builder / Reviewer handoff pattern
+- **`docs/project/current-state.md`** — code-verified implementation snapshot (replaces planned `docs/learning/` directory)
 - **`docs/specs/`** — feature spec conventions
-- **`docs/decisions/`** → ADRs in **`docs/adr/`**
+- **`docs/adr/`** → ADRs in **`docs/adr/`**
 
 ## Validation
 
@@ -63,6 +63,6 @@ decision tree and `.ai-rules/model-routing.md` for model/tier selection.
 - CI policy: `make policy-guards`
 - AI workflow files: `make validate-ai-workflows`
 
-Mechanical checks: `docs/ci-policy-guards.md`.
+Mechanical checks: `docs/development/ci-policy.md`.
 
 Update `.ai-rules/` when changing project rules. Keep this file as an index only.

@@ -10,7 +10,7 @@
 
 ## Context
 
-`docs/audits/pre-p3-readiness-audit.md` §9 flags P3-014 as **High** risk:
+`docs/archive/audits/pre-p3-readiness-audit.md` §9 flags P3-014 as **High** risk:
 *"any 'yes' answer here would contradict the existing accepted architecture
 and needs to be argued explicitly, not just documented"* — and scopes the
 default recommendation as *"reject full two-way sync in favor of one-way

@@ -31,6 +31,6 @@ ERROR: pyproject.toml and uv.lock must change together.
 
 Run \`uv lock\` after editing pyproject.toml.
 
-See docs/ci-policy-guards.md
+See docs/development/ci-policy.md
 EOF
 exit 1

@@ -5,7 +5,7 @@ content is in scope for this task). These tests prove the *mechanism*:
 key/locale resolution, graceful fallback for missing locales/keys, and that
 adding a second locale is a pure data change with zero step-handler-logic
 changes required (the actual goal of P3-009, per
-docs/appointment-saas-roadmap.md).
+docs/project/implementation-backlog.md).
 """
 from app.core.ivr import IvrOption
 from app.core.ivr_prompts import (

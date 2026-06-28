@@ -1,12 +1,13 @@
 # Staff Access, Scheduling, and Calendar Integrations
 
 - **Status:** Planned
-- **Current-state audit:**
-  [`docs/audits/staff-access-calendar-current-state.md`](../audits/staff-access-calendar-current-state.md)
+- **Current state:** [`docs/project/current-state.md`](../project/current-state.md)
+- **Historical audit:**
+  [`docs/archive/audits/staff-access-calendar-current-state.md`](../archive/audits/staff-access-calendar-current-state.md)
 - **Decisions:** [ADR 0007](../adr/0007-separate-staff-records-from-login-identities.md),
   [ADR 0008](../adr/0008-external-busy-periods-as-availability-exclusions.md)
 - **Execution plan:**
-  [`docs/product/staff-access-calendar-roadmap.md`](../product/staff-access-calendar-roadmap.md)
+  [`docs/project/implementation-backlog.md`](../project/implementation-backlog.md)
 
 ## Objective
 
@@ -580,4 +581,3 @@ Each task uses targeted tests first, then `make validate`, migration checks,
 tenant isolation tests, frontend lint/type/test/build as applicable, and the
 repository's required read-only reviewer. Security-sensitive integration tasks
 also require malicious-input test corpora and a threat-model review.
-
