@@ -53,7 +53,7 @@ decision tree and `.ai-rules/model-routing.md` for model/tier selection.
 - **`.commands/`** — prompt formats and procedures (spec, plan, builder
   handoff, two-agent review, audit, onboard)
 - **`docs/two-agent-review-workflow.md`** — Builder / Reviewer handoff pattern
-- **`docs/learning/`** — code-verified mental maps and interview defense
+- **`docs/CURRENT_STATE.md`** — code-verified implementation snapshot (replaces planned `docs/learning/` directory)
 - **`docs/specs/`** — feature spec conventions
 - **`docs/decisions/`** → ADRs in **`docs/adr/`**
 

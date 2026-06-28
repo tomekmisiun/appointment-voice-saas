@@ -1,12 +1,12 @@
 # VoxSlot — Current State
 
-Last updated: 2026-06-27, based on commit `8f8912b` (branch `main`, clean working tree, up to date with `origin/main`).
+Last updated: 2026-06-28 (P4-001 phone-role separation merged; migration head updated to `p4001a2b3c4d5e`).
 
 ---
 
 ## Summary
 
-VoxSlot is a multi-tenant appointment SaaS with an IVR voice-booking flow. The backend is feature-complete for the core booking domain. The frontend covers auth, booking management, and staff views. The telephony block (T1–T9) exists only in a backup snapshot branch and has not been merged to `main`.
+VoxSlot is a multi-tenant appointment SaaS with an IVR voice-booking flow. The backend is feature-complete for the core booking domain. The frontend covers auth, booking management, and staff views. TELEPHONY-T9 (phone-number-based IVR routing) was forward-ported to `main` as P4-001; remaining telephony items (T1–T8, BusinessPhoneNumber model) exist only in the backup snapshot branch.
 
 ---
 
@@ -35,7 +35,7 @@ Every product table carries `tenant_id` as a foreign key. Tenant isolation is va
 
 ### Alembic migrations
 
-43 migrations, single head: `demo_user_flag_a1b2c3d4`. Chain is clean (verified 2026-06-27).
+43 migrations, single head: `p4001a2b3c4d5e`. Chain is clean (verified 2026-06-27; head updated by P4-001).
 
 ### Domain models
 
@@ -204,7 +204,7 @@ Full IVR simulation available locally without Twilio credentials.
 | Suite | Result |
 |---|---|
 | Policy guards (`make policy-guards`) | PASS |
-| Alembic head check | PASS (1 head: `demo_user_flag_a1b2c3d4`) |
+| Alembic head check | PASS (1 head: `p4001a2b3c4d5e`) |
 | Frontend type-check (`tsc`) | PASS |
 | Frontend lint (ESLint) | PASS |
 | Frontend build (Next.js) | PASS (21 routes) |
@@ -222,7 +222,7 @@ Historical backend test count (last known green): 900+ tests, coverage ≥85%.
 2. `BusinessMembership.role` is not used in runtime authorization (SAC-005 incomplete)
 3. SMS messages are hardcoded EN-only; no per-business language or template support
 4. No public booking management link — customers cannot cancel/reschedule without calling or contacting business
-5. Telephony block (T1–T9) not on `main`; exists only in `backup/mixed-work-before-recovery-2026-06-26` snapshot (phone-number webhook routing from T9 was forward-ported as P4-001 on `main`)
+5. Telephony T1–T8 (`BusinessPhoneNumber` model, telephony_status column, operator API) not on `main`; exists only in `backup/mixed-work-before-recovery-2026-06-26` snapshot. T9 (phone-number IVR routing) was forward-ported as P4-001 and is fully on `main`.
 6. Landing page (`/`) does not link to `/demo` — reduces demo discoverability
 7. `staff_invitations` table (SAC-009) exists in the backup snapshot; if it was ever applied to production DB, a fresh DB will not have it (potential prod/fresh-DB divergence — investigate Railway DB state)
 8. Node version: local dev may use Node 26; `package.json` engines specifies `^22.13.0`

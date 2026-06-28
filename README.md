@@ -468,7 +468,6 @@ Immediate priorities:
 
 Next development areas:
 
-- phone-number-based IVR routing (BusinessPhoneNumber model, Twilio routing by `To` field),
 - SMS localization (locale-aware messages per business language),
 - public booking management link (HMAC-tokenized cancel/reschedule URL),
 - staff accounts and per-business RBAC (SAC-005 membership cutover),
@@ -525,7 +524,7 @@ More details:
 | [`docs/appointment-saas-roadmap.md`](docs/appointment-saas-roadmap.md) | Detailed implementation backlog |
 | [`docs/mvp-pilot-deployment-checklist.md`](docs/mvp-pilot-deployment-checklist.md) | Pilot deployment checklist |
 | [`docs/twilio-provider-runbook.md`](docs/twilio-provider-runbook.md) | Twilio integration runbook |
-| [`docs/learning/`](docs/learning/) | Codebase mental maps and learning notes |
+| [`docs/CURRENT_STATE.md`](docs/CURRENT_STATE.md) | Code-verified implementation snapshot |
 
 ---
 

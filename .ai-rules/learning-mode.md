@@ -9,12 +9,11 @@ grounded in this repo's actual code (not README claims).
 
 ## Before changing code
 
-- Read `docs/learning/00-current-state-audit.md` when unsure what is implemented.
-- Use `docs/learning/01-system-mental-map.md` and `docs/learning/02-file-by-file-map.md`
-  to locate layers and files.
+- Read `docs/CURRENT_STATE.md` when unsure what is implemented.
+- Use `docs/domain-model.md` to locate entities and their relationships.
 - Do not mark features implemented unless verified in code, tests, or migrations.
 - When closing a roadmap item (`[x]`) or updating verified status in
-  `PROJECT_STATUS.md`, **MUST** refresh `docs/learning/00-current-state-audit.md`
+  `PROJECT_STATUS.md`, **MUST** refresh `docs/CURRENT_STATE.md`
   in the same change set (see `.ai-rules/documentation.md`).
 
 ## Required final response sections
@@ -75,8 +74,6 @@ Still include validation run and manual verification (e.g. read docs, run
 
 | Doc | Use when |
 |-----|----------|
-| `docs/learning/00-current-state-audit.md` | What exists vs planned |
-| `docs/learning/03-request-flow-map.md` | HTTP/auth/worker flows |
-| `docs/learning/04-domain-model-map.md` | Product entities |
-| `docs/learning/05-how-to-change-common-things.md` | Safe change patterns |
-| `docs/learning/06-interview-defense-guide.md` | Explaining the stack |
+| `docs/CURRENT_STATE.md` | What exists vs planned |
+| `docs/domain-model.md` | Product entities and relationships |
+| `.ai-rules/context-map.md` | Safe change patterns by task type |

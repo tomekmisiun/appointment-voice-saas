@@ -147,8 +147,8 @@ findings. P3 is fully closed except P3-007 (deliberately deferred).
 4. `TELEPHONY-T3` — Composite FK isolation for `BusinessPhoneNumber`.
 5. `TELEPHONY-T4` — Seed demo phone number.
 6. `TELEPHONY-T5` — Operator API (assign phone to business).
-7. `TELEPHONY-T9` — Phone-number-based IVR routing (route Twilio webhooks
-   by `To` field, not URL-embedded `business_id`).
+7. ~~`TELEPHONY-T9` — Phone-number-based IVR routing (route Twilio webhooks
+   by `To` field, not URL-embedded `business_id`).~~ **Done — forward-ported as P4-001** (`POST /api/v1/webhooks/twilio/voice` routes by `To=` field; `BusinessPhoneNumber` model not required — used `business.phone` directly).
 8. `TELEPHONY-T6` — Telephony status card (frontend dashboard component).
 
 **Independent tracks:**

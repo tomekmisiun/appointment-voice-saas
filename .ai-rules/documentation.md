@@ -30,11 +30,10 @@ configuration, migrations, or workflows.
 
 - `PROJECT_STATUS.md`: verified implemented capabilities only. MUST NOT mark
   planned work as complete.
-- **`docs/learning/00-current-state-audit.md`**: code-verified implementation
-  inventory. **MUST** update in the same change set when marking a roadmap item
-  `[x]` in `docs/appointment-saas-roadmap.md`, when changing verified rows in
-  `PROJECT_STATUS.md`, or when adding/removing product routes, models,
-  migrations, or their primary tests.
+- **`docs/CURRENT_STATE.md`**: code-verified implementation snapshot. **MUST**
+  update in the same change set when marking a roadmap item complete, when
+  changing verified rows in `PROJECT_STATUS.md`, or when adding/removing product
+  routes, models, migrations, or their primary tests.
 - `TECH_DEBT.md`: when closing an item, update its Status to Done in the same
   change set.
 - `ROADMAP.md`: planned work and priorities only.

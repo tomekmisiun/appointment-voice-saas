@@ -29,7 +29,7 @@ How AI tooling should use this repository's rules, personas, and commands.
 5. For non-trivial work: `.ai-rules/spec-driven-development.md` →
    `.ai-rules/planning-and-task-breakdown.md` → `.ai-rules/incremental-work.md`
 6. Before merge: `.ai-rules/review.md`
-7. Learning the repo or mentor-style explanations: `docs/learning/` +
+7. Learning the repo or mentor-style explanations: `docs/CURRENT_STATE.md` +
    `.ai-rules/learning-mode.md`
 
 ## Tool Entry Points
@@ -98,7 +98,7 @@ the merge gate.
 | Security audit | `.commands/security-audit.md` |
 | Clone for new product | `.commands/template-onboard.md` |
 | Sync tracking docs | `.commands/update-project-status.md` |
-| Learn the codebase | `docs/learning/00-current-state-audit.md` |
+| Learn the codebase | `docs/CURRENT_STATE.md` |
 
 ## Personas (review only)
 

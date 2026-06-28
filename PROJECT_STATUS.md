@@ -101,7 +101,7 @@ vars. A pilot can be set up against the `docs/mvp-pilot-deployment-checklist.md`
 ### Real Provider Integrations (EPIC H — done)
 
 - Twilio voice webhook adapter (`app/services/twilio_voice_adapter.py`): IvrResponse → TwiML.
-- Twilio voice webhook route (`/api/v1/webhooks/twilio/voice/{business_id}`).
+- Twilio voice webhook route: `POST /api/v1/webhooks/twilio/voice` (routes by `To=` field matched against `businesses.phone`; no `business_id` in URL — P4-001); keypress action: `POST /api/v1/webhooks/twilio/voice/{session_id}`.
 - Twilio signature validation (`app/core/twilio_security.py`).
 - Twilio SMS provider (`TwilioSmsProvider` in `sms_provider.py`).
 - SMS status webhook (`/api/v1/webhooks/twilio/sms/status`).
@@ -199,7 +199,7 @@ Two independent dimensions added to `Business`:
 | GAP-010 | ~~No DLQ alerting or metrics for failed async jobs~~ | MEDIUM | **Fixed — P1-011/P1-012** |
 | GAP-011 | ~~`get_client`/`require_client`/`update_client`/`get_customer`/`require_customer`/`gdpr_delete_customer` (and pre-existing `get_staff`/`get_booking`) filter by `tenant_id` only, not `business_id`, despite routes accepting `business_id` in the URL — a tenant with multiple businesses can read/mutate/anonymize another business's client or customer data.~~ | CRITICAL | **Fixed — AVS-TD-029, PR #42** |
 | GAP-012 | ~~Waitlist offer matching (`find_matching_waitlist_entries()`) has no row locking or idempotency guard; concurrent cancellations or an overlapping maintenance tick can double-offer the same waitlist entry.~~ | HIGH | **Fixed — AVS-TD-030, PR #45** |
-| GAP-013 | `app/api/routes/twilio_voice.py:150`'s `VoiceSession` lookup doesn't validate `business_id`, only `session_id`; mitigated by mandatory Twilio signature validation. | LOW | Open — AVS-TD-031, see `docs/audits/pre-p3-readiness-audit.md` |
+| GAP-013 | Keypress handler's `VoiceSession` lookup validates only `session_id`; does not cross-check the `To=` field against the session's business phone. After P4-001 the URL has no `business_id` (route is `/webhooks/twilio/voice/{session_id}`); mitigated by mandatory Twilio signature validation. | LOW | Open — AVS-TD-031 |
 | GAP-014 | ~~Same pattern as GAP-011, found in two files that audit didn't cover: `require_working_hours`/`require_availability_exception` filtered by `tenant_id` only, despite their GET/DELETE routes accepting `business_id` in the URL.~~ | CRITICAL | **Fixed — AVS-TD-032** |
 
 ## Readiness Assessment
