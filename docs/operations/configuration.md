@@ -56,7 +56,7 @@ Important production-only or production-sensitive variables include:
 | `METRICS_REQUIRE_AUTH`, `METRICS_BEARER_TOKEN` | Protects `/metrics`. Defaults to auth required in production. |
 | `UPLOAD_MALWARE_SCAN_ENABLED`, `UPLOAD_MALWARE_SCANNER_URL` | Required by production validators. |
 | `SMTP_HOST`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `EMAIL_FROM` | Required outside local development. |
-| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, `TWILIO_VOICE_BASE_URL` | Required when real Twilio providers are used. |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_SMS_FROM`, `TWILIO_VOICE_NUMBER`, `TWILIO_VOICE_BASE_URL` | Required when real Twilio providers and the public demo Voice flow are used. `TWILIO_SMS_FROM` is the outbound SMS sender and may be an alphanumeric Sender ID such as `VoxSlot`; `TWILIO_VOICE_NUMBER` is the inbound Booking Assistant number. |
 
 ## Frontend Values
 
@@ -97,4 +97,3 @@ The local observability stack uses `.env.observability` and
 `docker-compose.observability.yml`. Grafana requires its own safe local admin
 credentials in that file. See [`observability-production.md`](observability.md)
 for metrics, alerts, and operational checks.
-

@@ -9,11 +9,23 @@ integrations. Complete before routing real calls or messages.
 |---|---|
 | `TWILIO_ACCOUNT_SID` | Twilio Account SID (starts with `AC`) |
 | `TWILIO_AUTH_TOKEN` | Twilio Auth Token (from console) |
-| `TWILIO_FROM_NUMBER` | E.164 number purchased in Twilio, e.g. `+48800000001` |
+| `TWILIO_VOICE_NUMBER` | E.164 inbound Voice number seeded into the public demo business, currently `+18174057514` |
+| `TWILIO_SMS_FROM` | SMS sender used by the provider. May be an E.164 number or an approved alphanumeric Sender ID such as `VoxSlot` |
 | `TWILIO_VOICE_BASE_URL` | Public HTTPS base URL of your API, e.g. `https://api.example.com` |
 
 Store all values in environment variables or a secrets manager. Never commit
 them to source control.
+
+Voice, owner notifications, and SMS sender are separate values:
+
+- Voice number: customers call `+18174057514`; Twilio sends this as the
+  webhook `To=` value and the backend matches it to `businesses.phone`.
+- Owner notification number: the demo business stores `+48505460409` in
+  `businesses.owner_notification_phone`; this is the SMS recipient for owner
+  alerts.
+- SMS sender: outbound SMS uses `TWILIO_SMS_FROM`, currently `VoxSlot`. Do not
+  reuse the Voice number as the SMS sender unless the Twilio account is
+  intentionally configured that way.
 
 ## 2. Twilio console setup
 
@@ -94,7 +106,8 @@ prompt and the call ends. Adjust the TTL to match your expected call duration.
 | 403 on voice webhook | Signature mismatch | Check `TWILIO_AUTH_TOKEN`; check reverse proxy URL rewriting |
 | 422 on voice webhook | Missing `CallSid` or `From` form field | Check Twilio webhook method is POST |
 | IVR returns "not configured" | No business with matching `phone` for the `To=` number | Verify the provisioned Twilio number matches `businesses.phone` |
-| SMS not delivered | `NullSmsProvider` active | Check `TWILIO_ACCOUNT_SID` / `TWILIO_FROM_NUMBER` are set |
+| SMS not delivered | `NullSmsProvider` active | Check `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_SMS_FROM` are set |
+| SMS rejected with invalid sender | Twilio account/route does not accept the alphanumeric Sender ID | Keep `TWILIO_SMS_FROM=VoxSlot`; enable or verify alphanumeric Sender ID support in Twilio instead of silently falling back |
 | SMS status stays `SENT` | Status callback URL not configured | Set status callback URL in Twilio console |
 | High failed-job queue depth | Twilio API returning errors | Check Twilio account balance and number status |
 
@@ -102,7 +115,7 @@ prompt and the call ends. Adjust the TTL to match your expected call duration.
 
 To disable Twilio integrations without redeploying:
 
-- Clear `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_FROM_NUMBER` →
+- Clear `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_SMS_FROM` →
   `get_sms_provider()` falls back to `NullSmsProvider` (SMS silently discarded).
 - Remove or change the webhook URL in the Twilio console → voice calls stop
   routing to the IVR.

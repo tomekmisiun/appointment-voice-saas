@@ -130,7 +130,7 @@ def test_e2e_ivr_press_2_returns_transfer(db, admin_client, ivr_domain):
     update_business(
         db, biz_id, tid,
         transfer_enabled=True,
-        transfer_phone_number="+48100200300",
+        transfer_phone_number="+48505460409",
     )
 
     resp = client.post(
@@ -148,7 +148,7 @@ def test_e2e_ivr_press_2_returns_transfer(db, admin_client, ivr_domain):
     assert resp.status_code == 200
     data = resp.json()
     assert data["action"] == IvrAction.TRANSFER
-    assert data["transfer_destination"] == "+48100200300"
+    assert data["transfer_destination"] == "+48505460409"
 
 
 def test_e2e_ivr_requires_auth(client, ivr_domain):

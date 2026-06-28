@@ -247,6 +247,46 @@ def test_settings_rejects_weak_production_webhook_secret():
     )
 
 
+def test_settings_rejects_production_voice_twilio_without_auth_token():
+    with pytest.raises(ValidationError) as exc_info:
+        Settings(
+            _env_file=None,
+            **{
+                **production_settings_kwargs(),
+                "twilio_voice_number": "+18174057514",
+                "twilio_voice_base_url": "https://api.example.test",
+                "twilio_auth_token": "",
+            },
+        )
+
+    assert "twilio_auth_token is required" in str(exc_info.value)
+
+
+def test_settings_accepts_production_sms_sender_id_with_twilio_auth_token():
+    settings = Settings(
+        _env_file=None,
+        **{
+            **production_settings_kwargs(),
+            "twilio_account_sid": "AC123",
+            "twilio_auth_token": "twilio-auth-token",
+            "twilio_sms_from": "VoxSlot",
+        },
+    )
+
+    assert settings.twilio_sms_from == "VoxSlot"
+
+
+def test_settings_accepts_legacy_twilio_from_number_as_deprecated_sms_alias(monkeypatch):
+    monkeypatch.setenv("TWILIO_FROM_NUMBER", "VoxSlot")
+
+    settings = Settings(
+        _env_file=None,
+        secret_key="strong-development-secret-key-value",
+    )
+
+    assert settings.twilio_sms_from == "VoxSlot"
+
+
 def test_settings_accepts_rate_limit_config():
     settings = Settings(
         _env_file=None,

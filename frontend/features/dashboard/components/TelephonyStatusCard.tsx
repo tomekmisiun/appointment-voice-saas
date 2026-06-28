@@ -9,10 +9,18 @@ interface TelephonyStatusCardProps {
 }
 
 function maskPhone(phone: string): string {
-  // Keep first N-6 chars visible, mask middle, show last 3.
-  // e.g. "+48505460409" → "+48505***409"
+  if (phone.startsWith("+48") && phone.length === 12) {
+    return "+48 *** *** " + phone.slice(-3);
+  }
   if (phone.length <= 6) return phone;
   return `${phone.slice(0, -6)}***${phone.slice(-3)}`;
+}
+
+function formatVoiceNumber(phone: string): string {
+  if (/^\+1\d{10}$/.test(phone)) {
+    return `+1 (${phone.slice(2, 5)}) ${phone.slice(5, 8)}-${phone.slice(8)}`;
+  }
+  return phone;
 }
 
 export function TelephonyStatusCard({ business, isDemo = false }: TelephonyStatusCardProps) {
@@ -20,6 +28,7 @@ export function TelephonyStatusCard({ business, isDemo = false }: TelephonyStatu
 
   const servicePhone = business.phone ?? null;
   const hasServicePhone = servicePhone !== null && servicePhone.trim() !== "";
+  const displayedServicePhone = hasServicePhone ? formatVoiceNumber(servicePhone!) : null;
 
   const ownerPhone = business.owner_notification_phone ?? null;
   const hasOwnerPhone = ownerPhone !== null && ownerPhone.trim() !== "";
@@ -39,8 +48,10 @@ export function TelephonyStatusCard({ business, isDemo = false }: TelephonyStatu
       <div>
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-900">Voice number</h2>
-          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
-            Active
+          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+            hasServicePhone ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+          }`}>
+            {hasServicePhone ? "Active" : "Not configured"}
           </span>
         </div>
 
@@ -52,7 +63,7 @@ export function TelephonyStatusCard({ business, isDemo = false }: TelephonyStatu
                 className="font-mono text-base font-semibold text-slate-900 hover:text-indigo-600"
                 aria-label={`Call ${servicePhone}`}
               >
-                {servicePhone}
+                {displayedServicePhone}
               </a>
               <button
                 type="button"

@@ -28,7 +28,7 @@ def test_twilio_sms_provider_success():
     mock_resp.raise_for_status.return_value = None
 
     with patch("httpx.post", return_value=mock_resp) as mock_post:
-        provider = TwilioSmsProvider("AC123", "token", "+48800000001")
+        provider = TwilioSmsProvider("AC123", "token", "VoxSlot")
         result = provider.send(SmsMessage(to="+48600000001", body="Hello"))
 
     assert result.success is True
@@ -36,6 +36,7 @@ def test_twilio_sms_provider_success():
     mock_post.assert_called_once()
     call_kwargs = mock_post.call_args
     assert call_kwargs.kwargs["auth"] == ("AC123", "token")
+    assert call_kwargs.kwargs["data"]["From"] == "VoxSlot"
     assert call_kwargs.kwargs["data"]["To"] == "+48600000001"
 
 
@@ -50,7 +51,7 @@ def test_twilio_sms_provider_http_error():
     exc = httpx.HTTPStatusError("bad", request=MagicMock(), response=error_resp)
 
     with patch("httpx.post", side_effect=exc):
-        provider = TwilioSmsProvider("AC123", "token", "+48800000001")
+        provider = TwilioSmsProvider("AC123", "token", "VoxSlot")
         result = provider.send(SmsMessage(to="invalid", body="Hello"))
 
     assert result.success is False
@@ -63,7 +64,7 @@ def test_twilio_sms_provider_request_error():
     from app.core.sms import SmsMessage
 
     with patch("httpx.post", side_effect=httpx.ConnectError("timeout")):
-        provider = TwilioSmsProvider("AC123", "token", "+48800000001")
+        provider = TwilioSmsProvider("AC123", "token", "VoxSlot")
         result = provider.send(SmsMessage(to="+48600000001", body="Hello"))
 
     assert result.success is False
@@ -76,7 +77,7 @@ def test_get_sms_provider_returns_twilio_when_configured():
     mock_settings = MagicMock()
     mock_settings.twilio_account_sid = "AC123"
     mock_settings.twilio_auth_token = "token"
-    mock_settings.twilio_from_number = "+48800000001"
+    mock_settings.twilio_sms_from = "VoxSlot"
 
     with patch("app.services.sms_provider.settings", mock_settings):
         provider = get_sms_provider()
@@ -90,7 +91,7 @@ def test_get_sms_provider_returns_null_when_unconfigured():
     mock_settings = MagicMock()
     mock_settings.twilio_account_sid = ""
     mock_settings.twilio_auth_token = ""
-    mock_settings.twilio_from_number = ""
+    mock_settings.twilio_sms_from = ""
 
     with patch("app.services.sms_provider.settings", mock_settings):
         provider = get_sms_provider()

@@ -26,6 +26,25 @@ def test_get_sms_provider_returns_a_provider_by_default():
     assert isinstance(provider, NullSmsProvider)
 
 
+def test_get_sms_provider_reports_missing_sms_from_when_twilio_credentials_present(monkeypatch):
+    from types import SimpleNamespace
+
+    monkeypatch.setattr(
+        "app.services.sms_provider.settings",
+        SimpleNamespace(
+            twilio_account_sid="AC123",
+            twilio_auth_token="token",
+            twilio_sms_from="",
+        ),
+    )
+
+    provider = get_sms_provider()
+    result = provider.send(SmsMessage(to="+48600100200", body="hello"))
+
+    assert isinstance(provider, NullSmsProvider)
+    assert result.error == "twilio_sms_from_not_configured"
+
+
 def test_fake_sms_provider_records_sent_messages():
     provider: SmsProvider = FakeSmsProvider()
     message = SmsMessage(to="+48600100200", body="Your booking is confirmed.")

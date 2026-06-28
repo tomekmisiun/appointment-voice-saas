@@ -56,12 +56,12 @@ def test_press_2_business_phone_policy_transfers_to_business_phone(domain):
         db, biz.id, tid,
         transfer_enabled=True,
         transfer_destination_policy=TransferDestinationPolicy.BUSINESS_PHONE,
-        transfer_phone_number="+48100200300",
+        transfer_phone_number="+48505460409",
     )
     session = _make_session(db, biz.id, tid)
     resp = handle_keypress(db, session_id=session.id, tenant_id=tid, key="2")
     assert resp.action == IvrAction.TRANSFER
-    assert resp.transfer_destination == "+48100200300"
+    assert resp.transfer_destination == "+48505460409"
 
 
 def test_press_2_business_phone_policy_no_phone_returns_unavailable_fallback(domain):

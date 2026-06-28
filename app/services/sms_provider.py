@@ -21,9 +21,12 @@ class NullSmsProvider:
 
     name = "null"
 
+    def __init__(self, error: str = "sms_provider_not_configured") -> None:
+        self._error = error
+
     def send(self, message: SmsMessage) -> SmsSendResult:
         _ = message
-        return SmsSendResult(success=False, error="sms_provider_not_configured")
+        return SmsSendResult(success=False, error=self._error)
 
 
 class FakeSmsProvider:
@@ -47,17 +50,17 @@ class TwilioSmsProvider:
     name = "twilio"
     _API_BASE = "https://api.twilio.com/2010-04-01/Accounts"
 
-    def __init__(self, account_sid: str, auth_token: str, from_number: str) -> None:
+    def __init__(self, account_sid: str, auth_token: str, sms_from: str) -> None:
         self._account_sid = account_sid
         self._auth_token = auth_token
-        self._from_number = from_number
+        self._sms_from = sms_from
 
     def send(self, message: SmsMessage) -> SmsSendResult:
         url = f"{self._API_BASE}/{self._account_sid}/Messages.json"
         try:
             resp = httpx.post(
                 url,
-                data={"From": self._from_number, "To": message.to, "Body": message.body},
+                data={"From": self._sms_from, "To": message.to, "Body": message.body},
                 auth=(self._account_sid, self._auth_token),
                 timeout=10.0,
             )
@@ -74,10 +77,16 @@ class TwilioSmsProvider:
 
 
 def get_sms_provider() -> SmsProvider:
-    if settings.twilio_account_sid and settings.twilio_auth_token and settings.twilio_from_number:
+    account_sid = settings.twilio_account_sid.strip()
+    auth_token = settings.twilio_auth_token.strip()
+    sms_from = settings.twilio_sms_from.strip()
+
+    if account_sid and auth_token and sms_from:
         return TwilioSmsProvider(
-            account_sid=settings.twilio_account_sid,
-            auth_token=settings.twilio_auth_token,
-            from_number=settings.twilio_from_number,
+            account_sid=account_sid,
+            auth_token=auth_token,
+            sms_from=sms_from,
         )
+    if account_sid and auth_token:
+        return NullSmsProvider("twilio_sms_from_not_configured")
     return NullSmsProvider()

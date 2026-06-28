@@ -99,6 +99,7 @@ def seed_demo_user(db, tenant_id: int) -> dict:
 def seed_demo(db) -> dict:
     tenant = ensure_default_tenant(db, commit=True)
     results: dict[str, list] = {"business": [], "staff": [], "services": [], "hours": []}
+    demo_inbound_phone = settings.twilio_voice_number.strip() or DEMO_INBOUND_PHONE
 
     # ── Business ──────────────────────────────────────────────────────────────
     biz = (
@@ -111,7 +112,7 @@ def seed_demo(db) -> dict:
             tenant_id=tenant.id,
             name=DEMO_BUSINESS_NAME,
             timezone="Europe/Warsaw",
-            phone=DEMO_INBOUND_PHONE,
+            phone=demo_inbound_phone,
             owner_notification_phone=DEMO_OWNER_NOTIFICATION_PHONE,
             transfer_phone_number=DEMO_TRANSFER_PHONE,
             is_active=True,
@@ -124,7 +125,7 @@ def seed_demo(db) -> dict:
         results["business"].append(f"created: {DEMO_BUSINESS_NAME}")
     else:
         # Always sync the phone fields so re-running seed after env changes is safe.
-        biz.phone = DEMO_INBOUND_PHONE
+        biz.phone = demo_inbound_phone
         biz.owner_notification_phone = DEMO_OWNER_NOTIFICATION_PHONE
         biz.transfer_phone_number = DEMO_TRANSFER_PHONE
         db.commit()

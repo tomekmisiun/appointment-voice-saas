@@ -35,9 +35,6 @@ from app.services.staff_service import create_staff
 from tests.database import auth_headers, login_user, promote_to_admin, register_user
 
 _STARTS_AT = datetime(2028, 3, 15, 10, 0, 0, tzinfo=timezone.utc)
-_LEGACY_PLACEHOLDER = "+48100200300"
-
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -253,11 +250,9 @@ def test_cancellation_owner_sms_uses_owner_notification_phone(db):
     assert "+48505460409" in recipients
 
 
-def test_no_notification_ever_sent_to_legacy_placeholder(db):
+def test_inbound_voice_number_is_not_used_as_owner_notification_recipient(db):
     from app.services.booking_service import create_booking
 
-    # Create business whose phone IS the legacy placeholder (edge case: should
-    # never be used as owner_notification_phone — we just set phone for routing).
     tenant_id, biz, staff_id, svc, customer = _make_notification_domain(
         db, owner_notification_phone=None
     )
@@ -271,9 +266,9 @@ def test_no_notification_ever_sent_to_legacy_placeholder(db):
         .filter(NotificationOutbox.business_id == biz.id)
         .all()
     )
-    bad_recipients = [n for n in outbox if n.recipient_phone == _LEGACY_PLACEHOLDER]
+    bad_recipients = [n for n in outbox if n.recipient_phone == biz.phone]
     assert bad_recipients == [], (
-        f"Legacy placeholder {_LEGACY_PLACEHOLDER} found in notification outbox"
+        f"Inbound Voice number {biz.phone} found in notification outbox"
     )
 
 
@@ -328,6 +323,17 @@ def test_seed_sets_correct_inbound_phone(db):
     seed_demo(db)
     biz = db.query(Business).filter(Business.name == DEMO_BUSINESS_NAME).one()
     assert biz.phone == DEMO_INBOUND_PHONE
+
+
+def test_seed_uses_configured_voice_number_without_changing_owner_phone(db):
+    with patch("app.seed_demo_data.settings") as ms:
+        ms.twilio_voice_number = "+18174057514"
+        ms.public_demo_user_email = DEMO_USER_EMAIL
+        seed_demo(db)
+
+    biz = db.query(Business).filter(Business.name == DEMO_BUSINESS_NAME).one()
+    assert biz.phone == "+18174057514"
+    assert biz.owner_notification_phone == DEMO_OWNER_NOTIFICATION_PHONE
 
 
 def test_seed_sets_correct_owner_notification_phone(db):
