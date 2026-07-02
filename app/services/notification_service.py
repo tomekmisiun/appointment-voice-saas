@@ -18,6 +18,7 @@ from app.models.notification_outbox import (
 )
 from app.models.service import Service
 from app.models.waitlist_entry import WaitlistEntry
+from app.services.booking_public_service import build_public_management_url
 from app.services.business_service import require_business
 from app.services.customer_service import require_customer_in_business
 from app.services.service_service import require_service_in_business
@@ -50,6 +51,9 @@ def enqueue_booking_confirmation(
 ) -> list[NotificationOutbox]:
     when = _format_local_time(booking.starts_at, business)
 
+    manage_url = build_public_management_url(booking.id)
+    manage_suffix = f" Manage: {manage_url}" if manage_url else ""
+
     intents = [
         NotificationOutbox(
             tenant_id=booking.tenant_id,
@@ -58,7 +62,7 @@ def enqueue_booking_confirmation(
             channel=NotificationChannel.SMS,
             purpose=NotificationPurpose.BOOKING_CONFIRMATION,
             recipient_phone=customer.phone,
-            body=f"Your {service.name} appointment at {business.name} is confirmed for {when}.",
+            body=f"Your {service.name} appointment at {business.name} is confirmed for {when}.{manage_suffix}",
         )
     ]
     if business.owner_notification_phone:

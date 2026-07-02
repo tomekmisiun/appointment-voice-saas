@@ -36,6 +36,17 @@ class BookingRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class BookingPublicRead(BaseModel):
+    """Minimal read-only view for unauthenticated public manage-booking pages."""
+
+    id: int
+    status: str
+    starts_at: datetime
+    ends_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class BookingCancelRequest(BaseModel):
     reason: str | None = Field(default=None, max_length=255)
 
@@ -87,6 +98,7 @@ __all__ = [
     "BookingCreate",
     "BookingOverrideCancelRequest",
     "BookingOverrideCreateRequest",
+    "BookingPublicRead",
     "BookingRead",
     "BookingRescheduleRequest",
     "BookingSource",
