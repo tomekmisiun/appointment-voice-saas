@@ -434,3 +434,15 @@ jobs:
         run: railway up --service=frontend --ci --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Post-deploy smoke check
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+          DEV_ADMIN_EMAIL: ${{ vars.SMOKE_ADMIN_EMAIL }}
+          DEV_PASSWORD: ${{ secrets.SMOKE_ADMIN_PASSWORD }}
+        run: |
+          if [[ -z "${API_BASE_URL:-}" ]]; then
+            echo "API_BASE_URL not configured; skipping post-deploy smoke check."
+            exit 0
+          fi
+          bash scripts/smoke_test.sh
