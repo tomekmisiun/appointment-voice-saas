@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies.auth import get_current_user, require_demo_business_access, require_non_demo_user, require_role
+from app.api.dependencies.auth import get_current_user, require_business_role, require_demo_business_access, require_non_demo_user
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.recurring_staff_block import (
@@ -32,7 +32,7 @@ def create_recurring_staff_block_endpoint(
     business_id: int,
     body: RecurringStaffBlockCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_business_role("admin")),
 ):
     """Create a recurring weekly unavailable window (P3-005), e.g. a daily
     lunch break. Unlike a one-off `AvailabilityException`, this is
@@ -94,7 +94,7 @@ def delete_recurring_staff_block_endpoint(
     business_id: int,
     block_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_business_role("admin")),
 ):
     delete_recurring_staff_block(
         db, block_id, current_user.tenant_id, business_id=business_id

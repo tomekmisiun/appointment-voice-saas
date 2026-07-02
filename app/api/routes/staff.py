@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies.auth import get_current_user, require_demo_business_access, require_non_demo_user, require_role
+from app.api.dependencies.auth import get_current_user, require_business_role, require_demo_business_access, require_non_demo_user
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.staff import StaffCreate, StaffRead, StaffUpdate
@@ -29,7 +29,7 @@ def create_staff_endpoint(
     business_id: int,
     body: StaffCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_business_role("admin")),
 ):
     return create_staff(
         db,
@@ -80,7 +80,7 @@ def update_staff_endpoint(
     staff_id: int,
     body: StaffUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_business_role("admin")),
 ):
     return update_staff(
         db,

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies.auth import get_current_user, require_demo_business_access, require_non_demo_user, require_role
+from app.api.dependencies.auth import get_current_user, require_business_role, require_demo_business_access, require_non_demo_user
 from app.db.session import get_db
 from app.models.user import User
 from app.models.booking import BookingStatus
@@ -40,7 +40,7 @@ def create_booking_endpoint(
     business_id: int,
     body: BookingCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_business_role("admin")),
 ):
     return create_booking(
         db,
@@ -65,7 +65,7 @@ def override_create_booking_endpoint(
     business_id: int,
     body: BookingOverrideCreateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_business_role("admin")),
 ):
     """Admin override booking creation (P3-012): same conflict rules as a
     normal create (the DB-level no-overlap constraint still applies for a
@@ -129,7 +129,7 @@ def cancel_booking_endpoint(
     booking_id: int,
     body: BookingCancelRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_business_role("admin")),
 ):
     return cancel_booking(
         db,
@@ -151,7 +151,7 @@ def override_cancel_booking_endpoint(
     booking_id: int,
     body: BookingOverrideCancelRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_business_role("admin")),
 ):
     """Admin override cancellation (P3-012): mechanically identical to a
     normal cancel (frees the slot, offers the waitlist) but requires an
@@ -173,7 +173,7 @@ def refund_booking_payment_endpoint(
     booking_id: int,
     body: BookingPaymentRefundRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_business_role("admin")),
 ):
     """Manual admin-triggered refund recording (P3-008, ADR 0004 SS6). Does
     not call any payment-provider API -- records that a refund already
@@ -198,7 +198,7 @@ def reschedule_booking_endpoint(
     booking_id: int,
     body: BookingRescheduleRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_business_role("admin")),
 ):
     return reschedule_booking(
         db,

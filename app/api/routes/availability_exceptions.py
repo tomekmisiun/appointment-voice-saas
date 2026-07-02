@@ -3,7 +3,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies.auth import get_current_user, require_demo_business_access, require_non_demo_user, require_role
+from app.api.dependencies.auth import get_current_user, require_business_role, require_demo_business_access, require_non_demo_user
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.availability_exception import (
@@ -34,7 +34,7 @@ def create_exception_endpoint(
     business_id: int,
     body: AvailabilityExceptionCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_business_role("admin")),
 ):
     """Create a one-off date override -- a full closure or special hours
     for a single date (P3-003/P3-004).
@@ -107,7 +107,7 @@ def delete_exception_endpoint(
     business_id: int,
     exception_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_business_role("admin")),
 ):
     delete_availability_exception(
         db, exception_id, current_user.tenant_id, business_id=business_id
