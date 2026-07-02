@@ -8,6 +8,7 @@ from app.core.permissions import Permission
 from app.core.security import decode_token
 from app.core.tenant_context import tenant_id_var, tenant_slug_var
 from app.db.session import get_db
+from app.models.business_membership import BusinessMembership, MembershipRole, MembershipStatus
 from app.models.user import User
 from app.services.permission_service import role_includes, user_has_any_permission
 from app.services.tenant_membership_service import (
@@ -15,6 +16,16 @@ from app.services.tenant_membership_service import (
     assert_request_tenant_matches_user,
 )
 from app.services.tenant_service import get_active_tenant_by_slug
+
+_MEMBERSHIP_ROLE_HIERARCHY: dict[str, frozenset[str]] = {
+    MembershipRole.OWNER: frozenset({MembershipRole.OWNER, MembershipRole.ADMIN, MembershipRole.STAFF}),
+    MembershipRole.ADMIN: frozenset({MembershipRole.ADMIN, MembershipRole.STAFF}),
+    MembershipRole.STAFF: frozenset({MembershipRole.STAFF}),
+}
+
+
+def _membership_role_includes(actor_role: str, required_role: str) -> bool:
+    return required_role in _MEMBERSHIP_ROLE_HIERARCHY.get(actor_role, frozenset())
 
 
 bearer_scheme = HTTPBearer()
@@ -114,6 +125,40 @@ def require_non_demo_user(
             detail="This action is not available in the public demo.",
         )
     return current_user
+
+
+def require_business_role(min_role: str = MembershipRole.STAFF):
+    """Enforce per-business RBAC using BusinessMembership (SAC-005).
+
+    Tenant admins and platform admins bypass the membership check and always
+    pass. Regular users must have an active BusinessMembership in the requested
+    business with a role that includes ``min_role``.
+    """
+    def checker(
+        business_id: int,
+        current_user: User = Depends(get_current_user),
+        db: Session = Depends(get_db),
+    ) -> User:
+        if current_user.role in ("admin", "platform_admin"):
+            return current_user
+
+        membership = (
+            db.query(BusinessMembership)
+            .filter(
+                BusinessMembership.tenant_id == current_user.tenant_id,
+                BusinessMembership.business_id == business_id,
+                BusinessMembership.user_id == current_user.id,
+                BusinessMembership.status == MembershipStatus.ACTIVE,
+            )
+            .first()
+        )
+
+        if membership is None or not _membership_role_includes(membership.role, min_role):
+            raise _forbidden()
+
+        return current_user
+
+    return checker
 
 
 def require_demo_business_access(
