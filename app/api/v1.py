@@ -5,6 +5,7 @@ from app.api.routes.auth import router as auth_router
 from app.api.routes.availability import router as availability_router
 from app.api.routes.availability_exceptions import router as availability_exceptions_router
 from app.api.routes.bookings import router as bookings_router
+from app.api.routes.bookings_public import router as bookings_public_router
 from app.api.routes.clients import router as clients_router
 from app.api.routes.customers import router as customers_router
 from app.api.routes.ivr import router as ivr_router
@@ -44,6 +45,7 @@ api_v1_router.include_router(availability_exceptions_router)
 api_v1_router.include_router(recurring_staff_blocks_router)
 api_v1_router.include_router(availability_router)
 api_v1_router.include_router(bookings_router)
+api_v1_router.include_router(bookings_public_router)
 api_v1_router.include_router(clients_router)
 api_v1_router.include_router(customers_router)
 api_v1_router.include_router(ivr_router)

@@ -45,6 +45,34 @@ export async function fetchFromBackend<T>(
 }
 
 /**
+ * Unauthenticated GET helper for public endpoints (no bearer token).
+ */
+export async function fetchFromBackendPublic<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
+  const response = await fetch(`${getBackendApiUrl()}${path}`, {
+    ...init,
+    cache: "no-store",
+    headers: {
+      ...init?.headers,
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const body = await parseErrorBody(response);
+    throw new ApiError(response.status, body);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return (await response.json()) as T;
+}
+
+/**
  * Unauthenticated POST helper — used only for login (no token yet) and the
  * refresh call itself (authenticated by the refresh token in the body, not
  * a bearer header). Everything else should use fetchFromBackend.

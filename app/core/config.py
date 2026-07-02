@@ -175,6 +175,12 @@ class Settings(BaseSettings):
     auth_demo_rate_limit_limit: int = Field(default=20, gt=0)
     auth_demo_rate_limit_window_seconds: int = Field(default=60, gt=0)
 
+    # Public booking management link (PUBLIC-LINK): base URL prepended to HMAC tokens
+    # sent in booking confirmation/reminder SMS.  Example:
+    # https://voxslot.up.railway.app/manage-booking
+    # If empty, public management links are omitted from SMS messages.
+    booking_public_base_url: str = ""
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
