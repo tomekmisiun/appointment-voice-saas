@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.domain_errors import NotFoundError
-from app.models.booking import Booking, BookingStatus
+from app.models.booking import Booking
 
 BOOKING_TOKEN_TTL_SECONDS = 90 * 24 * 3600  # 90 days
 
